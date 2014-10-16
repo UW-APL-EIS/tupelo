@@ -1,4 +1,4 @@
-package edu.uw.apl.tupelo.store;
+package edu.uw.apl.tupelo.store.filesys;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,7 +16,7 @@ public class FilesystemStoreTest extends junit.framework.TestCase {
 
 	public void test1() throws Exception {
 
-		Store store = new FilesystemStore( new File( "test-store" ) );
+		FilesystemStore store = new FilesystemStore( new File( "test-store" ) );
 		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
 		assertEquals( mdds.size(), 0 );
 		System.out.println( mdds );

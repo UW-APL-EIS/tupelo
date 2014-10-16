@@ -1,4 +1,4 @@
-package edu.uw.apl.tupelo.store;
+package edu.uw.apl.tupelo.store.filesys;
 
 import java.io.File;
 import java.io.FileReader;
@@ -21,6 +21,7 @@ import org.apache.commons.io.FileUtils;
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
+import edu.uw.apl.tupelo.store.Store;
 
 /**
    An implementation of the Tupelo Store interface which uses a flat
