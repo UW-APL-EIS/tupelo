@@ -1,10 +1,12 @@
 package edu.uw.apl.tupelo.model;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.UUID;
 
@@ -12,24 +14,23 @@ import org.apache.commons.io.FileUtils;
 
 public class FlatDisk extends ManagedDisk {
 
-	public FlatDisk( File rawImage, long length, String diskID, Session session,
-					 UUID parent ) {
-		this.rawImage = rawImage;
-		this.managedDisk = null;
-		header = new Header( diskID, session, DiskTypes.FLAT, parent,
-							 length / Constants.SECTORLENGTH, 128 );
+	/**
+	 * @param rawData - cannot be a whole disk, e.g. /dev/sda, since
+	 * length will be (incorrectly for our purposes) read as 0.  Must
+	 * instead be some form of disk image file.
+	 */
+	public FlatDisk( File rawData, String diskID, Session session ) {
+		super( rawData, null );
+		header = new Header( diskID, session, DiskTypes.FLAT, Constants.NULLUUID,
+							 rawData.length() / Constants.SECTORLENGTH,
+							 GRAINSIZE_DEFAULT );
 		header.dataOffset = Header.SIZEOF;
 	}
 
-	public FlatDisk( File managedDisk, Header h ) {
-		this.managedDisk = managedDisk;
+	// Called from ManagedDisk.readFrom()
+	public FlatDisk( File managedData, Header h ) {
+		super( null, managedData );
 		header = h;
-		this.rawImage = null;
-	}
-
-	@Override
-	public boolean hasParent() {
-		return false;
 	}
 
 	@Override
@@ -37,17 +38,26 @@ public class FlatDisk extends ManagedDisk {
 		throw new IllegalStateException( getClass() + ".setParent!!" );
 	}
 
-	@Override
+	public void writeTo( OutputStream os ) throws IOException {
+		if( rawData == null )
+			throw new IllegalStateException( "rawData missing" );
+		header.writeTo( os );
+		FileUtils.copyFile( rawData, os );
+	}
+
 	public void writeTo( File f ) throws IOException {
 		FileOutputStream fos = new FileOutputStream( f );
-		header.writeTo( fos );
-		FileUtils.copyFile( rawImage, fos );
+		BufferedOutputStream bos = new BufferedOutputStream( fos, 1024*1024 );
+		writeTo( bos );
+		bos.close();
 		fos.close();
 	}
 
 	@Override
 	public InputStream getInputStream() throws IOException {
-		FileInputStream fis = new FileInputStream( managedDisk );
+		if( managedData == null )
+			throw new IllegalStateException( "managedData missing" );
+		FileInputStream fis = new FileInputStream( managedData );
 		fis.skip( header.dataOffset );
 		return fis;
 	}
@@ -59,7 +69,7 @@ public class FlatDisk extends ManagedDisk {
 
 	class FlatDiskRandomAccessRead extends AbstractRandomAccessRead {
 		FlatDiskRandomAccessRead() throws IOException {
-			raf = new RandomAccessFile( managedDisk, "r" );
+			raf = new RandomAccessFile( managedData, "r" );
 			raf.seek( header.dataOffset );
 			size = size();
 			posn = 0;
@@ -132,9 +142,6 @@ public class FlatDisk extends ManagedDisk {
 		private long posn;
 	}
 
-	// Only one or the other is valid, never both. 
-	private final File rawImage;		// for creating/writing a ManagedDisk
-	private final File managedDisk;		// for loading a ManagedDisk
 	
 }
 

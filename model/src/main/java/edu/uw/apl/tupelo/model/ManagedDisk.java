@@ -15,9 +15,25 @@ import java.util.UUID;
 
 abstract public class ManagedDisk {
 
-	abstract public boolean hasParent();
+	protected ManagedDisk( File rawData, File managedData ) {
+		this.rawData = rawData;
+		this.managedData = managedData;
+	}
+	
+	public boolean hasParent() {
+		return !header.uuidParent.equals( Constants.NULLUUID );
+	}
 
+	/**
+	 * Needed by Store implementations to attached a final managedData file
+	 * to an supplied ManagedDisk object (e.g. in put())
+	 */
+	public void setManagedData( File f ) {
+		managedData = f;
+	}
+	
 	abstract public void setParent( ManagedDisk md );
+	//	abstract public ManagedDisk getParent();
 
 	abstract public void writeTo( File f ) throws IOException;
 
@@ -25,7 +41,7 @@ abstract public class ManagedDisk {
 
 	abstract public RandomAccessRead getRandomAccessRead() throws IOException;
 
-	static public ManagedDisk load( File managedDisk ) throws IOException {
+	static public ManagedDisk readFrom( File managedDisk ) throws IOException {
 		ManagedDisk result = null;
 		FileInputStream fis = new FileInputStream( managedDisk );
 		Header h = new Header( fis );
@@ -42,7 +58,10 @@ abstract public class ManagedDisk {
 		return result;
 	}
 
-	long size() {
+	/**
+	 * @return size of the managed disk, in BYTES
+	 */
+	public long size() {
 		return header.capacity * Constants.SECTORLENGTH;
 	}
 
@@ -52,12 +71,6 @@ abstract public class ManagedDisk {
 
 	public UUID getUUIDParent() {
 		return header.uuidParent;
-	}
-	
-	protected ManagedDisk( File source, Header h ) {
-	}
-
-	protected ManagedDisk() {
 	}
 
 	protected void setHeader( Header h ) {
@@ -220,6 +233,10 @@ abstract public class ManagedDisk {
 
 	Header header;
 
+	// Only one or the other is valid, never both. 
+	protected File rawData;		    // for creating/writing a ManagedDisk
+	protected File managedData;		// for loading a ManagedDisk
+
 	public enum DiskTypes { ERROR, FLAT };
 	
 	// Tupelo Managed Disk
@@ -232,6 +249,8 @@ abstract public class ManagedDisk {
 			}
 		};
 
+	// In sectors, NOT bytes
+	static public long GRAINSIZE_DEFAULT = 128;
 }
 
 // eof

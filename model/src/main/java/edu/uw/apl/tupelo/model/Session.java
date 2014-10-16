@@ -57,7 +57,7 @@ public class Session implements java.io.Serializable,
 	   supplied date parameter
 	*/
 	public Session successor() {
-		return successor( Calendar.getInstance( UTC ) );
+		return successor( this.date );
 	}
 	
 	/**

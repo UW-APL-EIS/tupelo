@@ -24,8 +24,7 @@ public class FlatDiskTest extends junit.framework.TestCase {
 	}
 
 	private void testWriteCanned( File f ) throws IOException {
-		FlatDisk fd = new FlatDisk( f, f.length(), "diskid", Session.CANNED,
-									Constants.NULLUUID );
+		FlatDisk fd = new FlatDisk( f, "diskid", Session.CANNED );
 
 		File output = new File( f.getParent(),
 								f.getName() + ManagedDisk.FILESUFFIX );
@@ -55,7 +54,7 @@ public class FlatDiskTest extends junit.framework.TestCase {
 
 		String md5_1 = Utils.md5sum( raw );
 		
-		ManagedDisk md = ManagedDisk.load( managed );
+		ManagedDisk md = ManagedDisk.readFrom( managed );
 		assertEquals( md.header.type, ManagedDisk.DiskTypes.FLAT );
 
 		InputStream is = md.getInputStream();
