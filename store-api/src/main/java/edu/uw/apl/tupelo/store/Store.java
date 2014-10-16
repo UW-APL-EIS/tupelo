@@ -18,6 +18,15 @@ public interface Store {
 
 	public void put( ManagedDisk md ) throws IOException;
 
+	public void setAttribute( ManagedDiskDescriptor mdd,
+							  String key, byte[] value ) throws IOException;
+
+	public byte[] getAttribute( ManagedDiskDescriptor mdd, String key )
+		throws IOException;
+	
+	// for the benefit of the fuse-based ManagedDiskFileSystem
+	public ManagedDisk locate( ManagedDiskDescriptor mdd );
+	
 	public Collection<ManagedDiskDescriptor> enumerate() throws IOException;
 
 	/**
