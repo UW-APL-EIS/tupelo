@@ -9,6 +9,8 @@ import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,7 +53,8 @@ public class FilesystemStore implements Store {
 		fuseDir.mkdirs();
 		log.info( "FSStore.fuse = " + fuseDir );
 		uuid = loadUUID();
-		diskMap = new HashMap<String,ManagedDisk>();
+		descriptorMap = new HashMap<ManagedDiskDescriptor,ManagedDisk>();
+		pathMap = new HashMap<String,ManagedDisk>();
 		loadManagedDisks();
 	}
 
@@ -96,6 +99,53 @@ public class FilesystemStore implements Store {
 		return result;
 	}
 
+	@Override
+	public synchronized void put( ManagedDisk md ) throws IOException {
+
+		ManagedDiskDescriptor mdd = md.getDescriptor();
+		if( descriptorMap.containsKey( mdd ) )
+			throw new IllegalStateException( "Already stored: " + mdd );
+		
+		String fileName = asFileName( mdd ) + ManagedDisk.FILESUFFIX;
+		File tempFile = new File( tempDir, fileName );
+		log.info( "Writing to " + tempFile );
+		/*
+		  Since the temp file itself is to be used as a lock,
+		  canonicalise it first to avoid any unintended side-stepping
+		  of lock requirements.  Since this is where the expensive
+		  operation occurs, we maintain the accessibility of the wider
+		  store object itself...
+		*/
+		tempFile = tempFile.getCanonicalFile();
+		synchronized( tempFile ) {
+			log.debug( "Locked " + tempFile );
+			md.writeTo( tempFile );
+			log.debug( "Unlocked " + tempFile );
+		}
+
+		// we are now adding to the Store proper, so need the lock....
+		synchronized( this ) {
+			File outDir = diskDataDir( root, mdd );
+			outDir.mkdirs();
+			File outFile = new File( outDir, fileName );
+			log.info( "Moving to " + outFile );
+			tempFile.renameTo( outFile );
+			log.info( "Moved to " + outFile );
+
+			// LOOK: link to parent ??
+			descriptorMap.put( mdd, md );
+			String path = asPathName( mdd );
+			pathMap.put( path, md );
+		}
+	}
+
+	@Override
+	public synchronized Collection<ManagedDiskDescriptor> enumerate()
+		throws IOException {
+		return descriptorMap.keySet();
+	}
+
+	
 	private UUID loadUUID() {
 		UUID result = null;
 		File f = new File( root, "uuid.txt" );
@@ -136,30 +186,41 @@ public class FilesystemStore implements Store {
 			( dir, new String[] { ManagedDisk.FILESUFFIX.substring(1) }, true );
 		for( File f : fs ) {
 			try {
-				ManagedDisk md = ManagedDisk.load( f );
+				ManagedDisk md = ManagedDisk.readFrom( f );
 				ManagedDiskDescriptor mdd = md.getDescriptor();
+				descriptorMap.put( mdd, md );
 				String path = asPathName( mdd );
-				diskMap.put( path, md );
+				pathMap.put( path, md );
 				log.info( "Loaded managed disk: " + f );
 			} catch( IOException ioe ) {
 				log.warn( ioe );
 				continue;
 			}
 		}
-		Collection<ManagedDisk> allDisks = diskMap.values();
+		Collection<ManagedDisk> allDisks = pathMap.values();
+		List<ManagedDisk> linkedDisks = new ArrayList<ManagedDisk>
+			( allDisks.size() );
 		for( ManagedDisk md : allDisks ) {
 			// LOOK: withdraw any ManagedDisk which cannot be fully linked
-			link( md, allDisks );
+			link( md, allDisks, linkedDisks );
 		}
 	}
 
-	private void link( ManagedDisk md, Collection<ManagedDisk> allDisks ) {
+	/**
+	 * @param linkedDisks - the accumlating result, often needed for
+	 * base case testing when using a recursive process
+	 */
+	private void link( ManagedDisk md, Collection<ManagedDisk> allDisks,
+					   List<ManagedDisk> linkedDisks ) {
 		if( !md.hasParent() )
+			return;
+		if( linkedDisks.contains( md ) )
 			return;
 		UUID linkage = md.getUUIDParent();
 		ManagedDisk parent = locate( linkage, allDisks );
 		md.setParent( parent );
-		link( parent, allDisks );
+		linkedDisks.add( md );
+		link( parent, allDisks, linkedDisks );
 	}
 
 	private ManagedDisk locate( UUID needle, Collection<ManagedDisk> allDisks ) {
@@ -170,15 +231,34 @@ public class FilesystemStore implements Store {
 		throw new IllegalStateException( "No such uuid: " + needle );
 	}
 
+	static private File diskDataDir( File root, ManagedDiskDescriptor mdd ) {
+		File dir = diskDir( root, mdd );
+		dir = new File( dir, "data" );
+		return dir;
+	}
+
+	static private File diskDir( File root, ManagedDiskDescriptor vd ) {
+		File dir = new File( root, "disks" );
+		dir = new File( dir, vd.getDiskID() );
+		dir = new File( dir, vd.getSession().toString() );
+		return dir;
+	}
+
 	static String asPathName( ManagedDiskDescriptor mdd ) {
 		return mdd.getDiskID() + File.separator +
+			mdd.getSession().toString();
+	}
+
+	static String asFileName( ManagedDiskDescriptor mdd ) {
+		return mdd.getDiskID() + "-" +
 			mdd.getSession().toString();
 	}
 
 
 	private final UUID uuid;
 	private final File root, tempDir, fuseDir;
-	private final Map<String,ManagedDisk> diskMap;
+	private final Map<ManagedDiskDescriptor,ManagedDisk> descriptorMap;
+	private final Map<String,ManagedDisk> pathMap;
 	private final Logger log;
 }
 
