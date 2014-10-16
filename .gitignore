@@ -2,5 +2,6 @@
 target
 paste
 *~
+*.tmd
 
 # eof

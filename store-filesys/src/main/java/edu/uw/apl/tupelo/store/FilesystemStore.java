@@ -26,37 +26,43 @@ import edu.uw.apl.tupelo.store.Store;
 /**
    An implementation of the Tupelo Store interface which uses a flat
    file system for Store component management.  Uses a local directory
-   heirarchy for managed disks and attribute management.
+   heirarchy for managed disks and attributes.
 
    Note that the Store interface has no description of any
    synchronisation constraints.  That is left to us here.  Given that
-   this FSStore object may be used by our webapp/server war, we need
-   to pay attention to multi-threaded access.  To do this, we maintain
-   a single lock, but use it more sparingly than at every method
-   interface.  Used that way, a single expensive put blocks
-   every other operation.  Instead, we still use the native lock on
-   the FSStore object, but reduce the critical region size where
-   possible.  In particular, a put first writes to a temp dir,
-   and only when it is time to move into the final Store location do
-   we require the lock.
+   this FSStore object may be used by a webapp/server war, we need to
+   pay attention to multi-threaded access.  To do this, we maintain a
+   single lock, but use it more sparingly than at every method
+   boundary.  Used that way, a single expensive put() blocks every
+   other operation.  Instead, we still use the native lock on the
+   FSStore object, but reduce the critical region size where possible.
+   In particular, a put() first writes to a temp dir/file, and only
+   when it is time to move into the final Store location do we require
+   the 'real' lock.
 */
 
 public class FilesystemStore implements Store {
 
 	public FilesystemStore( File root ) {
+		this( root, true );
+	}
+
+	/**
+	 * @param loadManagedDisks - normally true, but for test cases useful to
+	 * pass false so a FilesystemStore has known empty status initially
+	 */
+	public FilesystemStore( File root, boolean loadManagedDisks ) {
 		log = Logger.getLogger( getClass() );
 		this.root = root;
 		log.info( "FSStore.root = " + root );
 		tempDir = new File( root, "temp" );
 		tempDir.mkdirs();
 		log.info( "FSStore.tmp = " + tempDir );
-		fuseDir = new File( root, "fuse" );
-		fuseDir.mkdirs();
-		log.info( "FSStore.fuse = " + fuseDir );
 		uuid = loadUUID();
 		descriptorMap = new HashMap<ManagedDiskDescriptor,ManagedDisk>();
 		pathMap = new HashMap<String,ManagedDisk>();
-		loadManagedDisks();
+		if( loadManagedDisks )
+			loadManagedDisks();
 	}
 
 	
@@ -105,7 +111,7 @@ public class FilesystemStore implements Store {
 
 		ManagedDiskDescriptor mdd = md.getDescriptor();
 		if( descriptorMap.containsKey( mdd ) )
-			throw new IllegalStateException( "Already stored: " + mdd );
+			throw new IllegalArgumentException( "Already stored: " + mdd );
 		
 		String fileName = asFileName( mdd ) + ManagedDisk.FILESUFFIX;
 		File tempFile = new File( tempDir, fileName );
@@ -132,12 +138,19 @@ public class FilesystemStore implements Store {
 			log.info( "Moving to " + outFile );
 			tempFile.renameTo( outFile );
 			log.info( "Moved to " + outFile );
-
+			md.setManagedData( outFile );
+			
 			// LOOK: link to parent ??
 			descriptorMap.put( mdd, md );
 			String path = asPathName( mdd );
 			pathMap.put( path, md );
 		}
+	}
+
+	// for the benefit of the fuse-based ManagedDiskFileSystem
+	@Override
+	public ManagedDisk locate( ManagedDiskDescriptor mdd ) {
+		return descriptorMap.get( mdd );
 	}
 
 	@Override
@@ -146,6 +159,35 @@ public class FilesystemStore implements Store {
 		return descriptorMap.keySet();
 	}
 
+
+	@Override
+	public void setAttribute( ManagedDiskDescriptor mdd,
+							  String key, byte[] value ) throws IOException {
+
+		String fileName = key;
+		File outDir = attrDir( root, mdd );
+		outDir.mkdirs();
+		File outFile = new File( outDir, fileName );
+		outFile = outFile.getCanonicalFile();
+		synchronized( outFile ) {
+			log.debug( "Locked " + outFile );
+			FileUtils.writeByteArrayToFile( outFile, value );
+			log.debug( "Unlocked " + outFile );
+		}
+	}
+
+	@Override
+	public byte[] getAttribute( ManagedDiskDescriptor mdd, String key )
+		throws IOException {
+		String fileName = key;
+		File inDir = attrDir( root, mdd );
+		File inFile = new File( inDir, key );
+		if( !inFile.isFile() )
+			return null;
+		return FileUtils.readFileToByteArray( inFile );
+	}
+	
+	/*********************** Private Implementation *********************/
 	
 	private UUID loadUUID() {
 		UUID result = null;
@@ -238,6 +280,12 @@ public class FilesystemStore implements Store {
 		return dir;
 	}
 
+	static private File attrDir( File root, ManagedDiskDescriptor mdd ) {
+		File dir = diskDir( root, mdd );
+		dir = new File( dir, "attrs" );
+		return dir;
+	}
+
 	static private File diskDir( File root, ManagedDiskDescriptor vd ) {
 		File dir = new File( root, "disks" );
 		dir = new File( dir, vd.getDiskID() );
@@ -257,7 +305,7 @@ public class FilesystemStore implements Store {
 
 
 	private final UUID uuid;
-	private final File root, tempDir, fuseDir;
+	private final File root, tempDir;
 	private final Map<ManagedDiskDescriptor,ManagedDisk> descriptorMap;
 	private final Map<String,ManagedDisk> pathMap;
 	private final Logger log;
