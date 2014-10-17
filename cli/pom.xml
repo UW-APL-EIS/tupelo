@@ -2,10 +2,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <!-- 
-     Though THIS model has no native (JNI) code, it depends on another
-     module, tupelo-fuse, which DOES have native code.  Hence the need to
-     specify the AOL (Architecture-OperatingSystem-Linker) info, as best as
-     Java/Maven can.  
+     Though THIS module has no native (JNI) code, it depends on others
+     (tupelo-fuse, tsk4j) which DO have native code.  Hence the need
+     to specify the AOL (Architecture-OperatingSystem-Linker) info, as
+     best as Java/Maven can.  If you DEPEND on an 'aol'-ed artifact,
+     YOU are an aol-ed artifact.
   -->
 
   <properties>
@@ -36,9 +37,19 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>tsk4j-core-${aol}</artifactId>
+      <version>413.0.0</version>
+    </dependency>
+    <dependency>
       <groupId>commons-cli</groupId>
       <artifactId>commons-cli</artifactId>
       <version>1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.9</version>
     </dependency>
   </dependencies>
 
@@ -61,6 +72,10 @@
 	    <manifest>
 	      <addClasspath>true</addClasspath>
 	    </manifest>
+	    <manifestEntries>
+	      <!-- This will allow log4j config file locating -->
+	      <Class-Path>.</Class-Path>
+	    </manifestEntries>
 	  </archive>
 	</configuration>
       </plugin>
