@@ -33,15 +33,27 @@ import edu.uw.apl.tupelo.store.Store;
  * implemented (though of course the likely implementation is a
  * FilesystemStore.
  */
-public class ManagedDiskFileSystem implements Filesystem3 {
+public class ManagedDiskFileSystem implements Filesystem3,
+											  XattrSupport, LifecycleSupport {
 
 	public ManagedDiskFileSystem( Store s ) {
 		store = s;
 		startTime = (int) (System.currentTimeMillis() / 1000L);
 		readBuffers = new HashMap<Object,byte[]>();
-		log = LogFactory.getLog( getClass() );
-	}
 
+		log = LogFactory.getLog( getClass() );
+
+		try {
+			Collection<ManagedDiskDescriptor> mdds = store.enumerate();
+			for( ManagedDiskDescriptor mdd : mdds ) {
+				log.info( "Exposing: " + mdd.getDiskID() +
+						  "/" + mdd.getSession() );
+			}
+		} catch( IOException ioe ) {
+			log.warn( ioe );
+		}
+	}
+	
 	public void mount( File mountPoint, boolean ownThread ) throws Exception {
 		if( !mountPoint.isDirectory() )
 			throw new IllegalArgumentException( "Mountpoint not a dir: " +
@@ -51,18 +63,32 @@ public class ManagedDiskFileSystem implements Filesystem3 {
 		  The -f says no fork, we need this!!
 		  The -s says single-threaded, we need this!!
 		*/
-		String[] args = { mountPoint.getPath(), "-f", "-s"  };
+		String[] args = { mountPoint.getPath(), "-f", "-s", "-r"  };
+
+		/*
+		  If we supply the fuse package OUR logger, we cannot separate
+		  out logging by package name, like we usually do. So create
+		  two loggers, one for US and one for THEM
+		*/
+		Log logFuse = LogFactory.getLog( "fuse" );
 		if( ownThread ) {
 			ThreadGroup tg = new ThreadGroup( "MDFS.Threads" );
-			FuseMount.mount( args, this, tg, log );
+			FuseMount.mount( args, this, tg, logFuse );
 		} else {
-			FuseMount.mount( args, this, log );
+			FuseMount.mount( args, this, logFuse );
 		}
 	}
 
 	public void umount() throws Exception {
-		Process p = Runtime.getRuntime().exec( "fusermount -u " + mountPoint );
+		String cmdLine = "fusermount -u " + mountPoint;
+		log.info( "Execing: " + cmdLine );
+		//		Process p = Runtime.getRuntime().exec( cmdLine );
+		ProcessBuilder pb = new ProcessBuilder( "fusermount", "-u", mountPoint.toString() );
+		pb.redirectErrorStream( true );
+		pb.redirectOutput( new File( "mdfs.pb" ) );
+		Process p = pb.start();
 		p.waitFor();
+		log.info( "Result: " + p.exitValue() );
 	}
 
 	// LOOK: how do we handle io errors from store?
@@ -144,7 +170,7 @@ public class ManagedDiskFileSystem implements Filesystem3 {
 
 			int time = startTime;// LOOK: link to session date/time?
 			ManagedDisk md = store.locate( matching );
-			int size = (int)md.size();
+			long size = md.size();
 			getattrSetter.set
 				( matching.hashCode(), FuseFtypeConstants.TYPE_FILE | 0444,
 				  1, 0, 0, 0, size, (size + 512 - 1) / 512,
@@ -183,10 +209,10 @@ public class ManagedDiskFileSystem implements Filesystem3 {
 			String needle = m1.group(0);
 			List<String> matchingDirs = new ArrayList<String>();
 			for( ManagedDiskDescriptor mdd : mdds ) {
-				System.out.println( mdd );
+				//				System.out.println( mdd );
 				if( mdd.getDiskID().equals( needle ) ) {
 					matchingDirs.add( mdd.getSession().toString() );
-					System.out.println( "Matched: " + mdd );
+					//					System.out.println( "Matched: " + mdd );
 				}
 			}
 			if( matchingDirs.isEmpty() )
@@ -251,7 +277,8 @@ public class ManagedDiskFileSystem implements Filesystem3 {
 	public int read(String path, Object fh, ByteBuffer buf, long offset)
 		throws FuseException {
 
-		//		System.out.println( "read.: " + path );
+		if( log.isDebugEnabled() )
+			log.debug( "read.: " + path );
 
 		RandomAccessRead rar = (RandomAccessRead)fh;
 		try {
@@ -308,88 +335,109 @@ public class ManagedDiskFileSystem implements Filesystem3 {
 	}
 
    // called on every filehandle close, fh is filehandle passed from open
+	@Override
 	public int flush(String path, Object fh) throws FuseException {
 		//log.info( "flush" );
 		return 0;
 	}
 
    // called when last filehandle is closed, fh is filehandle passed from open
+	@Override
 	public int release(String path, Object fh, int flags) throws FuseException {
-		log.debug( "release" );
+		log.info( "Release read buffer for " + path );
+		
 		readBuffers.remove( fh );
 		return 0;
 	}
 
    // Synchronize file contents, fh is filehandle passed from open,
    // isDatasync indicates that only the user data should be flushed, not the meta data
+	@Override
 	public int fsync(String path, Object fh, boolean isDatasync)
 		throws FuseException {
 		return 0;
 	}
 
 
+	@Override
 	public int readlink(String path, CharBuffer link) throws FuseException {
 		//log.info( "readlink" );
 		return 0;
 	}
 
+	@Override
 	public int mknod(String path, int mode, int rdev) throws FuseException {
 		return 0;
 	}
 
+	@Override
 	public int mkdir(String path, int mode) throws FuseException {
 		//		log.info( "mkdir" );
 		return 0;
 	}
 
+	@Override
 	public int unlink(String path) throws FuseException {
 		return 0;
 	}
 
+	@Override
 	public int rmdir(String path) throws FuseException {
 		return 0;
 	}
 
+	@Override
 	public int symlink(String from, String to) throws FuseException {
 		return 0;
 	}
 
+	@Override
 	public int rename(String from, String to) throws FuseException {
 		return 0;
 	}
 
+	@Override
 	public int link(String from, String to) throws FuseException {
 		return 0;
 	}
 
+	@Override
 	public int chmod(String path, int mode) throws FuseException {
 		return 0;
 	}
 	
+	@Override
 	public int chown(String path, int uid, int gid) throws FuseException {
 		return 0;
 	}
 	
+	@Override
 	public int truncate(String path, long size) throws FuseException {
 		return 0;
 	}
 	
 
+	@Override
 	public int utime(String path, int atime, int mtime) throws FuseException {
 		//		log.info( "utime" );
 		return 0;
 	}
 
+	@Override
 	public int statfs(FuseStatfsSetter statfsSetter) throws FuseException {
 		//log.info( "statfs" );
 		return 0;
 	}
 
+	@Override
 	public int getxattr(String path, String name, ByteBuffer dst, int position)
 		throws FuseException, BufferOverflowException {
 
 		log.debug( "getxattr " + path );
 
+		if( true )
+			return 0;
+		
         if( path.equals( "/" ) )
 			return Errno.ENOATTR;
 		/*
@@ -404,17 +452,26 @@ public class ManagedDiskFileSystem implements Filesystem3 {
 		return Errno.ENOATTR;
     }
 	
+	@Override
     public int setxattr(String path, String name, ByteBuffer value,
 						int flags, int position) throws FuseException {
+		log.debug( "setxattr " + path );
         return Errno.EROFS;
     }
 
+	@Override
     public int removexattr(String path, String name) throws FuseException {
+		log.debug( "removexattr " + path );
         return Errno.EROFS;
     }
 
+	@Override
     public int listxattr(String path, XattrLister lister) throws FuseException {
 		log.debug( "listxattr " + path );
+
+		if( true )
+			return 0;
+		
         if( path.equals( "/" ) )
 			return Errno.ENOATTR;
 		/*
@@ -429,8 +486,14 @@ public class ManagedDiskFileSystem implements Filesystem3 {
 		return Errno.ENOATTR;
     }
 	
+	@Override
     public int getxattrsize(String path, String name,
 							FuseSizeSetter sizeSetter) throws FuseException {
+		log.debug( "getxattrsize " + path );
+
+		if( true )
+			return 0;
+		
         if( !(path.equals( "/" ) || path.equals( "/foo" ) ) )
             return Errno.ENOENT;
 
@@ -438,6 +501,18 @@ public class ManagedDiskFileSystem implements Filesystem3 {
     }
 
 
+	// Empty 'LifecycleSupport'
+	@Override
+	public int init() {
+		return 0;
+	}
+
+	// Empty 'LifecycleSupport'
+	@Override
+	public int destroy() {
+		return 0;
+	}
+	
 	private final Store store;
 	private final int startTime;
 	private File mountPoint;
