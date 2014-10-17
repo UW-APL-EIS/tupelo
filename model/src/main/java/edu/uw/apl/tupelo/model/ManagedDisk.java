@@ -258,6 +258,9 @@ abstract public class ManagedDisk {
 
 	// In sectors, NOT bytes
 	static public long GRAINSIZE_DEFAULT = 128;
+
+	// Number of Grain Table Entries per Grain Table (the 'length' of a GT)
+	static public int NUMGTESPERGT = 512;
 }
 
 // eof
