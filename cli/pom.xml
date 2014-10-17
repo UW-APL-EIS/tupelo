@@ -20,7 +20,7 @@
   </parent>
 
   <groupId>edu.uw.apl</groupId>
-  <artifactId>tupelo-cli</artifactId>
+  <artifactId>tupelo-cli-${aol}</artifactId>
   <version>0.0.1</version>
   <name>Tupelo Disk Management - Command Line Utilities</name>
   <url>http://maven.apache.org</url>

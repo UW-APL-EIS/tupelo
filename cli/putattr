@@ -6,7 +6,7 @@ VERSION=0.0.1
 JAR=$ARTIFACT-$AOL-$VERSION.jar
 PACKAGE=edu.uw.apl.tupelo.cli
 
-CLAZZ=HashData
+CLAZZ=PutAttr
 
 JAVA_OPTS="-Dlog4j.configuration=log4j.hashdata"
 #JAVA_OPTS="-Dlog4j.configuration=log4j.hashdata -Dlog4j.debug"

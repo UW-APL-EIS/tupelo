@@ -11,6 +11,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.HashMap;
@@ -105,6 +106,15 @@ public class HashData {
 	public void start() throws Exception {
 		File dir = new File( storeLocation );
 		Store store = new FilesystemStore( dir );
+		Collection<ManagedDiskDescriptor> stored = store.enumerate();
+		System.out.println( "Stored: " + stored );
+
+		ManagedDiskDescriptor mdd = Utils.locateDescriptor( store, diskID, sessionID );
+		if( mdd == null ) {
+			System.err.println( "Not stored: " + diskID + "," + sessionID );
+			System.exit(1);
+		}
+			
 		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( store );
 		
 		final File mountPoint = new File( "test-mount" );
@@ -121,10 +131,9 @@ public class HashData {
 					}
 				}
 			} );
-		Thread.sleep( 1000 * 10 );
+		Thread.sleep( 1000 * 2 );
 
-		File f = new File( mountPoint, diskID );
-		f = new File( f, sessionID );
+		File f = mdfs.pathTo( mdd );
 		System.err.println( f );
 		Image i = new Image( f );
 		VolumeSystem vs = new VolumeSystem( i );

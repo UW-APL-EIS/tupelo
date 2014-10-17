@@ -1,8 +1,9 @@
 #!/bin/sh
 
 ARTIFACT=tupelo-cli
+AOL=amd64-Linux
 VERSION=0.0.1
-JAR=$ARTIFACT-$VERSION.jar
+JAR=$ARTIFACT-$AOL-$VERSION.jar
 PACKAGE=edu.uw.apl.tupelo.cli
 
 CLAZZ=PutData
