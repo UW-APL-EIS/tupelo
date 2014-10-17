@@ -7,9 +7,10 @@ PACKAGE=edu.uw.apl.tupelo.cli
 
 CLAZZ=HashData
 
-#echo `which java`
+JAVA_OPTS="-Dlog4j.configuration=log4j.hashdata"
+#JAVA_OPTS="-Dlog4j.configuration=log4j.hashdata -Dlog4j.debug"
 
 # This codebase built using JDK 1.7 and requires a JRE 1.7 also...
-exec java -cp target/$JAR $PACKAGE.$CLAZZ "$@"
+exec java $JAVA_OPTS -cp target/$JAR $PACKAGE.$CLAZZ "$@"
 
 # eof
