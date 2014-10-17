@@ -57,10 +57,10 @@ public class FilesystemStore implements Store {
 	public FilesystemStore( File root, boolean loadManagedDisks ) {
 		log = Logger.getLogger( getClass() );
 		this.root = root;
-		log.info( "FSStore.root = " + root );
+		log.info( "Store.root = " + root );
 		tempDir = new File( root, "temp" );
 		tempDir.mkdirs();
-		log.info( "FSStore.tmp = " + tempDir );
+		log.debug( "FSStore.tmp = " + tempDir );
 		uuid = loadUUID();
 		descriptorMap = new HashMap<ManagedDiskDescriptor,ManagedDisk>();
 		pathMap = new HashMap<String,ManagedDisk>();
@@ -237,7 +237,7 @@ public class FilesystemStore implements Store {
 				descriptorMap.put( mdd, md );
 				String path = asPathName( mdd );
 				pathMap.put( path, md );
-				log.info( "Loaded managed disk: " + f );
+				log.info( "Located managed disk: " + f );
 			} catch( IOException ioe ) {
 				log.warn( ioe );
 				continue;
