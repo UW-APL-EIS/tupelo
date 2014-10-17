@@ -18,8 +18,12 @@ public interface Store {
 
 	public void put( ManagedDisk md ) throws IOException;
 
+	public Collection<String> attributeSet( ManagedDiskDescriptor mdd )
+		throws IOException;
+
 	public void setAttribute( ManagedDiskDescriptor mdd,
 							  String key, byte[] value ) throws IOException;
+
 
 	public byte[] getAttribute( ManagedDiskDescriptor mdd, String key )
 		throws IOException;

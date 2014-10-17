@@ -162,6 +162,17 @@ public class FilesystemStore implements Store {
 		return descriptorMap.keySet();
 	}
 
+	@Override
+	public Collection<String> attributeSet( ManagedDiskDescriptor mdd )
+		throws IOException {
+		List<String> result = new ArrayList<String>();
+		File dir = attrDir( root, mdd );
+		File[] fs = dir.listFiles();
+		for( File f : fs ) {
+			result.add( f.getName() );
+		}
+		return result;
+	}
 
 	@Override
 	public void setAttribute( ManagedDiskDescriptor mdd,
