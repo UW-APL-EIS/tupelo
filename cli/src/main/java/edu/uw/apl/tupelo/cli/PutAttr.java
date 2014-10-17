@@ -94,6 +94,9 @@ public class PutAttr {
 		}
 		byte[] ba = FileUtils.readFileToByteArray( valueFile );
 		store.setAttribute( mdd, key, ba );
+
+		Collection<String> keys = store.attributeSet( mdd );
+		System.out.println( "Stored Attributes: " + keys );
 	}
 
 
