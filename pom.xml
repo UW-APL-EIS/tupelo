@@ -1,0 +1,48 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>edu.uw.apl</groupId>
+  <artifactId>tupelo-parent</artifactId>
+  <version>0.0.1</version>
+  <packaging>pom</packaging>
+
+  <name>Tupelo Disk Management - Parent</name>
+  <url>http://maven.apache.org</url>
+
+  <organization>
+    <name>Applied Physics Laboratory, University of Washington</name>
+    <url>http://www.apl.uw.edu</url>
+  </organization>
+  
+  <developers>
+    <developer>
+      <id>stuart</id>
+      <name>Stuart Maclean</name>
+      <email>stuart@apl.uw.edu</email>
+    </developer>
+  </developers>
+  
+  <modules>
+    <module>model</module>
+    <module>store-api</module>
+    <module>store-filesys</module>
+    <module>fuse</module>
+    <module>cli</module>
+  </modules>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+	<groupId>log4j</groupId>
+	<artifactId>log4j</artifactId>
+	<version>1.2.13</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  
+  <build>
+    <defaultGoal>compile</defaultGoal>
+  </build>
+</project>
