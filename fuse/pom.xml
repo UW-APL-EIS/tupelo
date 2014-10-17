@@ -8,7 +8,7 @@
   </properties>
 
   <groupId>edu.uw.apl</groupId>
-  <artifactId>tupelo-fuse</artifactId>
+  <artifactId>tupelo-fuse-${aol}</artifactId>
   <version>0.0.1</version>
   <packaging>jar</packaging>
 

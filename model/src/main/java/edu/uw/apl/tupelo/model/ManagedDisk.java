@@ -91,6 +91,10 @@ abstract public class ManagedDisk {
 			return (long)(Math.ceil( (double)b / a ) * a);
 		}
 
+		/**
+		 * @param capacity - disk size, in sectors (as per VMDKs)
+		 * @param grainSize - grain size, in sectors (as per VMDKs)
+		 */
 		public Header( String diskID, Session s,
 					   DiskTypes type, UUID uuidParent, long capacity,
 					   long grainSize ) {
@@ -130,13 +134,13 @@ abstract public class ManagedDisk {
 			ls8 = di.readLong();
 			uuidParent = new UUID( ms8, ls8 );
 
-			byte[] didBytes = new byte[64];
+			byte[] didBytes = new byte[DISKIDSIZEOF];
 			di.readFully( didBytes );
 			int i = 0;
 			while( didBytes[i] != 0 )
 				i++;
 			diskID = new String( didBytes, 0, i );
-			byte[] sessionBytes = new byte[64];
+			byte[] sessionBytes = new byte[SESSIONSIZEOF];
 			di.readFully( sessionBytes );
 			i = 0;
 			while( sessionBytes[i] != 0 )
@@ -175,12 +179,12 @@ abstract public class ManagedDisk {
 			dop.writeLong( uuidParent.getMostSignificantBits() );
 			dop.writeLong( uuidParent.getLeastSignificantBits() );
 
-			byte[] didBytes = new byte[64];
+			byte[] didBytes = new byte[DISKIDSIZEOF];
 			byte[] ba = diskID.getBytes();
 			System.arraycopy( ba, 0, didBytes, 0, ba.length );
 			dop.write( didBytes );
 
-			byte[] sessionBytes = new byte[64];
+			byte[] sessionBytes = new byte[SESSIONSIZEOF];
 			ba = session.format().getBytes();
 			System.arraycopy( ba, 0, sessionBytes, 0, ba.length );
 			dop.write( sessionBytes );
@@ -217,10 +221,13 @@ abstract public class ManagedDisk {
 		// almost CODEINE, wot no N
 		static public final int MAGIC = 0xC0DE10E;
 
+		static private final int DISKIDSIZEOF = 64;
+		static private final int SESSIONSIZEOF = 64;
+		
 		// The number of bytes required for all the Header's fields
 		static private final int FIELDSIZETOTAL =
 			4 + 4 + 4 + 4 +		// magic, version, type, flags
-			64 + 64 +			// diskid, session
+			DISKIDSIZEOF + SESSIONSIZEOF +
 			16 + 16 +			// uuid x 2
 			8 + 8 +				// capacity, grainSize
 			4 + 8 + 8 + 8 +		// numGTEsPerGT, offset x 3

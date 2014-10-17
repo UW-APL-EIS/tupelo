@@ -48,6 +48,9 @@ public class FilesystemStore implements Store {
 	}
 
 	/**
+	 * @param root - root directory for the Store. ALL data is held
+	 * under this single root.
+	 *
 	 * @param loadManagedDisks - normally true, but for test cases useful to
 	 * pass false so a FilesystemStore has known empty status initially
 	 */

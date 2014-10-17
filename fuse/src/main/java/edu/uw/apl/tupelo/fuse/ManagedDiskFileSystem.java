@@ -60,6 +60,10 @@ public class ManagedDiskFileSystem implements Filesystem3 {
 		}
 	}
 
+	public void umount() throws Exception {
+		Process p = Runtime.getRuntime().exec( "fusermount -u " + mountPoint );
+		p.waitFor();
+	}
 
 	// LOOK: how do we handle io errors from store?
 	private Collection<ManagedDiskDescriptor> descriptors() {
@@ -77,7 +81,7 @@ public class ManagedDiskFileSystem implements Filesystem3 {
 			log.trace( "getattr " + path );
 		}
 
-		System.out.println( "getattr: " + path );
+		//		System.out.println( "getattr: " + path );
 
 		Collection<ManagedDiskDescriptor> mdds = descriptors();
 
@@ -160,7 +164,7 @@ public class ManagedDiskFileSystem implements Filesystem3 {
 		if( log.isTraceEnabled() )
 			log.trace( "getdir: " + path );
 
-		System.out.println( "getdir: " + path );
+		//		System.out.println( "getdir: " + path );
 
 		if( "/".equals( path ) ) {
 			Set<String> matching = new HashSet<String>();
