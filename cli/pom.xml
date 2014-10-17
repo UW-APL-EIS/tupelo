@@ -1,10 +1,22 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <!-- 
+     Though THIS model has no native (JNI) code, it depends on another
+     module, tupelo-fuse, which DOES have native code.  Hence the need to
+     specify the AOL (Architecture-OperatingSystem-Linker) info, as best as
+     Java/Maven can.  
+  -->
 
   <properties>
     <aol>${os.arch}-${os.name}</aol>
   </properties>
+
+  <parent>
+    <groupId>edu.uw.apl</groupId>
+    <artifactId>tupelo-parent</artifactId>
+    <version>0.0.1</version>
+  </parent>
 
   <groupId>edu.uw.apl</groupId>
   <artifactId>tupelo-cli</artifactId>

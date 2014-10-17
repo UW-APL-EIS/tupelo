@@ -3,12 +3,17 @@
 	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>edu.uw.apl</groupId>
+  <parent>
+    <groupId>edu.uw.apl</groupId>
+    <artifactId>tupelo-parent</artifactId>
+    <version>0.0.1</version>
+  </parent>
+
   <artifactId>tupelo-store-filesys</artifactId>
   <version>0.0.1</version>
   <packaging>jar</packaging>
 
-  <name>Tupelo Disk Management - Store In A Filesystem</name>
+  <name>Tupelo Disk Management - FileSystem Store</name>
   <url>http://maven.apache.org</url>
 
   <dependencies>
