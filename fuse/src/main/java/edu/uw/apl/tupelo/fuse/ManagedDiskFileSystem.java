@@ -99,6 +99,16 @@ public class ManagedDiskFileSystem implements Filesystem3,
 			return Collections.EMPTY_LIST;
 		}
 	}
+
+	/**
+	   Convenience for client apps so they know where in the 'file system'
+	   a ManagedDisk can be located
+	*/
+	public File pathTo( ManagedDiskDescriptor mdd ) {
+		File f = new File( mountPoint, mdd.getDiskID() );
+		f = new File( f, mdd.getSession().toString() );
+		return f;
+	}
 	
 	@Override
 	public int getattr( String path, FuseGetattrSetter getattrSetter )
