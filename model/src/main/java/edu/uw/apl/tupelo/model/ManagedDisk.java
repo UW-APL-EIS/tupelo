@@ -15,8 +15,13 @@ import java.util.UUID;
 
 abstract public class ManagedDisk {
 
-	protected ManagedDisk( File rawData, File managedData ) {
-		this.rawData = rawData;
+	/**
+	 * Expected one and only one of these is non-null
+	 */
+	protected ManagedDisk( PhysicalDisk device,
+						   File diskImage, File managedData ) {
+		this.device = device;
+		this.diskImage = diskImage;
 		this.managedData = managedData;
 	}
 	
@@ -240,13 +245,14 @@ abstract public class ManagedDisk {
 
 	Header header;
 
-	// Only one or the other is valid, never both. 
-	protected File rawData;		    // for creating/writing a ManagedDisk
+	// Only one of these is valid, never two/three. 
+	protected PhysicalDisk device;	// for creating/writing a ManagedDisk
+	protected File diskImage;		// for creating/writing a ManagedDisk
 	protected File managedData;		// for loading a ManagedDisk
 
 	public enum DiskTypes { ERROR, FLAT };
 	
-	// Tupelo Managed Disk
+	// Tupelo Managed Disk == tmd
 	static public final String FILESUFFIX = ".tmd";
 	
 	static public final FilenameFilter FILEFILTER =

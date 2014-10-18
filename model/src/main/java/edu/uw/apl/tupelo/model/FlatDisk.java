@@ -24,12 +24,14 @@ import org.apache.commons.io.FileUtils;
 public class FlatDisk extends ManagedDisk {
 
 	/**
-	 * @param rawData - cannot be a whole disk, e.g. /dev/sda, since
-	 * length will be (incorrectly for our purposes) read as 0.  Must
-	 * instead be some form of disk image file.
+	 * Managing a whole device as a FlatDisk is asking for trouble due
+	 * to the sheer size. For PhysicalDisks, use StreamOptimizedDisks
+	 * for management.
+	 *
+	 * LOOK: Withdraw this constructor completely ??
 	 */
-	public FlatDisk( File rawData, String diskID, Session session ) {
-		super( rawData, null );
+	public FlatDisk( PhysicalDisk device, Session session ) {
+		super( device, null, null );
 
 		/*
 		  A FlatDisk holds ALL its own data, so needs no parent.  This
@@ -38,13 +40,38 @@ public class FlatDisk extends ManagedDisk {
 		  need for any 'grain' logic at all.  The only constraint
 		  is that it be a whole number of sectors.
 		*/
+		long len = device.size();
+		checkSize( len );
+
+		String diskID = device.getID();
 		UUID parent = Constants.NULLUUID;
-		long len = rawData.length();
-		if( len % Constants.SECTORLENGTH != 0 ) {
-			throw new IllegalArgumentException
-				( "Data length (" + len +
-				  ") must be a multiple of " + Constants.SECTORLENGTH );
-		}
+		long capacity = len / Constants.SECTORLENGTH;
+		header = new Header( diskID, session, DiskTypes.FLAT, parent,
+							 capacity, GRAINSIZE_DEFAULT );
+		header.dataOffset = Header.SIZEOF;
+
+	}
+	
+	/**
+	 * @param diskImage - cannot be a whole disk, e.g. /dev/sda, since
+	 * length will be (incorrectly for our purposes) read as 0.  Must
+	 * instead be some form of disk image file.  For whole disks, use
+	 * PhysicalDisk constructor instead
+	 */
+	public FlatDisk( File diskImage, String diskID, Session session ) {
+		super( null, diskImage, null );
+
+		/*
+		  A FlatDisk holds ALL its own data, so needs no parent.  This
+		  is true even if the managed data has ancestors. Since the
+		  managed data is simply appended to the Header as is, we have
+		  need for any 'grain' logic at all.  The only constraint
+		  is that it be a whole number of sectors.
+		*/
+		long len = diskImage.length();
+		checkSize( len );
+		
+		UUID parent = Constants.NULLUUID;
 		long capacity = len / Constants.SECTORLENGTH;
 		header = new Header( diskID, session, DiskTypes.FLAT, parent,
 							 capacity, GRAINSIZE_DEFAULT );
@@ -53,8 +80,16 @@ public class FlatDisk extends ManagedDisk {
 
 	// Called from ManagedDisk.readFrom()
 	public FlatDisk( File managedData, Header h ) {
-		super( null, managedData );
+		super( null, null, managedData );
 		header = h;
+	}
+
+	private void checkSize( long advertisedSizeBytes ) {
+		if( advertisedSizeBytes % Constants.SECTORLENGTH != 0 ) {
+			throw new IllegalArgumentException
+				( "Data length (" + advertisedSizeBytes +
+				  ") must be a multiple of " + Constants.SECTORLENGTH );
+		}
 	}
 
 	@Override
@@ -63,10 +98,13 @@ public class FlatDisk extends ManagedDisk {
 	}
 
 	public void writeTo( OutputStream os ) throws IOException {
-		if( rawData == null )
-			throw new IllegalStateException( "rawData missing" );
+		if( device == null && diskImage == null )
+			throw new IllegalStateException
+				( header.diskID + ": device/diskImage both null" );
+		File inFile = device != null ? device.disk : diskImage; 
+
 		header.writeTo( os );
-		FileUtils.copyFile( rawData, os );
+		FileUtils.copyFile( inFile, os );
 	}
 
 	public void writeTo( File f ) throws IOException {
