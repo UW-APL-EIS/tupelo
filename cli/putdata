@@ -1,7 +1,16 @@
 #!/bin/sh
 
+# Discover whether we are on 32 or 64 bit hardware.
+# The jars are named accordingly (Java uses i386, amd64)
+A=amd64
+M=`uname -m`
+[ "$M" = "i686" ] && A=i386
+O=`uname`
+AOL=$A-$O
+
+
 ARTIFACT=tupelo-cli
-AOL=amd64-Linux
+#AOL=amd64-Linux
 VERSION=0.0.1
 JAR=$ARTIFACT-$AOL-$VERSION.jar
 PACKAGE=edu.uw.apl.tupelo.cli
