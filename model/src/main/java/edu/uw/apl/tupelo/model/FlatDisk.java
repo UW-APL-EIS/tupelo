@@ -12,6 +12,15 @@ import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
 
+/**
+ * The FlatDisk variant of ManagedDisks are really only for either
+ * testing or for (infeasibly) small disk images.  Trying to store an
+ * 80GB disk as a FlatDisk is asking for trouble.  Use StreamOptimizedDisks
+ * instead!
+ *
+ * @see StreamOptimizedDisks
+ */
+
 public class FlatDisk extends ManagedDisk {
 
 	/**
@@ -21,9 +30,24 @@ public class FlatDisk extends ManagedDisk {
 	 */
 	public FlatDisk( File rawData, String diskID, Session session ) {
 		super( rawData, null );
-		header = new Header( diskID, session, DiskTypes.FLAT, Constants.NULLUUID,
-							 rawData.length() / Constants.SECTORLENGTH,
-							 GRAINSIZE_DEFAULT );
+
+		/*
+		  A FlatDisk holds ALL its own data, so needs no parent.  This
+		  is true even if the managed data has ancestors. Since the
+		  managed data is simply appended to the Header as is, we have
+		  need for any 'grain' logic at all.  The only constraint
+		  is that it be a whole number of sectors.
+		*/
+		UUID parent = Constants.NULLUUID;
+		long len = rawData.length();
+		if( len % Constants.SECTORLENGTH != 0 ) {
+			throw new IllegalArgumentException
+				( "Data length (" + len +
+				  ") must be a multiple of " + Constants.SECTORLENGTH );
+		}
+		long capacity = len / Constants.SECTORLENGTH;
+		header = new Header( diskID, session, DiskTypes.FLAT, parent,
+							 capacity, GRAINSIZE_DEFAULT );
 		header.dataOffset = Header.SIZEOF;
 	}
 

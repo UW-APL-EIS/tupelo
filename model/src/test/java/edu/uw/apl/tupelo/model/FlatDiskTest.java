@@ -9,6 +9,32 @@ public class FlatDiskTest extends junit.framework.TestCase {
 	public void testNull() {
 	}
 
+	// A sized file which should PASS the 'whole number of sectors' test
+	public void testSize64k() throws IOException {
+		File f = new File( "src/test/resources/64k" );
+		if( !f.exists() )
+			return;
+		try {
+			FlatDisk fd = new FlatDisk( f, "diskid", Session.CANNED );
+		} catch( IllegalArgumentException iae ) {
+			fail();
+		}
+	}
+	
+	// A sized file which should FAIL the 'whole number of sectors' test
+	public void testSize1000() throws IOException {
+		File f = new File( "src/test/resources/1000" );
+		if( !f.exists() )
+			return;
+		try {
+			FlatDisk fd = new FlatDisk( f, "diskid", Session.CANNED );
+			fail();
+		} catch( IllegalArgumentException iae ) {
+			System.out.println( "Expected: " + iae );
+		}
+	}
+
+
 	public void testWriteCanned1() throws IOException {
 		File f = new File( "src/test/resources/64k" );
 		if( !f.exists() )

@@ -42,8 +42,20 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	public StreamOptimizedDisk( File rawData, String diskID, Session session,
 								long grainSize ) {
 		super( rawData, null );
-		header = new Header( diskID, session, DiskTypes.FLAT, Constants.NULLUUID,
-							 rawData.length()/Constants.SECTORLENGTH, grainSize );
+
+		// We require the managed data to be a whole number of grains...
+		long grainSizeBytes = grainSize * Constants.SECTORLENGTH;
+		long len = rawData.length();
+		if( len % grainSizeBytes != 0 ) {
+			throw new IllegalArgumentException
+				( "Data length (" + len +
+				  ") must be a multiple of " + grainSizeBytes );
+		}
+		UUID parent = Constants.NULLUUID;
+		long capacity = len / Constants.SECTORLENGTH;
+		header = new Header( diskID, session, DiskTypes.FLAT, parent,
+							 capacity, grainSize );
+
 		// dataOffset essentially meaningless for this type of data layout...
 		header.dataOffset = 0;
 	}
