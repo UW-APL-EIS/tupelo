@@ -14,9 +14,9 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		File f = new File( "src/test/resources/64k" );
 		if( !f.exists() )
 			return;
+		UnmanagedDisk ud = new DiskImage( f );
 		try {
-			ManagedDisk md = new StreamOptimizedDisk
-				( f, "diskid", Session.CANNED );
+			ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
 		} catch( IllegalArgumentException iae ) {
 			fail();
 		}
@@ -27,9 +27,9 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		File f = new File( "src/test/resources/1000" );
 		if( !f.exists() )
 			return;
+		UnmanagedDisk ud = new DiskImage( f );
 		try {
-			ManagedDisk md = new StreamOptimizedDisk
-				( f, "diskid", Session.CANNED );
+			ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
 			fail();
 		} catch( IllegalArgumentException iae ) {
 			System.out.println( "Expected: " + iae );
@@ -41,9 +41,9 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		File f = new File( "src/test/resources/1k" );
 		if( !f.exists() )
 			return;
+		UnmanagedDisk ud = new DiskImage( f );
 		try {
-			ManagedDisk md = new StreamOptimizedDisk
-				( f, "diskid", Session.CANNED );
+			ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
 			fail();
 		} catch( IllegalArgumentException iae ) {
 			System.out.println( "Expected: " + iae );

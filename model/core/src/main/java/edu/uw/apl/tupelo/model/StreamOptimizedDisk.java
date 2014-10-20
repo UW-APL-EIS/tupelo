@@ -24,19 +24,19 @@ import org.apache.commons.io.FileUtils;
 
 public class StreamOptimizedDisk extends ManagedDisk {
 
-	public StreamOptimizedDisk( PhysicalDisk device, Session session ) {
-		this( device, session, GRAINSIZE_DEFAULT );
+	public StreamOptimizedDisk( UnmanagedDisk ud, Session session ) {
+		this( ud, session, GRAINSIZE_DEFAULT );
 	}
 	
-	public StreamOptimizedDisk( PhysicalDisk device, Session session,
+	public StreamOptimizedDisk( UnmanagedDisk ud, Session session,
 								long grainSize ) {
-		super( device, null, null );
+		super( ud, null );
 
-		// We require the managed data to be a whole number of grains...
-		long len = device.size();
+		// We require the data to be managed to be a whole number of grains...
+		long len = unmanagedData.size();
 		checkSize( len, grainSize );
 
-		String diskID = device.getID();
+		String diskID = unmanagedData.getID();
 		UUID parent = Constants.NULLUUID;
 		long capacity = len / Constants.SECTORLENGTH;
 		header = new Header( diskID, session, DiskTypes.FLAT, parent,
@@ -46,54 +46,15 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		header.dataOffset = 0;
 	}
 	
-		/**
-	 * @param diskImage - cannot be a whole disk, e.g. /dev/sda, since
-	 * length will be (incorrectly for our purposes) read as 0.  Must
-	 * instead be some form of disk image file.  For whole disks, use
-	 * PhysicalDisk constructor instead
-	 */
-	public StreamOptimizedDisk( File diskImage, String diskID,
-								Session session ) {
-		this( diskImage, diskID, session, GRAINSIZE_DEFAULT );
-	}
-	
-	/**
-	 * @param rawData - cannot be a whole disk, e.g. /dev/sda, since
-	 * length will be (incorrectly for our purposes) read as 0.  Must
-	 * instead be some form of disk image file.
-	 */
-	public StreamOptimizedDisk( File diskImage, String diskID, Session session,
-								long grainSize ) {
-		super( null, diskImage, null );
 
-		/*
-		  Check that a whole device was not passed in as a File
-		  by mistake, e.g. File( "/dev/sda" )
-		*/
-		long len = diskImage.length();
-		if( len == 0 ) {
-			throw new IllegalArgumentException
-				( "Length 0 for " +	diskImage.getPath() +
-				  ". Use PhysicalDevice constructor" );
-		}
-		checkSize( len, grainSize );
-
-		UUID parent = Constants.NULLUUID;
-		long capacity = len / Constants.SECTORLENGTH;
-		header = new Header( diskID, session, DiskTypes.FLAT, parent,
-							 capacity, grainSize );
-
-		// dataOffset essentially meaningless for this type of data layout...
-		header.dataOffset = 0;
-	}
-
+	// Called from ManagedDisk.readFrom()
 	public StreamOptimizedDisk( File managedData, Header h ) {
-		super( null, null, managedData );
+		super( null, managedData );
 		header = h;
 	}
 
+	// We require the managed data to be a whole number of grains...
 	private void checkSize( long advertisedSizeBytes, long grainSize ) {
-		// We require the managed data to be a whole number of grains...
 		long grainSizeBytes = grainSize * Constants.SECTORLENGTH;
 		if( advertisedSizeBytes % grainSizeBytes != 0 ) {
 			throw new IllegalArgumentException
@@ -116,12 +77,11 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	  table and set that grain directory entry to 0.
 	*/
 	public void writeTo( OutputStream os ) throws IOException {
-		if( device == null && diskImage == null )
+		if( unmanagedData == null )
 			throw new IllegalStateException
-				( header.diskID + ": device/diskImage both null" );
-		File inFile = device != null ? device.disk : diskImage; 
-		FileInputStream fis = new FileInputStream( inFile );
-		BufferedInputStream bis = new BufferedInputStream( fis, 1024*1024 );
+				( header.diskID + ": unmanagedData null" );
+		InputStream is = unmanagedData.getInputStream();
+		BufferedInputStream bis = new BufferedInputStream( is, 1024*1024 );
 
 		DataOutputStream dos = new DataOutputStream( os );
 		
@@ -139,7 +99,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			long grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
 			long grainTableCoverageBytes = grainSizeBytes * NUMGTESPERGT;
 			byte[] ba = new byte[(int)grainTableCoverageBytes];
-			for( int i = 0; i < wholeGrainTables; i++ ) {
+			for( int gt = 0; gt < wholeGrainTables; gt++ ) {
 				int nin = bis.read( ba );
 				if( nin != ba.length )
 					throw new IllegalStateException( "Partial read!" );
@@ -161,8 +121,8 @@ public class StreamOptimizedDisk extends ManagedDisk {
 				
 				// Some grains in the table could be zeros...
 				for( int g = 0; g < NUMGTESPERGT; g++ ) {
-					int offset = grainSizeBytes * g;
-					boolean allZeros = true;
+					int offset = (int)(grainSizeBytes * g);
+					allZeros = true;
 					for( int b = 0; b < grainSizeBytes; b++ ) {
 						if( ba[offset+b] != 0 ) {
 							allZeros = false;
@@ -196,16 +156,17 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					( fullGrainTableSizeSectors, MetadataMarker.TYPE_GT );
 				mdm.writeTo( dos );
 				// to do pad to next sector of os
-				for( int i = 0; i < grainTable.length; i++ ) {
+				for( int gte = 0; gte < grainTable.length; gte++ ) {
 					// LOOK: Using 4byte GTE index values restricts us to 2TB
-					dos.writeInt( (int)grainTable[i] );
+					dos.writeInt( (int)grainTable[gte] );
 				}
 				gtIndex = 0;
 				// to do, update gd with sector offset of written GT
 			}
 		}
 			
-		int trailingGrains = grainCount - (wholeGrainTables * NUMGTESPERGT);
+		int trailingGrains = (int)(grainCount -
+								   (wholeGrainTables * NUMGTESPERGT));
 		if( trailingGrains > 0 ) {
 			// to do
 		}
@@ -213,6 +174,8 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		// to do : grain directory
 		// to do : footer: redundant header with correct gd offset, which is ?
 		// to do: eos marker
+		bis.close();
+		is.close();
 	}
 	
 

@@ -5,15 +5,15 @@
 
   <parent>
     <groupId>edu.uw.apl</groupId>
-    <artifactId>tupelo-parent</artifactId>
+    <artifactId>tupelo-model-parent</artifactId>
     <version>0.0.1</version>
   </parent>
 
-  <artifactId>tupelo-model</artifactId>
+  <artifactId>tupelo-model-core</artifactId>
   <version>0.0.1</version>
   <packaging>jar</packaging>
 
-  <name>Tupelo Disk Management - Core Objects</name>
+  <name>Tupelo Disk Management - Model (Core)</name>
   <url>http://maven.apache.org</url>
 
   <dependencies>

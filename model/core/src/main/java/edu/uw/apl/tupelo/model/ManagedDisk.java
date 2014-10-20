@@ -18,10 +18,8 @@ abstract public class ManagedDisk {
 	/**
 	 * Expected one and only one of these is non-null
 	 */
-	protected ManagedDisk( PhysicalDisk device,
-						   File diskImage, File managedData ) {
-		this.device = device;
-		this.diskImage = diskImage;
+	protected ManagedDisk( UnmanagedDisk unmanagedData, File managedData ) {
+		this.unmanagedData = unmanagedData;
 		this.managedData = managedData;
 	}
 	
@@ -38,7 +36,6 @@ abstract public class ManagedDisk {
 	}
 	
 	abstract public void setParent( ManagedDisk md );
-	//	abstract public ManagedDisk getParent();
 
 	abstract public void writeTo( File f ) throws IOException;
 
@@ -245,9 +242,8 @@ abstract public class ManagedDisk {
 
 	Header header;
 
-	// Only one of these is valid, never two/three. 
-	protected PhysicalDisk device;	// for creating/writing a ManagedDisk
-	protected File diskImage;		// for creating/writing a ManagedDisk
+	// Only one of these is valid, never both
+	protected UnmanagedDisk unmanagedData;// for creating/writing a ManagedDisk
 	protected File managedData;		// for loading a ManagedDisk
 
 	public enum DiskTypes { ERROR, FLAT };

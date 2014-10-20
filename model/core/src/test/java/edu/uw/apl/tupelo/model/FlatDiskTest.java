@@ -14,8 +14,9 @@ public class FlatDiskTest extends junit.framework.TestCase {
 		File f = new File( "src/test/resources/64k" );
 		if( !f.exists() )
 			return;
+		UnmanagedDisk ud = new DiskImage( f );
 		try {
-			FlatDisk fd = new FlatDisk( f, "diskid", Session.CANNED );
+			FlatDisk fd = new FlatDisk( ud, Session.CANNED );
 		} catch( IllegalArgumentException iae ) {
 			fail();
 		}
@@ -26,8 +27,9 @@ public class FlatDiskTest extends junit.framework.TestCase {
 		File f = new File( "src/test/resources/1000" );
 		if( !f.exists() )
 			return;
+		UnmanagedDisk ud = new DiskImage( f );
 		try {
-			FlatDisk fd = new FlatDisk( f, "diskid", Session.CANNED );
+			FlatDisk fd = new FlatDisk( ud, Session.CANNED );
 			fail();
 		} catch( IllegalArgumentException iae ) {
 			System.out.println( "Expected: " + iae );
@@ -50,7 +52,8 @@ public class FlatDiskTest extends junit.framework.TestCase {
 	}
 
 	private void testWriteCanned( File f ) throws IOException {
-		FlatDisk fd = new FlatDisk( f, "diskid", Session.CANNED );
+		UnmanagedDisk ud = new DiskImage( f );
+		FlatDisk fd = new FlatDisk( ud, Session.CANNED );
 
 		File output = new File( f.getParent(),
 								f.getName() + ManagedDisk.FILESUFFIX );

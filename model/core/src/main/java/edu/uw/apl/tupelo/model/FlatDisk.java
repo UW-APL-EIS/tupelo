@@ -10,28 +10,25 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.UUID;
 
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 /**
- * The FlatDisk variant of ManagedDisks are really only for either
- * testing or for (infeasibly) small disk images.  Trying to store an
- * 80GB disk as a FlatDisk is asking for trouble.  Use StreamOptimizedDisks
- * instead!
+ * The FlatDisk variant of ManagedDisks simply prepends a
+ * ManagedDisk.Header on the front of the input (Unmanaged) data.  The
+ * FlatDisk size is therefore essentially equal to the input size.
+ 
+ * The FlatDisk is thus really only for either testing or for
+ * (infeasibly) small disk images.  Trying to store an 250GB physical
+ * disk (e.g. /dev/sda) as a FlatDisk is asking for trouble.  Use
+ * StreamOptimizedDisks instead!
  *
  * @see StreamOptimizedDisks
  */
 
 public class FlatDisk extends ManagedDisk {
 
-	/**
-	 * Managing a whole device as a FlatDisk is asking for trouble due
-	 * to the sheer size. For PhysicalDisks, use StreamOptimizedDisks
-	 * for management.
-	 *
-	 * LOOK: Withdraw this constructor completely ??
-	 */
-	public FlatDisk( PhysicalDisk device, Session session ) {
-		super( device, null, null );
+	public FlatDisk( UnmanagedDisk ud, Session session ) {
+		super( ud, null );
 
 		/*
 		  A FlatDisk holds ALL its own data, so needs no parent.  This
@@ -40,47 +37,21 @@ public class FlatDisk extends ManagedDisk {
 		  need for any 'grain' logic at all.  The only constraint
 		  is that it be a whole number of sectors.
 		*/
-		long len = device.size();
+		long len = unmanagedData.size();
 		checkSize( len );
 
-		String diskID = device.getID();
+		String diskID = unmanagedData.getID();
 		UUID parent = Constants.NULLUUID;
 		long capacity = len / Constants.SECTORLENGTH;
 		header = new Header( diskID, session, DiskTypes.FLAT, parent,
 							 capacity, GRAINSIZE_DEFAULT );
 		header.dataOffset = Header.SIZEOF;
 
-	}
-	
-	/**
-	 * @param diskImage - cannot be a whole disk, e.g. /dev/sda, since
-	 * length will be (incorrectly for our purposes) read as 0.  Must
-	 * instead be some form of disk image file.  For whole disks, use
-	 * PhysicalDisk constructor instead
-	 */
-	public FlatDisk( File diskImage, String diskID, Session session ) {
-		super( null, diskImage, null );
-
-		/*
-		  A FlatDisk holds ALL its own data, so needs no parent.  This
-		  is true even if the managed data has ancestors. Since the
-		  managed data is simply appended to the Header as is, we have
-		  need for any 'grain' logic at all.  The only constraint
-		  is that it be a whole number of sectors.
-		*/
-		long len = diskImage.length();
-		checkSize( len );
-		
-		UUID parent = Constants.NULLUUID;
-		long capacity = len / Constants.SECTORLENGTH;
-		header = new Header( diskID, session, DiskTypes.FLAT, parent,
-							 capacity, GRAINSIZE_DEFAULT );
-		header.dataOffset = Header.SIZEOF;
 	}
 
 	// Called from ManagedDisk.readFrom()
 	public FlatDisk( File managedData, Header h ) {
-		super( null, null, managedData );
+		super( null, managedData );
 		header = h;
 	}
 
@@ -98,13 +69,14 @@ public class FlatDisk extends ManagedDisk {
 	}
 
 	public void writeTo( OutputStream os ) throws IOException {
-		if( device == null && diskImage == null )
+		if( unmanagedData == null )
 			throw new IllegalStateException
-				( header.diskID + ": device/diskImage both null" );
-		File inFile = device != null ? device.disk : diskImage; 
+				( header.diskID + ": unmanagedData null" );
+		InputStream is = unmanagedData.getInputStream();
 
 		header.writeTo( os );
-		FileUtils.copyFile( inFile, os );
+		IOUtils.copyLarge( is, os );
+		is.close();
 	}
 
 	public void writeTo( File f ) throws IOException {
