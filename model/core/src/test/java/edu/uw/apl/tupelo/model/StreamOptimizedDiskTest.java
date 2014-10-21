@@ -49,6 +49,35 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 			System.out.println( "Expected: " + iae );
 		}
 	}
+
+	public void _testManage32m() throws IOException {
+		File f = new File( "src/test/resources/32m.zero" );
+		if( !f.exists() )
+			return;
+		UnmanagedDisk ud = new DiskImage( f );
+		ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
+		File out = new File( "/dev/null" );
+		md.writeTo( out );
+
+	}
+
+	public void _testNuga2() throws IOException {
+		File f = new File( "data/nuga2.dd" );
+		if( !f.exists() )
+			return;
+		UnmanagedDisk ud = new DiskImage( f );
+		ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
+		File out = new File( f.getName() + ManagedDisk.FILESUFFIX );
+		md.writeTo( out );
+
+	}
+
+	public void testManagedNuga2() throws IOException {
+		File f = new File( "nuga2.dd" + ManagedDisk.FILESUFFIX );
+		if( !f.exists() )
+			return;
+		ManagedDisk md = ManagedDisk.readFrom( f );
+	}
 }
 
 // eof

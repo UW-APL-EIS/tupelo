@@ -13,6 +13,9 @@ import java.io.FileInputStream;
 import java.text.ParseException;
 import java.util.UUID;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 abstract public class ManagedDisk {
 
 	/**
@@ -21,6 +24,7 @@ abstract public class ManagedDisk {
 	protected ManagedDisk( UnmanagedDisk unmanagedData, File managedData ) {
 		this.unmanagedData = unmanagedData;
 		this.managedData = managedData;
+		log = LogFactory.getLog( getClass() );
 	}
 	
 	public boolean hasParent() {
@@ -51,6 +55,9 @@ abstract public class ManagedDisk {
 		switch( h.type ) {
 		case FLAT:
 			result = new FlatDisk( managedDisk, h );
+			break;
+		case STREAMOPTIMIZED:
+			result = new StreamOptimizedDisk( managedDisk, h );
 			break;
 		default:
 			throw new IllegalStateException
@@ -84,14 +91,15 @@ abstract public class ManagedDisk {
 		return new ManagedDiskDescriptor( header.diskID, header.session );
 	}
 	
-	static public class Header {
+	/**
+	 * Example: alignUp( 700, 512 ) -> 1024
+	 */
+	static long alignUp( long b, int a ) {
+		return (long)(Math.ceil( (double)b / a ) * a);
+	}
+	
 
-		/**
-		 * Example: alignUp( 700, 512 ) -> 1024
-		 */
-		static long alignUp( long b, int a ) {
-			return (long)(Math.ceil( (double)b / a ) * a);
-		}
+	static public class Header {
 
 		/**
 		 * @param capacity - disk size, in sectors (as per VMDKs)
@@ -112,6 +120,7 @@ abstract public class ManagedDisk {
 			this.uuidParent = uuidParent;
 			this.capacity = capacity;
 			this.grainSize = grainSize;
+			this.numGTEsPerGT = NUMGTESPERGT;
 		}
 
 		Header( InputStream is ) throws IOException {
@@ -164,6 +173,7 @@ abstract public class ManagedDisk {
 			compressAlgorithm = di.readInt();
 		}
 
+		// LOOK: may not need this??
 		public void writeTo( OutputStream os ) throws IOException {
 			DataOutputStream dos = new DataOutputStream( os );
 			writeTo( (DataOutput)dos );
@@ -245,8 +255,9 @@ abstract public class ManagedDisk {
 	// Only one of these is valid, never both
 	protected UnmanagedDisk unmanagedData;// for creating/writing a ManagedDisk
 	protected File managedData;		// for loading a ManagedDisk
-
-	public enum DiskTypes { ERROR, FLAT };
+	protected Log log;
+	
+	public enum DiskTypes { ERROR, FLAT, STREAMOPTIMIZED };
 	
 	// Tupelo Managed Disk == tmd
 	static public final String FILESUFFIX = ".tmd";
