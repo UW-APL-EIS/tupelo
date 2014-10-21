@@ -37,6 +37,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 								long grainSize ) {
 		super( ud, null );
 
+		checkGrainSize( grainSize );
 		// We require the data to be managed to be a whole number of grains...
 		long len = unmanagedData.size();
 		checkSize( len, grainSize );
@@ -60,6 +61,21 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		readMetaData();
 	}
 
+	// We require the grainSize to be power of 2 (for sparse disk arithmetic)
+	private void checkGrainSize( long grainSize ) {
+		boolean found = false;
+		for( int i = 3; i < 32; i++ ) {
+			if( grainSize == (1L << i) ) {
+				found = true;
+				break;
+			}
+		}
+		if( !found )
+			throw new IllegalArgumentException( "grainSize not 2^N: " +
+												grainSize );
+	}
+			
+		
 	// We require the managed data to be a whole number of grains...
 	private void checkSize( long advertisedSizeBytes, long grainSize ) {
 		long grainSizeBytes = grainSize * Constants.SECTORLENGTH;
