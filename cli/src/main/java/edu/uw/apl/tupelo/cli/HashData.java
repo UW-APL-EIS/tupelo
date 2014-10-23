@@ -104,12 +104,15 @@ public class HashData {
 	}
 	
 	public void start() throws Exception {
-		File dir = new File( storeLocation );
-		Store store = new FilesystemStore( dir );
+
+		Store store = Utils.buildStore( storeLocation );
+		System.out.println( "Store type: " + store );
+
 		Collection<ManagedDiskDescriptor> stored = store.enumerate();
 		System.out.println( "Stored: " + stored );
 
-		ManagedDiskDescriptor mdd = Utils.locateDescriptor( store, diskID, sessionID );
+		ManagedDiskDescriptor mdd = Utils.locateDescriptor( store, diskID,
+															sessionID );
 		if( mdd == null ) {
 			System.err.println( "Not stored: " + diskID + "," + sessionID );
 			System.exit(1);
@@ -119,6 +122,7 @@ public class HashData {
 		
 		final File mountPoint = new File( "test-mount" );
 		mountPoint.mkdirs();
+		mountPoint.deleteOnExit();
 		System.err.println( "Mounting '" + mountPoint + "'" );
 		mdfs.mount( mountPoint, true );
 		Runtime.getRuntime().addShutdownHook( new Thread() {
@@ -218,12 +222,14 @@ public class HashData {
 		return MD5.digest();
 	}
 	
-	private void record( Map<String,byte[]> fileHashes, long start, long length )
+	private void record( Map<String,byte[]> fileHashes,
+						 long start, long length )
 		throws Exception {
 
 		List<String> sorted = new ArrayList<String>( fileHashes.keySet() );
 		Collections.sort( sorted );
-		String outName = diskID + "-" + sessionID + "-" + start + "-" + length + ".md5";
+		String outName = diskID + "-" + sessionID + "-" +
+			start + "-" + length + ".md5";
 		if( verbose )
 			System.out.println( "Writing: " + outName );
 		

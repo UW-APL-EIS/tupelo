@@ -14,8 +14,6 @@ import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.model.StreamOptimizedDisk;
 import edu.uw.apl.tupelo.model.UnmanagedDisk;
 import edu.uw.apl.tupelo.store.Store;
-import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
-import edu.uw.apl.tupelo.http.client.HttpStoreProxy;
 
 /**
  * Simple Tupelo Utility: add some arbitrary disk image file to a
@@ -91,17 +89,7 @@ public class PutData {
 	
 	public void start() throws IOException {
 
-		Store s = null;
-		if( storeLocation.startsWith( "http" ) ) {
-			s = new HttpStoreProxy( storeLocation );
-		} else {
-			File dir = new File( storeLocation );
-			if( !dir.isDirectory() ) {
-				throw new IllegalStateException
-					( "Not a directory: " + storeLocation );
-			}
-			s = new FilesystemStore( dir );
-		}
+		Store s = Utils.buildStore( storeLocation );
 		System.out.println( "Store type: " + s );
 		
 		System.out.println( "Store.usableSpace:" + s.getUsableSpace() );
