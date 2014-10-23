@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 
+import edu.uw.apl.tupelo.model.DiskImage;
 import edu.uw.apl.tupelo.model.FlatDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
@@ -25,8 +26,9 @@ public class FilesystemStoreTest extends junit.framework.TestCase {
 		File f = new File( "src/test/resources/1m" );
 		if( !f.exists() )
 			return;
+		DiskImage di = new DiskImage( f );
 		Session session = Session.CANNED;
-		FlatDisk fd = new FlatDisk( f, "diskid", session );
+		FlatDisk fd = new FlatDisk( di, session );
 		store.put( fd );
 
 		try {

@@ -19,7 +19,7 @@
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>tupelo-model</artifactId>
+      <artifactId>tupelo-model-core</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>

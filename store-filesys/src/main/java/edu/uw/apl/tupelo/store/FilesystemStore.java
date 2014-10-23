@@ -1,6 +1,7 @@
 package edu.uw.apl.tupelo.store.filesys;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.BufferedReader;
@@ -15,7 +16,8 @@ import java.util.UUID;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.commons.io.FileUtils;
 
 import edu.uw.apl.tupelo.model.ManagedDisk;
@@ -55,7 +57,7 @@ public class FilesystemStore implements Store {
 	 * pass false so a FilesystemStore has known empty status initially
 	 */
 	public FilesystemStore( File root, boolean loadManagedDisks ) {
-		log = Logger.getLogger( getClass() );
+		log = LogFactory.getLog( getClass() );
 		this.root = root;
 		log.info( "Store.root = " + root );
 		tempDir = new File( root, "temp" );
@@ -129,7 +131,9 @@ public class FilesystemStore implements Store {
 		tempFile = tempFile.getCanonicalFile();
 		synchronized( tempFile ) {
 			log.debug( "Locked " + tempFile );
-			md.writeTo( tempFile );
+			FileOutputStream fos = new FileOutputStream( tempFile );
+			md.writeTo( fos );
+			fos.close();
 			log.debug( "Unlocked " + tempFile );
 		}
 
@@ -322,7 +326,7 @@ public class FilesystemStore implements Store {
 	private final File root, tempDir;
 	private final Map<ManagedDiskDescriptor,ManagedDisk> descriptorMap;
 	private final Map<String,ManagedDisk> pathMap;
-	private final Logger log;
+	private final Log log;
 }
 
 // eof
