@@ -1,0 +1,210 @@
+package edu.uw.apl.tupelo.http.client;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+
+//import java.io.*;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import org.apache.http.Header;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpStatus;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.protocol.HTTP;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpParams;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import edu.uw.apl.tupelo.model.ManagedDisk;
+import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.Session;
+import edu.uw.apl.tupelo.store.Store;
+
+/**
+ * A client side (in the http sense that is) proxy for a Store.
+ * Connects to the http.server.StoreServlet.  Kind of like an RMI
+ * stub.
+ */
+public class HttpStoreProxy implements Store {
+
+	public HttpStoreProxy( String s ) {
+		if( !s.endsWith( "/" ) )
+			s = s + "/";
+		this.server = s;
+		log = LogFactory.getLog( getClass() );
+	}
+
+	@Override
+	public UUID getUUID() throws IOException {
+		HttpGet g = new HttpGet( server + "uuid" );
+		g.addHeader( "Accept", "application/x-java-serialized-object" );
+		log.debug( g.getRequestLine() );
+		HttpClient req = new DefaultHttpClient( );
+		HttpResponse res = req.execute( g );
+		HttpEntity he = res.getEntity();
+		InputStream is = he.getContent();
+		ObjectInputStream ois = new ObjectInputStream( is );
+		try {
+			UUID result = (UUID)ois.readObject();
+			return result;
+		} catch( ClassNotFoundException cnfe ) {
+			throw new IOException( cnfe );
+		} finally {
+			ois.close();
+		}
+	}
+
+	@Override
+	public long getUsableSpace() throws IOException {
+		HttpGet g = new HttpGet( server + "usablespace" );
+		g.addHeader( "Accept", "application/x-java-serialized-object" );
+		log.debug( g.getRequestLine() );
+		HttpClient req = new DefaultHttpClient( );
+		HttpResponse res = req.execute( g );
+		HttpEntity he = res.getEntity();
+		InputStream is = he.getContent();
+		ObjectInputStream ois = new ObjectInputStream( is );
+		try {
+			Long result = (Long)ois.readObject();
+			return result;
+		} catch( ClassNotFoundException cnfe ) {
+			throw new IOException( cnfe );
+		} finally {
+			ois.close();
+		}
+	}
+
+	@Override
+	public Session newSession() throws IOException {
+		HttpGet g = new HttpGet( server + "newsession" );
+		g.addHeader( "Accept", "application/x-java-serialized-object" );
+	
+		log.debug( g.getRequestLine() );
+		
+		HttpClient req = new DefaultHttpClient( );
+		HttpResponse res = req.execute( g );
+		HttpEntity he = res.getEntity();
+		InputStream is = he.getContent();
+		ObjectInputStream ois = new ObjectInputStream( is );
+		try {
+			Session result = (Session)ois.readObject();
+			return result;
+		} catch( ClassNotFoundException cnfe ) {
+			throw new IOException( cnfe );
+		} finally {
+			ois.close();
+		}
+	}
+
+	/**
+	   Slightly awkward implementation, making use of a Pipe.  We have
+	   a ManagedDisk as the source of our data, which supports just
+	   writeTo( OutputStream ). But the HttpClient InputStreamEntity
+	   wants to see an Inputstream.  So, in a new thread, we write the
+	   ManagedDisk to the OutputStream side of the Pipe.  The caller
+	   thread is then given the input side of the Pipe.
+	*/
+	@Override
+	public void put( final ManagedDisk md ) throws IOException {
+		ManagedDiskDescriptor mdd = md.getDescriptor();
+		HttpPost p = new HttpPost( server + "data/put/" + mdd.getDiskID() +
+								   "/" + mdd.getSession() );
+		log.debug( p.getRequestLine() );
+
+		final PipedOutputStream pos = new PipedOutputStream();
+		PipedInputStream pis = new PipedInputStream( pos );
+		InputStreamEntity ise = new InputStreamEntity
+			( pis, -1, ContentType.APPLICATION_OCTET_STREAM );
+		ise.setChunked( true );
+		p.setEntity( ise );
+		Runnable r = new Runnable() {
+				public void run() {
+					try {
+						md.writeTo( pos );
+						pos.close();
+					} catch( IOException ioe ) {
+						log.error( ioe );
+					}
+				}
+			};
+		Thread t = new Thread( r );
+		t.start();
+		HttpClient req = new DefaultHttpClient( );
+		HttpResponse res = req.execute( p );
+	}
+
+	public Collection<String> attributeSet( ManagedDiskDescriptor mdd )
+		throws IOException {
+		return null;
+	}
+
+	public void setAttribute( ManagedDiskDescriptor mdd,
+							  String key, byte[] value ) throws IOException {
+	}
+
+
+	public byte[] getAttribute( ManagedDiskDescriptor mdd, String key )
+		throws IOException {
+		return null;
+	}
+
+	/*
+	  For the benefit of the fuse-based ManagedDiskFileSystem, so
+	  meaningless for a client-side http proxy.  Should never be
+	  called.
+	*/
+	public ManagedDisk locate( ManagedDiskDescriptor mdd ) {
+		throw new UnsupportedOperationException( "HttpStoreProxy.locate" );
+	}
+
+	public Collection<ManagedDiskDescriptor> enumerate() throws IOException {
+		HttpGet g = new HttpGet( server + "enumerate" );
+		g.addHeader( "Accept", "application/x-java-serialized-object" );
+	
+		log.debug( g.getRequestLine() );
+		
+		HttpClient req = new DefaultHttpClient( );
+		HttpResponse res = req.execute( g );
+		HttpEntity he = res.getEntity();
+		InputStream is = he.getContent();
+		ObjectInputStream ois = new ObjectInputStream( is );
+		try {
+			Collection<ManagedDiskDescriptor> result =
+				(Collection<ManagedDiskDescriptor>)ois.readObject();
+			return result;
+		} catch( ClassNotFoundException cnfe ) {
+			throw new IOException( cnfe );
+		} finally {
+			ois.close();
+		}
+	}
+
+	private String server;
+	private final Log log;
+}
+
+// eof

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" "http://java.sun.com/dtd/web-app_2_3.dtd">
+
+<web-app>
+  <display-name>APL/UW Tupelo Store Web Access</display-name>
+  <description></description>
+  
+  
+  <listener>
+    <listener-class>
+      edu.uw.apl.tupelo.http.server.ContextListener
+    </listener-class>
+  </listener>
+
+<!--
+  <filter>
+    <filter-name>SnoopFilter</filter-name>
+    <filter-class>
+      edu.uw.apl.commons.servletfilters.snoop.SnoopFilter
+    </filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>SnoopFilter</filter-name>
+    <url-pattern>/index.html</url-pattern>
+  </filter-mapping>
+-->
+
+<!--
+  <servlet>
+    <servlet-name>MetadataServlet</servlet-name>
+    <description></description>
+    <servlet-class>
+      edu.uw.apl.mwa.tupelo.webapp.server.MetadataServlet
+    </servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>MetadataServlet</servlet-name>
+    <url-pattern>/version</url-pattern>
+  </servlet-mapping>	
+-->
+
+
+  <servlet>
+    <servlet-name>StoreServlet</servlet-name>
+    <description></description>
+    <servlet-class>
+      edu.uw.apl.tupelo.http.server.HttpStoreServlet
+    </servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>StoreServlet</servlet-name>
+    <url-pattern>/storage/*</url-pattern>
+  </servlet-mapping>	
+
+  <servlet-mapping>
+    <servlet-name>StoreServlet</servlet-name>
+    <url-pattern>/uuid</url-pattern>
+  </servlet-mapping>	
+
+  <servlet-mapping>
+    <servlet-name>StoreServlet</servlet-name>
+    <url-pattern>/usablespace</url-pattern>
+  </servlet-mapping>	
+
+  <servlet-mapping>
+    <servlet-name>StoreServlet</servlet-name>
+    <url-pattern>/newsession</url-pattern>
+  </servlet-mapping>	
+
+  <servlet-mapping>
+    <servlet-name>StoreServlet</servlet-name>
+    <url-pattern>/enumerate</url-pattern>
+  </servlet-mapping>	
+
+
+  <servlet-mapping>
+    <servlet-name>StoreServlet</servlet-name>
+    <url-pattern>/data/*</url-pattern>
+  </servlet-mapping>	
+
+  <welcome-file-list>
+    <welcome-file>index.jsp</welcome-file>
+    <welcome-file>index.html</welcome-file>
+  </welcome-file-list>
+  
+</web-app>

@@ -1,0 +1,93 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+			     http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>edu.uw.apl</groupId>
+    <artifactId>tupelo-http-parent</artifactId>
+    <version>0.0.1</version>
+  </parent>
+
+  <groupId>edu.uw.apl</groupId>
+  <artifactId>tupelo-http-server</artifactId>
+  <packaging>war</packaging>
+  <version>0.0.1</version>
+  <name>Tupelo Disk Management - Http Store Servlet</name>
+  <url>http://maven.apache.org</url>
+
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>tupelo-store-filesys</artifactId>
+      <version>0.0.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <version>2.4</version>
+      <scope>provided</scope>
+    </dependency>
+
+<!--
+    <dependency>
+      <groupId>edu.uw.apl</groupId>
+      <artifactId>commons-servlet-filters</artifactId>
+      <version>1.0</version>
+    </dependency>
+-->
+
+    <!--  Gson: Java to Json conversion -->
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>1.7.1</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <defaultGoal>compile</defaultGoal>
+    <plugins>
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-compiler-plugin</artifactId>
+	<configuration>
+	  <source>1.5</source>
+	  <target>1.5</target>
+	</configuration>
+      </plugin>
+
+      <plugin>
+	<groupId>org.mortbay.jetty</groupId>
+	<artifactId>maven-jetty-plugin</artifactId>
+	<version>6.1.22</version>
+	<configuration>
+	  <connectors>
+	    <connector implementation=
+		       "org.mortbay.jetty.nio.SelectChannelConnector">
+	      <port>8888</port>
+	      <maxIdleTime>360000</maxIdleTime>
+	    </connector>
+	    <connector implementation=
+		       "org.mortbay.jetty.nio.SelectChannelConnector">
+	      <port>8889</port>
+	      <maxIdleTime>360000</maxIdleTime>
+	    </connector>
+	  </connectors>
+	  <!-- 
+	       The override.xml lets us set a context init param for dataroot 
+	  -->
+	  <overrideWebXml>
+	    src/main/resources/jetty-override-web.xml
+	  </overrideWebXml>
+	  <contextPath>tupelo</contextPath>
+	  <reload>manual</reload>
+	</configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
