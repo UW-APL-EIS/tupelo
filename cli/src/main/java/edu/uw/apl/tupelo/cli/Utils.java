@@ -3,6 +3,9 @@ package edu.uw.apl.tupelo.cli;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
@@ -14,6 +17,16 @@ import edu.uw.apl.tupelo.http.client.HttpStoreProxy;
 
 public class Utils {
 
+	static final String STORELOCATIONDEFAULT = "./test-store";
+
+	static public Options commonOptions() {
+		Options os = new Options();
+		os.addOption( "s", true,
+					  "Store url/directory. Defaults to " +
+					  STORELOCATIONDEFAULT );
+		return os;
+	}
+	
 	static public ManagedDiskDescriptor locateDescriptor( Store s,
 														  String diskID,
 														  String sessionID )

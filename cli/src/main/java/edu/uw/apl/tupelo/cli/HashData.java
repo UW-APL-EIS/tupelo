@@ -41,6 +41,18 @@ import edu.uw.apl.commons.sleuthkit.volsys.VolumeSystem;
  * using tsk4j/Sleuthkit routines and a FUSE filesystem to access the
  * managed data.  Store the resultant 'Hash Info' as a Store
  * attribute.
+ *
+ * Note: This program makes use of fuse4j/fuse and so has an impact on
+ * the filesystem as a whole.  In principle, a fuse mount point is
+ * created at program start and deleted at program end.  However, if
+ * user exits early (Ctrl C), we may have a lasting mount point.  To
+ * delete this, do
+ *
+ * $ fusermount -u test-mount
+ *
+ * We do have a shutdown hook for the umount installed, but it appears
+ * unreliable.
+ *
  */
 
 public class HashData {
@@ -59,7 +71,7 @@ public class HashData {
 	}
 
 	public HashData() {
-		storeLocation = STORELOCATIONDEFAULT;
+		storeLocation = Utils.STORELOCATIONDEFAULT;
 	}
 
 	static private void printUsage( Options os, String usage,
@@ -70,14 +82,13 @@ public class HashData {
 	}
 
 	public void readArgs( String[] args ) {
-		Options os = new Options();
-		os.addOption( "d", false, "debug on" );
-		os.addOption( "v", false, "verbose" );
-		os.addOption( "s", true, "Store location, defaults to " +
-					  STORELOCATIONDEFAULT );
+		Options os = Utils.commonOptions();
+		os.addOption( "d", false, "Debug" );
+		os.addOption( "v", false, "Verbose" );
 
 		final String USAGE =
-			HashData.class.getName() + " [-d] [-v] [-s storeLocation] diskID sessionID";
+			HashData.class.getName() +
+			" [-d] [-v] [-s storeLocation] diskID sessionID";
 		final String HEADER = "";
 		final String FOOTER = "";
 		
@@ -106,7 +117,8 @@ public class HashData {
 	public void start() throws Exception {
 
 		Store store = Utils.buildStore( storeLocation );
-		System.out.println( "Store type: " + store );
+		if( debug )
+			System.out.println( "Store type: " + store );
 
 		Collection<ManagedDiskDescriptor> stored = store.enumerate();
 		System.out.println( "Stored: " + stored );
@@ -123,11 +135,13 @@ public class HashData {
 		final File mountPoint = new File( "test-mount" );
 		mountPoint.mkdirs();
 		mountPoint.deleteOnExit();
-		System.err.println( "Mounting '" + mountPoint + "'" );
+		if( debug )
+			System.out.println( "Mounting '" + mountPoint + "'" );
 		mdfs.mount( mountPoint, true );
 		Runtime.getRuntime().addShutdownHook( new Thread() {
 				public void run() {
-					System.err.println( "Unmounting '" + mountPoint + "'" );
+					if( debug )
+						System.out.println( "Unmounting '" + mountPoint + "'" );
 					try {
 						mdfs.umount();
 					} catch( Exception e ) {
@@ -138,7 +152,7 @@ public class HashData {
 		Thread.sleep( 1000 * 2 );
 
 		File f = mdfs.pathTo( mdd );
-		System.err.println( f );
+		System.out.println( "Located Managed Data: " + f );
 		Image i = new Image( f );
 		VolumeSystem vs = new VolumeSystem( i );
 		//		System.err.println( i + " " + vs);
@@ -149,17 +163,19 @@ public class HashData {
 		for( Partition p : ps ) {
 			if( !p.isAllocated() )
 				continue;
-			System.out.println( "At sector " + p.start() + ", located " + p.description() );
+			System.out.println( "At sector " + p.start() +
+								", located " + p.description() );
 			Map<String,byte[]> fileHashes = new HashMap<String,byte[]>();
 			walk( i, p.start(), fileHashes );
-			System.out.println( "FileHashes : " + fileHashes.size() );
+			System.out.println( " FileHashes : " + fileHashes.size() );
 			record( fileHashes, p.start(), p.length() );
 		}
 		vs.close();
 		i.close();
 	}
 	
-	private void walk( Image i, long start, final Map<String,byte[]> fileHashes )
+	private void walk( Image i, long start,
+					   final Map<String,byte[]> fileHashes )
 		throws Exception {
 		FileSystem fs = new FileSystem( i, start );
 		DirectoryWalk.Callback cb = new DirectoryWalk.Callback() {
@@ -182,7 +198,8 @@ public class HashData {
 		fs.close();
 	}
 
-	private void process( WalkFile f, String path, Map<String,byte[]> fileHashes )
+	private void process( WalkFile f, String path,
+						  Map<String,byte[]> fileHashes )
 		throws IOException {
 
 		String name = f.getName();
@@ -230,8 +247,7 @@ public class HashData {
 		Collections.sort( sorted );
 		String outName = diskID + "-" + sessionID + "-" +
 			start + "-" + length + ".md5";
-		if( verbose )
-			System.out.println( "Writing: " + outName );
+		System.out.println( "Writing: " + outName );
 		
 		FileWriter fw = new FileWriter( outName );
 		BufferedWriter bw = new BufferedWriter( fw, 1024 * 1024 );
@@ -248,8 +264,6 @@ public class HashData {
 	String storeLocation;
 	String diskID, sessionID;
 	static boolean debug, verbose;
-	
-	static final String STORELOCATIONDEFAULT = "./test-store";
 
 	static byte[] DIGESTBUFFER = new byte[ 1024*1024 ];
 	static MessageDigest MD5 = null;

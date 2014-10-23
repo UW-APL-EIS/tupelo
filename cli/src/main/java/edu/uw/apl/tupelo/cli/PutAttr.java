@@ -33,7 +33,7 @@ public class PutAttr {
 	}
 
 	public PutAttr() {
-		storeLocation = STORELOCATIONDEFAULT;
+		storeLocation = Utils.STORELOCATIONDEFAULT;
 	}
 
 	static private void printUsage( Options os, String usage,
@@ -44,12 +44,11 @@ public class PutAttr {
 	}
 
 	public void readArgs( String[] args ) {
-		Options os = new Options();
-		os.addOption( "s", true, "Store location, defaults to " +
-					  STORELOCATIONDEFAULT );
+		Options os = Utils.commonOptions();
 
 		final String USAGE =
-			PutAttr.class.getName() + " [-s storeLocation] diskID sessionID key valueFile";
+			PutAttr.class.getName() +
+			" [-s storeLocation] diskID sessionID key valueFile";
 		final String HEADER = "";
 		final String FOOTER = "";
 		
@@ -81,31 +80,31 @@ public class PutAttr {
 	}
 	
 	public void start() throws IOException {
-		File dir = new File( storeLocation );
-		Store store = new FilesystemStore( dir );
+		Store store = Utils.buildStore( storeLocation );
 
 		Collection<ManagedDiskDescriptor> stored = store.enumerate();
-		System.out.println( "Stored: " + stored );
+		System.out.println( "ManagedDisks: " + stored );
 
-		ManagedDiskDescriptor mdd = Utils.locateDescriptor( store, diskID, sessionID );
+		ManagedDiskDescriptor mdd = Utils.locateDescriptor( store,
+															diskID, sessionID );
 		if( mdd == null ) {
 			System.err.println( "Not stored: " + diskID + "," + sessionID );
 			System.exit(1);
 		}
 		byte[] ba = FileUtils.readFileToByteArray( valueFile );
+		System.out.println( "Storing attribute " + key +
+							" for managedDisk " + mdd );
 		store.setAttribute( mdd, key, ba );
 
 		Collection<String> keys = store.attributeSet( mdd );
 		System.out.println( "Stored Attributes: " + keys );
 	}
 
-
 	String storeLocation;
 	String diskID, sessionID;
 	String key;
 	File valueFile;
 
-	static final String STORELOCATIONDEFAULT = "./test-store";
 }
 
 // eof

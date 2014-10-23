@@ -36,7 +36,7 @@ public class PutData {
 	}
 
 	public PutData() {
-		storeLocation = STORELOCATIONDEFAULT;
+		storeLocation = Utils.STORELOCATIONDEFAULT;
 	}
 
 	static private void printUsage( Options os, String usage,
@@ -47,11 +47,8 @@ public class PutData {
 	}
 
 	public void readArgs( String[] args ) {
-		Options os = new Options();
+		Options os = Utils.commonOptions();
 		os.addOption( "d", false, "Debug" );
-		os.addOption( "s", true,
-					  "Store url/directory. If directory, defaults to " +
-					  STORELOCATIONDEFAULT );
 		os.addOption( "f", false,
 					  "Force flatDisk, default decides based on unmanaged data size" );
 
@@ -90,7 +87,8 @@ public class PutData {
 	public void start() throws IOException {
 
 		Store s = Utils.buildStore( storeLocation );
-		System.out.println( "Store type: " + s );
+		if( debug )
+			System.out.println( "Store type: " + s );
 		
 		System.out.println( "Store.usableSpace:" + s.getUsableSpace() );
 		Collection<ManagedDiskDescriptor> mdds1 = s.enumerate();
@@ -121,8 +119,6 @@ public class PutData {
 	File rawData;
 
 	static boolean debug;
-	
-	static final String STORELOCATIONDEFAULT = "./test-store";
 }
 
 // eof
