@@ -33,7 +33,9 @@ abstract public class ManagedDisk {
 
 	/**
 	 * Needed by Store implementations to attached a final managedData file
-	 * to an supplied ManagedDisk object (e.g. in put())
+	 * to a supplied ManagedDisk object (e.g. in put()).  The ManagedDisk
+	 * object likely stays in memory, so needs its association to the
+	 * final store location on disk.
 	 */
 	public void setManagedData( File f ) {
 		managedData = f;
@@ -41,7 +43,8 @@ abstract public class ManagedDisk {
 	
 	abstract public void setParent( ManagedDisk md );
 
-	abstract public void writeTo( File f ) throws IOException;
+	//	abstract public void writeTo( File f ) throws IOException;
+	abstract public void writeTo( OutputStream os ) throws IOException;
 
 	abstract public InputStream getInputStream() throws IOException;
 

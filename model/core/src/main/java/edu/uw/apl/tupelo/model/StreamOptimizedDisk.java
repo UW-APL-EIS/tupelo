@@ -172,6 +172,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	  table.  Then, if we find all zeros, we can completely omit that
 	  grain table and set that grain directory entry to 0.
 	*/
+	@Override
 	public void writeTo( OutputStream os ) throws IOException {
 		if( unmanagedData == null )
 			throw new IllegalStateException

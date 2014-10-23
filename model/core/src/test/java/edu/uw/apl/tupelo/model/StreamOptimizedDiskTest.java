@@ -1,6 +1,7 @@
 package edu.uw.apl.tupelo.model;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -57,7 +58,9 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		UnmanagedDisk ud = new DiskImage( f );
 		ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
 		File out = new File( "/dev/null" );
-		md.writeTo( out );
+		FileOutputStream fos = new FileOutputStream( out );
+		md.writeTo( fos );
+		fos.close();
 
 	}
 
@@ -68,7 +71,9 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		UnmanagedDisk ud = new DiskImage( f );
 		ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
 		File out = new File( f.getName() + ManagedDisk.FILESUFFIX );
-		md.writeTo( out );
+		FileOutputStream fos = new FileOutputStream( out );
+		md.writeTo( fos );
+		fos.close();
 
 	}
 
@@ -95,7 +100,9 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		UnmanagedDisk ud = new DiskImage( f );
 		ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
 		File out = new File( f.getName() + ManagedDisk.FILESUFFIX );
-		md.writeTo( out );
+		FileOutputStream fos = new FileOutputStream( out );
+		md.writeTo( fos );
+		fos.close();
 		System.out.println( "Writing " + out );
 	}
 
@@ -127,7 +134,8 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		UnmanagedDisk ud = new DiskImage( f );
 		ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
 		File out = new File( f.getName() + ManagedDisk.FILESUFFIX );
-		md.writeTo( out );
+		FileOutputStream fos = new FileOutputStream( out );
+		md.writeTo( fos );
 		System.out.println( "Writing " + out );
 	}
 
