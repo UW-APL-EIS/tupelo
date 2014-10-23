@@ -6,11 +6,16 @@ import java.util.Collection;
 
 import org.apache.commons.cli.*;
 
+import edu.uw.apl.tupelo.model.DiskImage;
 import edu.uw.apl.tupelo.model.FlatDisk;
+import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
+import edu.uw.apl.tupelo.model.StreamOptimizedDisk;
+import edu.uw.apl.tupelo.model.UnmanagedDisk;
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
+import edu.uw.apl.tupelo.http.client.HttpStoreProxy;
 
 /**
  * Simple Tupelo Utility: add some arbitrary disk image file to a
@@ -26,6 +31,8 @@ public class PutData {
 			main.start();
 		} catch( Exception e ) {
 			System.err.println( e );
+			if( debug )
+				e.printStackTrace();
 			System.exit(-1);
 		}
 	}
@@ -43,12 +50,15 @@ public class PutData {
 
 	public void readArgs( String[] args ) {
 		Options os = new Options();
-		os.addOption( "s", true, "Store location, defaults to " +
+		os.addOption( "d", false, "Debug" );
+		os.addOption( "s", true,
+					  "Store url/directory. If directory, defaults to " +
 					  STORELOCATIONDEFAULT );
-		os.addOption( "f", false, "Force flatDisk, default decides based on size" );
+		os.addOption( "f", false,
+					  "Force flatDisk, default decides based on unmanaged data size" );
 
 		final String USAGE =
-			PutData.class.getName() + " [-s storeLocation] [-f] rawData";
+			PutData.class.getName() + " [-s storeLocation] [-f] unmanagedData";
 		final String HEADER = "";
 		final String FOOTER = "";
 		
@@ -60,13 +70,14 @@ public class PutData {
 			printUsage( os, USAGE, HEADER, FOOTER );
 			System.exit(1);
 		}
+		debug = cl.hasOption( "d" );
 		forceFlatDisk = cl.hasOption( "f" );
 		if( cl.hasOption( "s" ) ) {
 			storeLocation = cl.getOptionValue( "s" );
 		}
 		args = cl.getArgs();
 		if( args.length > 0 ) {
-			rawData = new java.io.File( args[0] );
+			rawData = new File( args[0] );
 			if( !rawData.exists() ) {
 				// like bash would do, write to stderr...
 				System.err.println( rawData + ": No such file or directory" );
@@ -80,20 +91,37 @@ public class PutData {
 	
 	public void start() throws IOException {
 
-		File dir = new File( storeLocation );
-		Store s = new FilesystemStore( dir );
+		Store s = null;
+		if( storeLocation.startsWith( "http" ) ) {
+			s = new HttpStoreProxy( storeLocation );
+		} else {
+			File dir = new File( storeLocation );
+			if( !dir.isDirectory() ) {
+				throw new IllegalStateException
+					( "Not a directory: " + storeLocation );
+			}
+			s = new FilesystemStore( dir );
+		}
+		System.out.println( "Store type: " + s );
+		
 		System.out.println( "Store.usableSpace:" + s.getUsableSpace() );
 		Collection<ManagedDiskDescriptor> mdds1 = s.enumerate();
 		System.out.println( "Stored data: " + mdds1 );
 
 		Session session = s.newSession();
-		String diskID = rawData.getName();
-		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( diskID, session );
+		UnmanagedDisk ud = new DiskImage( rawData );
+		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
+															   session );
 		System.out.println( "Storing: " + mdd +
-							"(" + rawData.length() + " bytes)" );
-		
-		FlatDisk d = new FlatDisk( rawData, diskID, session );
-		s.put( d );
+							"(" + ud.size() + " bytes)" );
+
+		ManagedDisk md = null;
+		if( forceFlatDisk || ud.size() < 1024L * 1024 * 1024 ) {
+			md = new FlatDisk( ud, session );
+		} else {
+			md = new StreamOptimizedDisk( ud, session );
+		}
+		s.put( md );
 
 		Collection<ManagedDiskDescriptor> mdds2 = s.enumerate();
 		System.out.println( "Stored data: " + mdds2 );
@@ -104,6 +132,8 @@ public class PutData {
 	String storeLocation;
 	File rawData;
 
+	static boolean debug;
+	
 	static final String STORELOCATIONDEFAULT = "./test-store";
 }
 
