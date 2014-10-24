@@ -89,6 +89,13 @@ public class HttpStoreServlet extends HttpServlet {
 			return;
 		}
 
+		if( sp.startsWith( "/digest/" ) ) {
+			String pi = req.getPathInfo();
+			log.debug( "Post.PathInfo: " + pi );
+			digest( req, res );
+			return;
+		}
+
 		// Step 2: match against the path info
 		String pi = req.getPathInfo();
 		System.out.println( "PathInfo: " + pi );
@@ -299,6 +306,55 @@ public class HttpStoreServlet extends HttpServlet {
 		is.close();
 	}
 
+	private void digest( HttpServletRequest req, HttpServletResponse res )
+		throws IOException, ServletException {
+
+		// to get the details, need the pathInfo again...
+		String pi = req.getPathInfo();
+		String details = pi;
+
+		log.debug( "Put.details: '" + details  + "'" );
+
+		ManagedDiskDescriptor mdd = null;
+		try {
+			mdd = fromPathInfo( details );
+		} catch( ParseException pe ) {
+			log.debug( "put send error" );
+			res.sendError( HttpServletResponse.SC_NOT_FOUND,
+						   "Malformed managed disk descriptor: " + details );
+			return;
+		}
+
+		// LOOK: check the content type...
+		String hdr = req.getHeader( "Content-Encoding" );
+
+		List<byte[]> digest = store.digest( mdd );
+		
+		
+		if( false ) {
+		} else if( Utils.acceptsJavaObjects( req ) ) {
+			res.setContentType( "application/x-java-serialized-object" );
+			OutputStream os = res.getOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream( os );
+
+			/*
+			  Having serialization issues with the object returned
+			  from the store, what seems to be a HashMap$KeySet.  So
+			  expand to a regular List on output.
+			*/
+			oos.writeObject( digest );
+		} else if( Utils.acceptsJson( req ) ) {
+			res.setContentType( "application/json" );
+			String json = gson.toJson( digest );
+			PrintWriter pw = res.getWriter();
+			pw.print( json );
+		} else {
+			res.setContentType( "text/plain" );
+			PrintWriter pw = res.getWriter();
+			pw.println( "TODO: Store.digest text/plain" );
+		}
+
+	}
 
 	/*
 	  LOOK: we assume the client did NOT send the full session info,

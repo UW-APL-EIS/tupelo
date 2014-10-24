@@ -5,11 +5,16 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.DigestInputStream;
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -118,7 +123,7 @@ public class FilesystemStore implements Store {
 		if( descriptorMap.containsKey( mdd ) )
 			throw new IllegalArgumentException( "Already stored: " + mdd );
 		
-		String fileName = asFileName( mdd ) + ManagedDisk.FILESUFFIX;
+		String fileName = asFileName( mdd );
 		File tempFile = new File( tempDir, fileName );
 		log.info( "Writing to " + tempFile );
 		/*
@@ -154,6 +159,63 @@ public class FilesystemStore implements Store {
 		}
 	}
 
+	/**
+	 * Produce a sha1 hash of each grain in the managed disk
+	 * identified by the supplied descriptor.
+	 
+	 * Asserting that we do NOT need this to be synchronized,
+	 * since we are reading data already managed, and by definition
+	 * that cannot change.
+
+	 * LOOK: We may need to stream this out instead of holding it all.
+	 * A 2TB disk using 16 million grains and a hash of 20bytes per grain
+	 * means 320MB of memory!
+	 *
+	 * LOOK: We may/should have this already held as an attribute!
+	 */
+	@Override
+	public List<byte[]> digest( ManagedDiskDescriptor mdd )
+		throws IOException {
+
+		File f = managedDataFile( root, mdd );
+		if( !f.isFile() )
+			return Collections.EMPTY_LIST;
+
+		List<byte[]> result = new ArrayList<byte[]>();
+		ManagedDisk md = ManagedDisk.readFrom( f );
+		MessageDigest sha1 = null;
+		try {
+			sha1 = MessageDigest.getInstance( "sha1" );
+		} catch( NoSuchAlgorithmException never ) {
+		}
+
+		byte[] grain = new byte[(int)md.grainSizeBytes()];
+		InputStream is = md.getInputStream();
+		DigestInputStream dis = new DigestInputStream( is, sha1 );
+		while( true ) {
+			int nin = dis.read( grain );
+			if( nin == -1 )
+				break;
+			if( nin != grain.length ) {
+				throw new IllegalStateException( "Partial read. Fix!" );
+			}
+			byte[] hash = sha1.digest();
+			result.add( hash );
+			sha1.reset();
+		}
+		dis.close();
+		is.close();
+
+		// Sanity check ??  SHOULD THROW ERROR ???
+		if( result.size() != md.size() / md.grainSizeBytes() ) {
+			log.warn( "Unexpected digest length: " + result.size() +
+					  "/" + (md.size() / md.grainSizeBytes()) );
+			throw new IllegalStateException( "Bad digest compute: " + mdd );
+		}
+		
+		return result;
+	}
+	
 	// for the benefit of the fuse-based ManagedDiskFileSystem
 	@Override
 	public ManagedDisk locate( ManagedDiskDescriptor mdd ) {
@@ -169,8 +231,10 @@ public class FilesystemStore implements Store {
 	@Override
 	public Collection<String> attributeSet( ManagedDiskDescriptor mdd )
 		throws IOException {
-		List<String> result = new ArrayList<String>();
 		File dir = attrDir( root, mdd );
+		if( !dir.isDirectory() )
+			return Collections.EMPTY_LIST;
+		List<String> result = new ArrayList<String>();
 		File[] fs = dir.listFiles();
 		for( File f : fs ) {
 			result.add( f.getName() );
@@ -198,8 +262,10 @@ public class FilesystemStore implements Store {
 	public byte[] getAttribute( ManagedDiskDescriptor mdd, String key )
 		throws IOException {
 		String fileName = key;
-		File inDir = attrDir( root, mdd );
-		File inFile = new File( inDir, key );
+		File dir = attrDir( root, mdd );
+		if( !dir.isDirectory() )
+			return null;
+		File inFile = new File( dir, key );
 		if( !inFile.isFile() )
 			return null;
 		return FileUtils.readFileToByteArray( inFile );
@@ -252,7 +318,7 @@ public class FilesystemStore implements Store {
 				descriptorMap.put( mdd, md );
 				String path = asPathName( mdd );
 				pathMap.put( path, md );
-				log.info( "Located managed disk: " + f );
+				log.debug( "Located managed disk: " + f );
 			} catch( IOException ioe ) {
 				log.warn( ioe );
 				continue;
@@ -284,12 +350,30 @@ public class FilesystemStore implements Store {
 		link( parent, allDisks, linkedDisks );
 	}
 
-	private ManagedDisk locate( UUID needle, Collection<ManagedDisk> allDisks ) {
+	private ManagedDisk locate( UUID needle,
+								Collection<ManagedDisk> allDisks ) {
 		for( ManagedDisk md : allDisks ) {
 			if( md.getUUIDCreate().equals( needle ) )
 				return md;
 		}
 		throw new IllegalStateException( "No such uuid: " + needle );
+	}
+
+	/*
+	  The file sys layout here is
+
+	  disks/
+	  disks/DISKID/SESSIONID
+	  disks/DISKID/SESSIONID/data
+	  disks/DISKID/SESSIONID/data/DISKID-SESSIONID.tmd
+	  disks/DISKID/SESSIONID/attrs
+	  disks/DISKID/SESSIONID/attrs/SOMEATTR
+	*/
+	static private File diskDir( File root, ManagedDiskDescriptor vd ) {
+		File dir = new File( root, "disks" );
+		dir = new File( dir, vd.getDiskID() );
+		dir = new File( dir, vd.getSession().toString() );
+		return dir;
 	}
 
 	static private File diskDataDir( File root, ManagedDiskDescriptor mdd ) {
@@ -298,16 +382,16 @@ public class FilesystemStore implements Store {
 		return dir;
 	}
 
+	static private File managedDataFile( File root,
+										 ManagedDiskDescriptor mdd ) {
+		File dir = diskDataDir( root, mdd );
+		File result = new File( dir, asFileName( mdd ) );
+		return result;
+	}
+
 	static private File attrDir( File root, ManagedDiskDescriptor mdd ) {
 		File dir = diskDir( root, mdd );
 		dir = new File( dir, "attrs" );
-		return dir;
-	}
-
-	static private File diskDir( File root, ManagedDiskDescriptor vd ) {
-		File dir = new File( root, "disks" );
-		dir = new File( dir, vd.getDiskID() );
-		dir = new File( dir, vd.getSession().toString() );
 		return dir;
 	}
 
@@ -318,7 +402,7 @@ public class FilesystemStore implements Store {
 
 	static String asFileName( ManagedDiskDescriptor mdd ) {
 		return mdd.getDiskID() + "-" +
-			mdd.getSession().toString();
+			mdd.getSession().toString() + ManagedDisk.FILESUFFIX;
 	}
 
 

@@ -2,6 +2,7 @@ package edu.uw.apl.tupelo.store;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 import edu.uw.apl.tupelo.model.ManagedDisk;
@@ -18,6 +19,9 @@ public interface Store {
 
 	public void put( ManagedDisk md ) throws IOException;
 
+	public List<byte[]> digest( ManagedDiskDescriptor mdd )
+		throws IOException;
+	
 	public Collection<String> attributeSet( ManagedDiskDescriptor mdd )
 		throws IOException;
 

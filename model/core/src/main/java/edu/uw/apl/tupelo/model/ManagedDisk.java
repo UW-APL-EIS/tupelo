@@ -85,6 +85,10 @@ abstract public class ManagedDisk {
 		return header.uuidParent;
 	}
 
+	public long grainSizeBytes() {
+		return header.grainSize * Constants.SECTORLENGTH;
+	}
+	
 	protected void setHeader( Header h ) {
 		header = h;
 	}

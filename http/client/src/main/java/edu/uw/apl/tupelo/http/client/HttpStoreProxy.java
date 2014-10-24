@@ -157,6 +157,31 @@ public class HttpStoreProxy implements Store {
 		HttpResponse res = req.execute( p );
 	}
 
+	@Override
+	public List<byte[]> digest( ManagedDiskDescriptor mdd )
+		throws IOException {
+		HttpGet g = new HttpGet( server + "digest/" + mdd.getDiskID() +
+								 "/" + mdd.getSession() );
+		g.addHeader( "Accept", "application/x-java-serialized-object" );
+	
+		log.debug( g.getRequestLine() );
+		
+		HttpClient req = new DefaultHttpClient( );
+		HttpResponse res = req.execute( g );
+		HttpEntity he = res.getEntity();
+		InputStream is = he.getContent();
+		ObjectInputStream ois = new ObjectInputStream( is );
+		try {
+			List<byte[]>result = (List<byte[]>)ois.readObject();
+			return result;
+		} catch( ClassNotFoundException cnfe ) {
+			throw new IOException( cnfe );
+		} finally {
+			ois.close();
+		}
+	}
+
+		
 	public Collection<String> attributeSet( ManagedDiskDescriptor mdd )
 		throws IOException {
 		return null;
