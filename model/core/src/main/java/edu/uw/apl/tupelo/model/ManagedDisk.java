@@ -48,7 +48,7 @@ abstract public class ManagedDisk {
 
 	abstract public InputStream getInputStream() throws IOException;
 
-	abstract public RandomAccessRead getRandomAccessRead() throws IOException;
+	abstract public SeekableInputStream getSeekableInputStream() throws IOException;
 
 	static public ManagedDisk readFrom( File managedDisk ) throws IOException {
 		ManagedDisk result = null;

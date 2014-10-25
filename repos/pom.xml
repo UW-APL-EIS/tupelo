@@ -1,0 +1,79 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+			     http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+      This pom is purely a vehicle for copying Tupelo 3rd party
+      dependencies for users that DO have them built/installed into
+      this directory so that they can be added to git for users that
+      do NOT have them built/installed.  It is NOT part of the Tupelo
+      codebase build process.  We do NOT have the Tupelo super-pom for
+      a parent.  Conversely, the parent pom does NOT list us as a
+      module.
+  -->
+  <!--
+      This pom uses a profile named 'repos' to copy the dependencies
+      listed below into the current directory.  Without this profile
+      being activated, this pom does nothing. To invoke, do 'mvn
+      -Prepos'
+  -->
+
+  <groupId>edu.uw.apl</groupId>
+  <artifactId>tupelo-repo</artifactId>
+  <version>0.0.1</version>
+  <packaging>pom</packaging>
+
+  <name>Tupelo Disk Management - Third Party Artifact Bundling</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>tsk4j-core</artifactId>
+      <version>413.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>fuse4j-core</artifactId>
+      <version>2400.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>native-lib-loader</artifactId>
+      <version>2.0.0</version>
+    </dependency>
+  </dependencies>
+  
+  <profiles>
+    <profile>
+      <id>repos</id>
+      <build>
+	<defaultGoal>process-sources</defaultGoal>
+	<plugins>
+	  <plugin>
+	    <groupId>org.apache.maven.plugins</groupId>
+	    <artifactId>maven-dependency-plugin</artifactId>
+	    <version>2.9</version>
+	    <executions>
+	      <execution>
+		<id>copy-dependencies</id>
+		<goals>
+		  <goal>copy-dependencies</goal>
+		</goals>
+		<configuration>
+		  <!-- 
+		       Artifacts the listed dependencies depend are on
+		       Maven Central so we exlcude them here.
+		  -->
+		  <excludeTransitive>true</excludeTransitive>
+		  <outputDirectory>.</outputDirectory>
+		</configuration>
+	      </execution>
+	    </executions>
+	  </plugin>
+	</plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

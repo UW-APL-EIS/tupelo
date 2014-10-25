@@ -105,10 +105,10 @@ public class ContextListener implements ServletContextListener {
 		}
 		*/
 		
-		File root = new File( dataRoot, "server" );
+		//		File root = new File( dataRoot, "server" );
 		//		log.info( "DataStore root: " + root );
 
-		Store store = new FilesystemStore( root );
+		Store store = new FilesystemStore( dataRoot );
 		
 		sc.setAttribute( STOREKEY, store );
 	}

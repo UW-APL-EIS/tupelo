@@ -5,6 +5,6 @@
 <web-app>
   <context-param>
     <param-name>dataroot</param-name>
-    <param-value>./server</param-value>
+    <param-value>./test-store</param-value>
   </context-param>
 </web-app>

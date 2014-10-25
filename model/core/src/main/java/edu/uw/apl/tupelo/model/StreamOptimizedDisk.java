@@ -114,7 +114,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			raf.seek( footer.gdOffset * Constants.SECTORLENGTH -
 					  Constants.SECTORLENGTH );
 			MetadataMarker mdm = MetadataMarker.readFrom( raf );
-			log.info( "Expected GD: actual " + mdm );
+			log.debug( "Expected GD: actual " + mdm );
 		}
 		
 		long grainCount = footer.capacity / footer.grainSize;
@@ -145,7 +145,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 				raf.seek( gde * Constants.SECTORLENGTH -
 						  Constants.SECTORLENGTH );
 				MetadataMarker mdm = MetadataMarker.readFrom( raf );
-				log.info( "Expected GT: actual " + mdm );
+				log.debug( "Expected GT: actual " + mdm );
 			}
 			
 			raf.seek( gde * Constants.SECTORLENGTH );
@@ -229,7 +229,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 						}
 					}
 					if( allZeros ) {
-						log.info( "Zero GDE at " + gdIndex );
+						log.debug( "Zero GDE at " + gdIndex );
 						grainDirectory[gdIndex] = 0;
 						gdIndex++;
 						lba += header.grainSize * header.numGTEsPerGT;
@@ -250,7 +250,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 						}
 					}
 					if( allZeros ) {
-						log.info( "Zero GT at " + gdIndex + " " + gtIndex );
+						log.debug( "Zero GT at " + gdIndex + " " + gtIndex );
 						grainTable[gtIndex] = 0;
 						gtIndex++;
 						lba += header.grainSize;
@@ -265,7 +265,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					def.finish();
 					int compressedLength = def.deflate( output );
 					def.end();
-					log.info( "Deflating " + gt + " "+ g +
+					log.debug( "Deflating " + gt + " "+ g +
 								  " = " + compressedLength );
 
 
@@ -398,31 +398,22 @@ public class StreamOptimizedDisk extends ManagedDisk {
 
 	@Override
 	public InputStream getInputStream() throws IOException {
-		return new SODInputStream( size() );
+		return new SODRandomAccessRead( size() );
 	}
 
 	@Override
-	public RandomAccessRead getRandomAccessRead() throws IOException {
-		return null;
+	public SeekableInputStream getSeekableInputStream() throws IOException {
+		return new SODRandomAccessRead( size() );
 	}
 
-	static int log2( long i ) {
-		for( int p = 0; p < 32; p++ ) {
-			if( i == 1 << p )
-				return p;
-		}
-		throw new IllegalArgumentException( "Not a pow2: " + i );
-	}
-
-	class SODInputStream extends ManagedDiskInputStream {
-		SODInputStream( long size ) throws IOException {
+	class SODRandomAccessRead extends SeekableInputStream {
+		SODRandomAccessRead( long size ) throws IOException {
 			super( size );
 			raf = new RandomAccessFile( managedData, "r" );
 			log2GrainSize = log2( grainSizeBytes );
 			log2GrainTableCoverage = log2( grainTableCoverageBytes );
 			//			log.info( grainSizeBytes + " " + grainTableSizeBytes );
 			log.info( "log2 " + log2GrainSize + " " + log2GrainTableCoverage );
-			posn = 0;
 			/*
 			  Twice a grain since in pathological cases, compression
 			  actually EXPANDS the grain!
@@ -437,6 +428,13 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			raf.close();
 		}
 		   
+		@Override
+		public void seek( long s ) throws IOException {
+			// according to java.io.RandomAccessFile, no restriction on seek
+			posn = s;
+			dPos();
+		}
+
 		@Override
 		public long skip( long n ) throws IOException {
 			long result = super.skip( n );
@@ -463,7 +461,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 				long[] gde = grainDirectory[gdIndex];
 				if( false ) {
 				} else if( gde == ZEROGDE ) {
-					log.info( "Zero GD : "+ gdIndex );
+					log.debug( "Zero GD : "+ gdIndex );
 					int grainTableOffset = (int)
 						(gtIndex * grainSizeBytes + gOffset);
 					int inGrainTable = (int)
@@ -486,7 +484,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 							   " " + fromGrain );
 					long grainMarker = gde[gtIndex];
 					if( grainMarker == 0 ) {
-						log.info( "Zero GT : "+ gdIndex + " " + gtIndex );
+						log.debug( "Zero GT : "+ gdIndex + " " + gtIndex );
 						System.arraycopy( zeroGrain, 0,
 										  ba, off+total, fromGrain );
 					} else {
@@ -498,7 +496,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 						if( nin != gm.size )
 							throw new IllegalStateException
 								( "Partial read: "+ nin + " " + gm.size);
-						log.info( "Inflating " + gdIndex + " "+ gtIndex +
+						log.debug( "Inflating " + gdIndex + " "+ gtIndex +
 								  " = " + nin + " " + gm.lba );
 						Inflater inf = new Inflater();
 						inf.setInput( compressedGrainBuffer,
@@ -525,6 +523,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			return total;
 		}
 
+
 		/**
 		   Called whenever the local posn changes value.
 		   Do NOT make calls to the parent.dPos here,
@@ -545,7 +544,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			if( posn >= size )
 				return;
 
-			// LOOK: use pow2 here to eliminate / and % ops !!
+			// Note: All arithmetic using shifts/masks not multiply/divide !!
 			
 			gdIndex = (int)(posn >>> log2GrainTableCoverage);
 			long inTable = posn - ((long)gdIndex << log2GrainTableCoverage);
@@ -557,7 +556,6 @@ public class StreamOptimizedDisk extends ManagedDisk {
 							  " gtIndex: " + gtIndex +
 							  " gOffset: " + gOffset );
 		}
-
 	
 		private final RandomAccessFile raf;
 		private int log2GrainSize, log2GrainTableCoverage;
@@ -567,6 +565,14 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		private long gOffset;
 	}
 	
+	static int log2( long i ) {
+		for( int p = 0; p < 32; p++ ) {
+			if( i == 1 << p )
+				return p;
+		}
+		throw new IllegalArgumentException( "Not a pow2: " + i );
+	}
+
 	/**
 	   struct GrainMarker {
 	     long lba;

@@ -98,26 +98,20 @@ public class FlatDisk extends ManagedDisk {
 	}
 
 	@Override
-	public RandomAccessRead getRandomAccessRead() throws IOException {
+	public SeekableInputStream getSeekableInputStream() throws IOException {
 		return new FlatDiskRandomAccessRead();
 	}
 
-	class FlatDiskRandomAccessRead extends AbstractRandomAccessRead {
+	class FlatDiskRandomAccessRead extends SeekableInputStream {
 		FlatDiskRandomAccessRead() throws IOException {
+			super( size() );
 			raf = new RandomAccessFile( managedData, "r" );
 			raf.seek( header.dataOffset );
-			size = size();
-			posn = 0;
 		}
 
 		@Override
 		public void close() throws IOException {
 			raf.close();
-		}
-
-		@Override
-		public long length() throws IOException {
-			return size;
 		}
 
 		@Override
@@ -142,27 +136,12 @@ public class FlatDisk extends ManagedDisk {
 		*/
 		   
 		@Override
-		public int read( byte[] ba, int off, int len ) throws IOException {
+		public int readImpl( byte[] ba, int off, int len ) throws IOException {
 
-			/*
-			  checks from the contract for InputStream, which docs for
-			  RandomAccessFile say it honors
-			*/
-			if( ba == null )
-				throw new NullPointerException();
-			if( off < 0 || len < 0 || off + len > ba.length ) {
-				throw new IndexOutOfBoundsException();
-			}
-			if( len == 0 )
-				return 0;
-			
-			if( posn >= size ) {
-				return -1;
-			}
-			
 			long actualL = Math.min( size - posn, len );
-			int actual = (int)actualL;
-			//logger.debug( "Actual " + actualL + " " + actual );
+			int actual = actualL > Integer.MAX_VALUE ? Integer.MAX_VALUE :
+				(int)actualL;
+
 			int total = 0;
 			while( total < actual ) {
 				int nin = raf.read( ba, off+total, len-total );
@@ -173,11 +152,7 @@ public class FlatDisk extends ManagedDisk {
 		}
 
 		private final RandomAccessFile raf;
-		private final long size;
-		private long posn;
 	}
-
-	
 }
 
 // eof

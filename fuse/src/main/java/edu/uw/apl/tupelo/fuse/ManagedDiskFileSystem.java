@@ -23,7 +23,7 @@ import org.apache.commons.logging.LogFactory;
 
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
-import edu.uw.apl.tupelo.model.RandomAccessRead;
+import edu.uw.apl.tupelo.model.SeekableInputStream;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.Store;
 
@@ -33,8 +33,7 @@ import edu.uw.apl.tupelo.store.Store;
  * implemented (though of course the likely implementation is a
  * FilesystemStore.
  */
-public class ManagedDiskFileSystem implements Filesystem3,
-											  XattrSupport, LifecycleSupport {
+public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 
 	public ManagedDiskFileSystem( Store s ) {
 		store = s;
@@ -271,8 +270,8 @@ public class ManagedDiskFileSystem implements Filesystem3,
 			//			System.out.println( "open.Matched: " + md );
 
 			try {
-				RandomAccessRead rar = md.getRandomAccessRead();
-				openSetter.setFh( rar );
+				SeekableInputStream sis = md.getSeekableInputStream();
+				openSetter.setFh( sis );
 				//	System.out.println( "open.rar: " + rar );
 				return 0;
 			} catch( IOException e ) {
@@ -284,15 +283,16 @@ public class ManagedDiskFileSystem implements Filesystem3,
 
 	
 	// fh is filehandle passed from open
+	@Override
 	public int read(String path, Object fh, ByteBuffer buf, long offset)
 		throws FuseException {
 
 		if( log.isDebugEnabled() )
 			log.debug( "read.: " + path );
 
-		RandomAccessRead rar = (RandomAccessRead)fh;
+		SeekableInputStream sis = (SeekableInputStream)fh;
 		try {
-			rar.seek( offset );
+			sis.seek( offset );
 			
 			/*
 			  We keep building a bigger read buffer for each open 'file'.
@@ -310,14 +310,14 @@ public class ManagedDiskFileSystem implements Filesystem3,
 						log.info( "New read buffer for " + path +
 								  " = " + ba.length );
 				}
-				nin = rar.read( ba, 0, buf.remaining() );
+				nin = sis.read( ba, 0, buf.remaining() );
 			} else {
 				ba = new byte[buf.remaining()];
-				nin = rar.read( ba );
+				nin = sis.read( ba );
 			}
 			
 			if( log.isDebugEnabled() ) {
-				log.debug( "rar.read " + nin );
+				log.debug( "sis.read " + nin );
 			}
 			
 			if( nin > -1 )
@@ -339,16 +339,10 @@ public class ManagedDiskFileSystem implements Filesystem3,
 	
 	// fh is filehandle passed from open,
    // isWritepage indicates that write was caused by a writepage
+	@Override
 	public int write(String path, Object fh, boolean isWritepage,
 					 ByteBuffer buf, long offset) throws FuseException {
 		return Errno.EROFS;
-	}
-
-   // called on every filehandle close, fh is filehandle passed from open
-	@Override
-	public int flush(String path, Object fh) throws FuseException {
-		//log.info( "flush" );
-		return 0;
 	}
 
    // called when last filehandle is closed, fh is filehandle passed from open
@@ -360,169 +354,6 @@ public class ManagedDiskFileSystem implements Filesystem3,
 		return 0;
 	}
 
-   // Synchronize file contents, fh is filehandle passed from open,
-   // isDatasync indicates that only the user data should be flushed, not the meta data
-	@Override
-	public int fsync(String path, Object fh, boolean isDatasync)
-		throws FuseException {
-		return 0;
-	}
-
-
-	@Override
-	public int readlink(String path, CharBuffer link) throws FuseException {
-		//log.info( "readlink" );
-		return 0;
-	}
-
-	@Override
-	public int mknod(String path, int mode, int rdev) throws FuseException {
-		return 0;
-	}
-
-	@Override
-	public int mkdir(String path, int mode) throws FuseException {
-		//		log.info( "mkdir" );
-		return 0;
-	}
-
-	@Override
-	public int unlink(String path) throws FuseException {
-		return 0;
-	}
-
-	@Override
-	public int rmdir(String path) throws FuseException {
-		return 0;
-	}
-
-	@Override
-	public int symlink(String from, String to) throws FuseException {
-		return 0;
-	}
-
-	@Override
-	public int rename(String from, String to) throws FuseException {
-		return 0;
-	}
-
-	@Override
-	public int link(String from, String to) throws FuseException {
-		return 0;
-	}
-
-	@Override
-	public int chmod(String path, int mode) throws FuseException {
-		return 0;
-	}
-	
-	@Override
-	public int chown(String path, int uid, int gid) throws FuseException {
-		return 0;
-	}
-	
-	@Override
-	public int truncate(String path, long size) throws FuseException {
-		return 0;
-	}
-	
-
-	@Override
-	public int utime(String path, int atime, int mtime) throws FuseException {
-		//		log.info( "utime" );
-		return 0;
-	}
-
-	@Override
-	public int statfs(FuseStatfsSetter statfsSetter) throws FuseException {
-		//log.info( "statfs" );
-		return 0;
-	}
-
-	@Override
-	public int getxattr(String path, String name, ByteBuffer dst, int position)
-		throws FuseException, BufferOverflowException {
-
-		log.debug( "getxattr " + path );
-
-		if( true )
-			return 0;
-		
-        if( path.equals( "/" ) )
-			return Errno.ENOATTR;
-		/*
-		  try {
-			VolumeContainer vc = locateContainer( path );
-			if( vc == null )
-				return Errno.ENOENT;
-		} catch( IOException ioe ) {
-			throw new FuseException( ioe );
-		}
-		*/
-		return Errno.ENOATTR;
-    }
-	
-	@Override
-    public int setxattr(String path, String name, ByteBuffer value,
-						int flags, int position) throws FuseException {
-		log.debug( "setxattr " + path );
-        return Errno.EROFS;
-    }
-
-	@Override
-    public int removexattr(String path, String name) throws FuseException {
-		log.debug( "removexattr " + path );
-        return Errno.EROFS;
-    }
-
-	@Override
-    public int listxattr(String path, XattrLister lister) throws FuseException {
-		log.debug( "listxattr " + path );
-
-		if( true )
-			return 0;
-		
-        if( path.equals( "/" ) )
-			return Errno.ENOATTR;
-		/*
-		  try {
-			VolumeContainer vc = locateContainer( path );
-			if( vc == null )
-				return Errno.ENOENT;
-		} catch( IOException ioe ) {
-			throw new FuseException( ioe );
-		}
-		*/
-		return Errno.ENOATTR;
-    }
-	
-	@Override
-    public int getxattrsize(String path, String name,
-							FuseSizeSetter sizeSetter) throws FuseException {
-		log.debug( "getxattrsize " + path );
-
-		if( true )
-			return 0;
-		
-        if( !(path.equals( "/" ) || path.equals( "/foo" ) ) )
-            return Errno.ENOENT;
-
-		return Errno.ENOATTR;
-    }
-
-
-	// Empty 'LifecycleSupport'
-	@Override
-	public int init() {
-		return 0;
-	}
-
-	// Empty 'LifecycleSupport'
-	@Override
-	public int destroy() {
-		return 0;
-	}
-	
 	private final Store store;
 	private final int startTime;
 	private File mountPoint;

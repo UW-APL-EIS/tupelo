@@ -10,7 +10,7 @@ import org.apache.commons.io.IOUtils;
 
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
-import edu.uw.apl.tupelo.model.RandomAccessRead;
+import edu.uw.apl.tupelo.model.SeekableInputStream;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.Store;
 
@@ -68,8 +68,8 @@ public class HttpManagedDisk extends ManagedDisk {
 	}
 
 	@Override
-	public RandomAccessRead getRandomAccessRead() throws IOException {
-		throw new IllegalStateException( getClass() + ".getRandomAccessRead!!");
+	public SeekableInputStream getSeekableInputStream() throws IOException {
+		throw new IllegalStateException( getClass() + ".getSeekableInputStream!!");
 	}
 
 	private final ManagedDiskDescriptor descriptor;
