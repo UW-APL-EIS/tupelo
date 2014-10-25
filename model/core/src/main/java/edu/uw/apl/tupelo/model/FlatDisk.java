@@ -76,7 +76,13 @@ public class FlatDisk extends ManagedDisk {
 		InputStream is = unmanagedData.getInputStream();
 
 		header.writeTo( os );
-		IOUtils.copyLarge( is, os );
+		// IOUtils uses 4k buffers, pah!
+		if( false ) {
+			byte[] ba = new byte[1024*1024*16];
+			IOUtils.copyLarge( is, os, ba );
+		} else {
+			IOUtils.copyLarge( is, os );
+		}
 		is.close();
 	}
 

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.IOException;
@@ -73,8 +74,16 @@ public class FilesystemStore implements Store {
 		pathMap = new HashMap<String,ManagedDisk>();
 		if( loadManagedDisks )
 			loadManagedDisks();
+		writable = true;
 	}
 
+	/**
+	 * To protect assets in the store, we can make dirs un-writable. Default
+	 * is writable, so in testing the user can wipe the store directory
+	 */
+	public void setWritable( boolean b ) {
+		writable = b;
+	}
 	
 	@Override
 	public synchronized UUID getUUID() {
@@ -137,7 +146,9 @@ public class FilesystemStore implements Store {
 		synchronized( tempFile ) {
 			log.debug( "Locked " + tempFile );
 			FileOutputStream fos = new FileOutputStream( tempFile );
-			md.writeTo( fos );
+			BufferedOutputStream bos = new BufferedOutputStream( fos, 1024*1024*16 );
+			md.writeTo( bos );
+			bos.close();
 			fos.close();
 			log.debug( "Unlocked " + tempFile );
 		}
@@ -151,6 +162,11 @@ public class FilesystemStore implements Store {
 			tempFile.renameTo( outFile );
 			log.info( "Moved to " + outFile );
 			md.setManagedData( outFile );
+
+			// Access controls in place to guard against file system screw ups..
+			outFile.setWritable( writable );
+			// Since only ever supposed to be a single file in the dir, protect the dir
+			outDir.setWritable( writable );
 			
 			// LOOK: link to parent ??
 			descriptorMap.put( mdd, md );
@@ -405,7 +421,8 @@ public class FilesystemStore implements Store {
 			mdd.getSession().toString() + ManagedDisk.FILESUFFIX;
 	}
 
-
+	private boolean writable;
+	
 	private final UUID uuid;
 	private final File root, tempDir;
 	private final Map<ManagedDiskDescriptor,ManagedDisk> descriptorMap;

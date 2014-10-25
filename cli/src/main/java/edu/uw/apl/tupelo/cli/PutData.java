@@ -90,7 +90,8 @@ public class PutData {
 		if( debug )
 			System.out.println( "Store type: " + s );
 		
-		System.out.println( "Store.usableSpace:" + s.getUsableSpace() );
+		System.out.println( "Using store: " + storeLocation );
+		System.out.println( "Store.usableSpace: " + s.getUsableSpace() );
 		Collection<ManagedDiskDescriptor> mdds1 = s.enumerate();
 		System.out.println( "Stored data: " + mdds1 );
 
@@ -99,7 +100,7 @@ public class PutData {
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
 															   session );
 		System.out.println( "Storing: " + mdd +
-							"(" + ud.size() + " bytes)" );
+							" (" + ud.size() + " bytes)" );
 
 		ManagedDisk md = null;
 		if( forceFlatDisk || ud.size() < 1024L * 1024 * 1024 ) {

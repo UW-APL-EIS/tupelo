@@ -154,9 +154,15 @@ public class HashData {
 		File f = mdfs.pathTo( mdd );
 		System.out.println( "Located Managed Data: " + f );
 		Image i = new Image( f );
-		VolumeSystem vs = new VolumeSystem( i );
-		//		System.err.println( i + " " + vs);
-		//System.err.println( vs.getOffset() + " " + vs.getType() + " " + vs.partitionCount() );
+		VolumeSystem vs = null;
+		try {
+			vs = new VolumeSystem( i );
+		} catch( IllegalArgumentException iae ) {
+			// MUST release i else leaves mfs non-unmountable
+			i.close();
+			System.err.println( "No volume system on " + f );
+			System.exit( 1 );
+		}
 		
 		//		Thread.sleep( 1000 * 10 );
 		List<Partition> ps = vs.getPartitions();

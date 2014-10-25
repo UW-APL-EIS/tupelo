@@ -12,6 +12,10 @@
   <name>Tupelo Disk Management - Parent</name>
   <url>http://eis.apl.uw.edu</url>
   
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
   <organization>
     <name>Applied Physics Laboratory, University of Washington</name>
     <url>http://www.apl.uw.edu</url>
