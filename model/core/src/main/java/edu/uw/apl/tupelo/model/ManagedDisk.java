@@ -40,6 +40,10 @@ abstract public class ManagedDisk {
 	public void setManagedData( File f ) {
 		managedData = f;
 	}
+
+	public void setCompression( Compressions c ) {
+		header.compressAlgorithm = c;
+	}
 	
 	abstract public void setParent( ManagedDisk md );
 
@@ -128,6 +132,7 @@ abstract public class ManagedDisk {
 			this.capacity = capacity;
 			this.grainSize = grainSize;
 			this.numGTEsPerGT = NUMGTESPERGT;
+			this.compressAlgorithm = Compressions.NONE;
 		}
 
 		Header( InputStream is ) throws IOException {
@@ -177,7 +182,8 @@ abstract public class ManagedDisk {
 			gdOffset = di.readLong();
 			rgdOffset = di.readLong();
 			dataOffset = di.readLong();
-			compressAlgorithm = di.readInt();
+			int compressAlgorithmInt = di.readInt();
+			compressAlgorithm = Compressions.values()[compressAlgorithmInt];
 		}
 
 		// LOOK: may not need this??
@@ -214,7 +220,7 @@ abstract public class ManagedDisk {
 			dop.writeLong( gdOffset );
 			dop.writeLong( rgdOffset );
 			dop.writeLong( dataOffset );
-			dop.writeInt( compressAlgorithm );
+			dop.writeInt( compressAlgorithm.ordinal() );
 
 			byte[] pad = new byte[SIZEOF - FIELDSIZETOTAL];
 			dop.write( pad );
@@ -235,7 +241,7 @@ abstract public class ManagedDisk {
 		int numGTEsPerGT;
 		long gdOffset, rgdOffset;
 		long dataOffset;
-		int compressAlgorithm;
+		Compressions compressAlgorithm;
 		
 		// almost CODEINE, wot no N
 		static public final int MAGIC = 0xC0DE10E;
@@ -266,6 +272,8 @@ abstract public class ManagedDisk {
 	
 	public enum DiskTypes { ERROR, FLAT, STREAMOPTIMIZED };
 	
+	public enum Compressions { NONE, DEFLATE, GZIP, SNAPPY };
+
 	// Tupelo Managed Disk == tmd
 	static public final String FILESUFFIX = ".tmd";
 	

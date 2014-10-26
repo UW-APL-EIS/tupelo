@@ -46,7 +46,6 @@ public class FlatDisk extends ManagedDisk {
 		header = new Header( diskID, session, DiskTypes.FLAT, parent,
 							 capacity, GRAINSIZE_DEFAULT );
 		header.dataOffset = Header.SIZEOF;
-
 	}
 
 	// Called from ManagedDisk.readFrom()

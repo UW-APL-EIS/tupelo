@@ -18,9 +18,13 @@ import java.util.UUID;
 import java.util.zip.Deflater;;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.io.FileUtils;
+
+
+import org.xerial.snappy.Snappy;
 
 /**
  * Named after VMWare's own 'stream optimized sparse extent', a way of
@@ -55,6 +59,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
 		// dataOffset essentially meaningless for this type of data layout...
 		header.dataOffset = 0;
+		header.compressAlgorithm = Compressions.DEFLATE;
 	}
 	
 
@@ -191,6 +196,9 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		int gtIndex = 0;
 		long lba = 0;
 
+		// In pathological cases, the compression expands input!
+		byte[] compressedGrainBuffer = new byte[(int)(2*grainSizeBytes)];
+
 		/*
 		  So that all data structures line up on a sector boundary in the
 		  managed file, we pad where necessary (so use a subset of this)
@@ -198,7 +206,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		byte[] padding = new byte[Constants.SECTORLENGTH];
 		/*
 		  Remember: any offset in a GD or GT is an offset (in sectors)
-		  into the _managed_ data file.  The 'lba' values assiged to
+		  into the _managed_ data file.  The 'lba' values assigned to
 		  compressed grain marker represent offsets (in sectors) in
 		  the _unmanaged_ (i.e. real) data
 		*/
@@ -206,13 +214,10 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		int wholeGrainTables = (int)(grainCount / header.numGTEsPerGT );
 		log.info( "Whole Grain Tables " + wholeGrainTables  );
 		if( wholeGrainTables > 0 ) {
-			//			long grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
-			//long grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
-			//log.debug( "Grain Table Coverage Bytes " + grainTableCoverageBytes  );
 			byte[] ba = new byte[(int)grainTableCoverageBytes];
 			BufferedInputStream bis = new BufferedInputStream( is, ba.length );
 			for( int gt = 0; gt < wholeGrainTables; gt++ ) {
-				log.info( "GDIndex " + gdIndex );
+				log.debug( "GDIndex " + gdIndex );
 				int nin = bis.read( ba );
 				if( nin != ba.length )
 					throw new IllegalStateException( "Partial read!" );
@@ -257,27 +262,14 @@ public class StreamOptimizedDisk extends ManagedDisk {
 						continue;
 					}
 
-					// This grain is not zeros, compress DEFLATER
-					// In pathological cases, the compression expands input!
-					byte[] output = new byte[(int)(2*grainSizeBytes)];
-					Deflater def = new Deflater();// Deflater.BEST_COMPRESSION );
-					def.setInput( ba, offset, (int)grainSizeBytes );
-					def.finish();
-					int compressedLength = def.deflate( output );
-					def.end();
+					// This grain is not zeros, compress
+					int compressedLength =
+						compressGrain( ba, offset, (int)grainSizeBytes,
+									   compressedGrainBuffer );
 					log.debug( "Deflating " + gt + " "+ g +
 								  " = " + compressedLength );
 
 
-					/*
-					// This grain is not zeros, compress GZIP
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					GZIPOutputStream gzos = new GZIPOutputStream( baos );
-					gzos.write( ba, offset, (int)grainSizeBytes );
-					gzos.finish();
-					byte[] output = baos.toByteArray();
-					int compressedLength = output.length;
-					*/
 					/*
 					  Record in the grain table where in the managed
 					  data this compressed grain sits
@@ -285,7 +277,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					grainTable[gtIndex] = dos.size() / Constants.SECTORLENGTH;
 					GrainMarker gm = new GrainMarker( lba, compressedLength );
 					gm.writeTo( dos );
-					dos.write( output, 0, compressedLength );
+					dos.write( compressedGrainBuffer, 0, compressedLength );
 					long written = GrainMarker.SIZEOF + compressedLength;
 					// to do: pad to next sector of os
 					int padLen = (int)
@@ -350,7 +342,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 
 		// This is the grain directory write...
 		for( int gde = 0; gde < grainDirectory.length; gde++ ) {
-			log.info( "GD: " + gde + " "+ grainDirectory[gde] );
+			log.debug( "GD: " + gde + " "+ grainDirectory[gde] );
 			dos.writeInt( (int)grainDirectory[gde] );
 		}
 		int written = 4 * grainDirectory.length;
@@ -383,8 +375,82 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		dos.close();
 		is.close();
 	}
-	
 
+	/**
+	 * @return The compressed data count, in bytes
+	 */
+	private int compressGrain( byte[] ba, int offset, int len, byte[] output )
+		throws IOException {
+		int result = 0;
+		switch( header.compressAlgorithm ) {
+		case DEFLATE:
+			Deflater def = new Deflater();// Deflater.BEST_COMPRESSION );
+			def.setInput( ba, offset, len );
+			def.finish();
+			result = def.deflate( output );
+			def.end();
+			break;
+		case GZIP:
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			GZIPOutputStream gzos = new GZIPOutputStream( baos );
+			gzos.write( ba, offset, len );
+			gzos.finish();
+			//			gzos.close();
+			byte[] ba2 = baos.toByteArray();
+			System.arraycopy( ba2, 0, output, 0, ba2.length );
+			result = ba2.length;
+			/*
+			  System.out.println( result );
+			if( true )
+					System.exit(0);
+			*/
+			break;
+		case SNAPPY:
+			result = Snappy.compress( ba, offset, len, output, 0 );
+			break;
+		}
+		return result;
+	}
+	
+	/**
+	 * @return The uncompressed data count, in bytes
+	 */
+	private int uncompressGrain( byte[] ba, int offset, int len, byte[] output )
+		throws DataFormatException, IOException {
+		int result = 0;
+		switch( header.compressAlgorithm ) {
+		case DEFLATE:
+			Inflater inf = new Inflater();
+			inf.setInput( ba, offset, len );
+			result = inf.inflate( output );
+			inf.end();
+			break;
+		case GZIP:
+			ByteArrayInputStream bais = new ByteArrayInputStream( ba );
+			GZIPInputStream gzis = new GZIPInputStream( bais );
+			int total = 0;
+			while( total < output.length ) {
+				int nin = gzis.read( output, total, output.length - total );
+				//				System.out.println( nin + " " + total );
+				if( nin == -1 )
+					break;
+				total += nin;
+			}
+			gzis.close();
+			result = total;
+			break;
+		case SNAPPY:
+			if( true ) {
+				if( !Snappy.isValidCompressedBuffer( ba, offset, len ) )
+				throw new DataFormatException( "!isValidCompressedBuffer" );
+			}
+			result = Snappy.uncompress( ba, offset, len, output, 0 );
+			// to do
+			break;
+		}
+		return result;
+	}
+	
 	public void writeTo( File f ) throws IOException {
 		FileOutputStream fos = new FileOutputStream( f );
 		long defaultGrainTableCoverageBytes = GRAINSIZE_DEFAULT *
@@ -498,19 +564,16 @@ public class StreamOptimizedDisk extends ManagedDisk {
 								( "Partial read: "+ nin + " " + gm.size);
 						log.debug( "Inflating " + gdIndex + " "+ gtIndex +
 								  " = " + nin + " " + gm.lba );
-						Inflater inf = new Inflater();
-						inf.setInput( compressedGrainBuffer,
-									  0, nin );
-						
 						try {
-							int actualLength = inf.inflate( grainBuffer );
-							inf.end();
+							int actualLength = uncompressGrain
+								( compressedGrainBuffer, 0, nin, grainBuffer );
 							if( actualLength != grainSizeBytes )
 								throw new IllegalStateException
 									( "Bad inflate len: " + actualLength );
 							System.arraycopy( grainBuffer, (int)gOffset,
 											  ba, off+total, fromGrain );
 						} catch( DataFormatException dfe ) {
+							// now what ???
 							log.warn( dfe );
 						}
 					}
@@ -660,6 +723,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	private byte[] zeroGrainTable;
 	private long[][] grainDirectory;
 
+	
 	static private final byte[] ZEROGRAIN_DEFAULT =
 		new byte[(int)(GRAINSIZE_DEFAULT * Constants.SECTORLENGTH)];
 
