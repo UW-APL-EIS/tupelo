@@ -1,0 +1,13 @@
+#!/bin/bash
+
+ARTIFACT=tupelo-amqp-client
+VERSION=0.0.1
+
+JAR=target/$ARTIFACT-$VERSION.jar
+PACKAGE=edu.uw.apl.tupelo.amqp.client
+CLAZZ=FileHashClient
+
+exec java -classpath $JAR $PACKAGE.$CLAZZ "$@"
+
+# eof
+
