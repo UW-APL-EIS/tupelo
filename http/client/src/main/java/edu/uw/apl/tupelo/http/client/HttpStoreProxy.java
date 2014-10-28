@@ -222,7 +222,7 @@ public class HttpStoreProxy implements Store {
 		InputStream is = he.getContent();
 		ObjectInputStream ois = new ObjectInputStream( is );
 		try {
-			byte[]result = (byte[])ois.readObject();
+			byte[] result = (byte[])ois.readObject();
 			return result;
 		} catch( ClassNotFoundException cnfe ) {
 			throw new IOException( cnfe );
@@ -234,7 +234,7 @@ public class HttpStoreProxy implements Store {
 	@Override
 	public void setAttribute( ManagedDiskDescriptor mdd,
 							  String key, byte[] value ) throws IOException {
-		HttpPost p = new HttpPost( server + "disks/attr/get/" + mdd.getDiskID() +
+		HttpPost p = new HttpPost( server + "disks/attr/set/" + mdd.getDiskID() +
 								   "/" + mdd.getSession() + "/" + key  );
 		log.debug( p.getRequestLine() );
 
