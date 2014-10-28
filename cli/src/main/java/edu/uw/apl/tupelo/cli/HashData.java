@@ -158,7 +158,7 @@ public class HashData {
 		try {
 			vs = new VolumeSystem( i );
 		} catch( IllegalArgumentException iae ) {
-			// MUST release i else leaves mfs non-unmountable
+			// MUST release i else leaves mdfs non-unmountable
 			i.close();
 			System.err.println( "No volume system on " + f );
 			System.exit( 1 );
@@ -166,18 +166,22 @@ public class HashData {
 		
 		//		Thread.sleep( 1000 * 10 );
 		List<Partition> ps = vs.getPartitions();
-		for( Partition p : ps ) {
-			if( !p.isAllocated() )
-				continue;
-			System.out.println( "At sector " + p.start() +
-								", located " + p.description() );
-			Map<String,byte[]> fileHashes = new HashMap<String,byte[]>();
-			walk( i, p.start(), fileHashes );
-			System.out.println( " FileHashes : " + fileHashes.size() );
-			record( fileHashes, p.start(), p.length() );
+		try {
+			for( Partition p : ps ) {
+				if( !p.isAllocated() )
+					continue;
+				System.out.println( "At sector " + p.start() +
+									", located " + p.description() );
+				Map<String,byte[]> fileHashes = new HashMap<String,byte[]>();
+				walk( i, p.start(), fileHashes );
+				System.out.println( " FileHashes : " + fileHashes.size() );
+				record( fileHashes, p.start(), p.length() );
+			}
+		} finally {
+			// MUST release i else leaves mdfs non-unmountable
+			vs.close();
+			i.close();
 		}
-		vs.close();
-		i.close();
 	}
 	
 	private void walk( Image i, long start,

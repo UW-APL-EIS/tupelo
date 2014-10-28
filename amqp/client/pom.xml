@@ -10,14 +10,17 @@
   <groupId>edu.uw.apl</groupId>
   <artifactId>tupelo-amqp-client</artifactId>
   <version>0.0.1</version>
-  <name>Tupelo Disk Management - AMQP Client Programs</name>
-  <url>http://maven.apache.org</url>
+  <name>Tupelo Disk Management - AMQP Requesting Programs</name>
 
   <dependencies>
     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>tupelo-amqp-objects</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.rabbitmq</groupId>
       <artifactId>amqp-client</artifactId>
-      <version>3.2.2</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>

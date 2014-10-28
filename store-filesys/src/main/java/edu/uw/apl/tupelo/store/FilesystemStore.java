@@ -195,7 +195,7 @@ public class FilesystemStore implements Store {
 
 		File f = managedDataFile( root, mdd );
 		if( !f.isFile() )
-			return Collections.EMPTY_LIST;
+			return Collections.emptyList();
 
 		List<byte[]> result = new ArrayList<byte[]>();
 		ManagedDisk md = ManagedDisk.readFrom( f );
@@ -249,7 +249,7 @@ public class FilesystemStore implements Store {
 		throws IOException {
 		File dir = attrDir( root, mdd );
 		if( !dir.isDirectory() )
-			return Collections.EMPTY_LIST;
+			return Collections.emptyList();
 		List<String> result = new ArrayList<String>();
 		File[] fs = dir.listFiles();
 		for( File f : fs ) {

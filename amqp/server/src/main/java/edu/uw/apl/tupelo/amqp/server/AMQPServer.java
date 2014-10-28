@@ -14,8 +14,9 @@ import java.util.Map;
 import java.util.HashMap;
 
 import org.apache.commons.cli.*;
-import org.apache.log4j.Logger;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.log4j.Logger;
+import com.google.gson.*;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -24,9 +25,14 @@ import com.rabbitmq.client.QueueingConsumer;
 import com.rabbitmq.client.AMQP.BasicProperties;
 
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 import edu.uw.apl.tupelo.http.client.HttpStoreProxy;
+
+import edu.uw.apl.tupelo.amqp.objects.FileHashQuery;
+import edu.uw.apl.tupelo.amqp.objects.FileHashResponse;
+import edu.uw.apl.tupelo.amqp.objects.JSONSerializers;
 
 public class AMQPServer {
 
@@ -46,6 +52,13 @@ public class AMQPServer {
 	AMQPServer() {
 		storeLocation = STORELOCATIONDEFAULT;
 		brokerUrl = BROKERURLDEFAULT;
+		GsonBuilder gb = new GsonBuilder();
+		gb.disableHtmlEscaping();
+		gb.registerTypeAdapter(Session.class,
+							   new JSONSerializers.SessionSerializer() );
+		gb.registerTypeAdapter(byte[].class,
+							   new JSONSerializers.MessageDigestSerializer() );
+		gson = gb.create();
 		log = Logger.getLogger( getClass() );
 	}
 
@@ -105,21 +118,30 @@ public class AMQPServer {
         while (true) {
             QueueingConsumer.Delivery delivery = consumer.nextDelivery();
 
-			BasicProperties reqProps = delivery.getProperties();
-			String reqContentType = reqProps.getContentType();
-
-			BasicProperties resProps = new BasicProperties.Builder()
-				.build();
-			String message = new String(delivery.getBody());
-
-            System.out.println(" [x] Received '" + message + "'");
-
+			// LOOK: algorithm match
+			
+			String message = new String( delivery.getBody() );
+			// LOOK: check mime type aka contentType
+			String json = message;
+			
+            System.out.println(" [x] Received '" + json + "'");
+			FileHashQuery fhq = (FileHashQuery)gson.fromJson
+				( json, FileHashQuery.class );
+			FileHashResponse fhr = new FileHashResponse( fhq.algorithm );
+			/*
+			  LOOK: load all the Store's md5 hash data on every query ??
+			  Better to load it once (but then what if stored updated?)
+			*/
 			for( ManagedDiskDescriptor mdd : mdds ) {
 				List<String> ss = loadFileHashes( mdd );
-				System.out.println( ss.size() );
-				Map<BigInteger,String> haystack = new HashMap<BigInteger,String>();
+				/*
+				  The file content of MANY paths can hash to the
+				  SAME value, typically when the file is empty
+				*/
+				Map<BigInteger,List<String>> haystack = new
+					HashMap<BigInteger,List<String>>();
 				for( String s : ss ) {
-					String[] toks = s.split( "\\s+" );
+					String[] toks = s.split( "\\s+", 2 );
 					if( toks.length < 2 ) {
 						log.warn( s );
 						continue;
@@ -128,17 +150,45 @@ public class AMQPServer {
 					String path = toks[1];
 					byte[] md5 = Hex.decodeHex( md5Hex.toCharArray() );
 					BigInteger bi = new BigInteger( 1, md5 );
-					haystack.put( bi, path );
+					List<String> paths = haystack.get( bi );
+					if( paths == null ) {
+						paths = new ArrayList<String>();
+						haystack.put( bi, paths );
+					}
+					paths.add( path );
 				}
+				for( byte[] hash : fhq.hashes ) {
+					BigInteger needle = new BigInteger( 1, hash );
+					List<String> paths = haystack.get( needle );
+					if( paths == null )
+						continue;
+					for( String path : paths )
+						fhr.add( hash, mdd, path );
+				}					
 			}
 			
-			String msg = "world";
+			BasicProperties reqProps = delivery.getProperties();
+			BasicProperties resProps = new BasicProperties.Builder()
+				.contentType( "application/json" )
+				.build();
+			json = gson.toJson( fhr );
 			channel.basicPublish( "", reqProps.getReplyTo(),
-								  resProps, msg.getBytes() );
-            System.out.println(" [x] Sent '" + msg + "'");
+								  resProps, json.getBytes() );
+            System.out.println(" [x] Sent '" + json + "'");
 			
         }
 	}
+			
+	/*
+	  BasicProperties reqProps = delivery.getProperties();
+			String reqContentType = reqProps.getContentType();
+
+			BasicProperties resProps = new BasicProperties.Builder()
+				.build();
+			String message = new String(delivery.getBody());
+
+            System.out.println(" [x] Received '" + message + "'");
+	*/
 	
 	static public Store buildStore( String storeLocation ) {
 		Store s = null;
@@ -188,9 +238,12 @@ public class AMQPServer {
 
 	private String storeLocation;
 	private Store store;
+	private String brokerUrl;
+	private Gson gson;
+	
 	private Logger log;
 	
-	private String brokerUrl;
+
 	static boolean debug, verbose;
 	
 	static final String STORELOCATIONDEFAULT = "./test-store";
