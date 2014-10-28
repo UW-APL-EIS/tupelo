@@ -1,9 +1,14 @@
 package edu.uw.apl.tupelo.http.client;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.UUID;
 
 import edu.uw.apl.tupelo.store.Store;
+import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.DiskImage;
+import edu.uw.apl.tupelo.model.FlatDisk;
 import edu.uw.apl.tupelo.model.Session;
 
 public class HttpStoreProxyTest extends junit.framework.TestCase {
@@ -40,6 +45,23 @@ public class HttpStoreProxyTest extends junit.framework.TestCase {
 		// wot, no assertNotEquals
 		if( s1.equals( s2 ) )
 			fail();
+	}
+
+	public void testPutData() throws IOException {
+		File f = new File( "32m" );
+		if( !f.exists() )
+			return;
+		DiskImage di = new DiskImage( f );
+
+		Session s = store.newSession();
+		FlatDisk fd = new FlatDisk( di, s );
+		store.put( fd );
+	}
+
+	public void testEnumerate() throws IOException {
+		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
+		assertNotNull( mdds );
+		System.out.println( "Enumerate: " + mdds );
 	}
 }
 

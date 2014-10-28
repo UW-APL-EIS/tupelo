@@ -257,7 +257,7 @@ public class HttpStoreProxy implements Store {
 
 	@Override
 	public Collection<ManagedDiskDescriptor> enumerate() throws IOException {
-		HttpGet g = new HttpGet( server + "enumerate" );
+		HttpGet g = new HttpGet( server + "disks/data/enumerate" );
 		g.addHeader( "Accept", "application/x-java-serialized-object" );
 	
 		log.debug( g.getRequestLine() );
