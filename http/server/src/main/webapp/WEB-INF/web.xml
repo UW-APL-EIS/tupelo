@@ -40,50 +40,51 @@
     <url-pattern>/version</url-pattern>
   </servlet-mapping>	
 -->
-
-
   <servlet>
-    <servlet-name>StoreServlet</servlet-name>
+    <servlet-name>MiscServlet</servlet-name>
     <description></description>
     <servlet-class>
-      edu.uw.apl.tupelo.http.server.HttpStoreServlet
+      edu.uw.apl.tupelo.http.server.MiscServlet
     </servlet-class>
   </servlet>
 
   <servlet-mapping>
-    <servlet-name>StoreServlet</servlet-name>
-    <url-pattern>/storage/*</url-pattern>
-  </servlet-mapping>	
-
-  <servlet-mapping>
-    <servlet-name>StoreServlet</servlet-name>
+    <servlet-name>MiscServlet</servlet-name>
     <url-pattern>/uuid</url-pattern>
   </servlet-mapping>	
-
   <servlet-mapping>
-    <servlet-name>StoreServlet</servlet-name>
+    <servlet-name>MiscServlet</servlet-name>
     <url-pattern>/usablespace</url-pattern>
   </servlet-mapping>	
-
   <servlet-mapping>
-    <servlet-name>StoreServlet</servlet-name>
+    <servlet-name>MiscServlet</servlet-name>
     <url-pattern>/newsession</url-pattern>
   </servlet-mapping>	
 
+  <servlet>
+    <servlet-name>AttributesServlet</servlet-name>
+    <description></description>
+    <servlet-class>
+      edu.uw.apl.tupelo.http.server.AttributesServlet
+    </servlet-class>
+  </servlet>
+
   <servlet-mapping>
-    <servlet-name>StoreServlet</servlet-name>
-    <url-pattern>/enumerate</url-pattern>
+    <servlet-name>AttributesServlet</servlet-name>
+    <url-pattern>/disks/attr/*</url-pattern>
   </servlet-mapping>	
 
+  <servlet>
+    <servlet-name>DataServlet</servlet-name>
+    <description></description>
+    <servlet-class>
+      edu.uw.apl.tupelo.http.server.DataServlet
+    </servlet-class>
+  </servlet>
 
   <servlet-mapping>
-    <servlet-name>StoreServlet</servlet-name>
-    <url-pattern>/data/*</url-pattern>
-  </servlet-mapping>	
-
-  <servlet-mapping>
-    <servlet-name>StoreServlet</servlet-name>
-    <url-pattern>/digest/*</url-pattern>
+    <servlet-name>DataServlet</servlet-name>
+    <url-pattern>/disks/data/*</url-pattern>
   </servlet-mapping>	
 
   <welcome-file-list>

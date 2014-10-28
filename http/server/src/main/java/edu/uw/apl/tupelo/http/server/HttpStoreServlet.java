@@ -91,8 +91,15 @@ public class HttpStoreServlet extends HttpServlet {
 
 		if( sp.startsWith( "/digest/" ) ) {
 			String pi = req.getPathInfo();
-			log.debug( "Post.PathInfo: " + pi );
+			log.debug( "Get.PathInfo: " + pi );
 			digest( req, res );
+			return;
+		}
+
+		if( sp.startsWith( "/getAttribute/" ) ) {
+			String pi = req.getPathInfo();
+			log.debug( "Get.PathInfo: " + pi );
+			getAttribute( req, res );
 			return;
 		}
 
@@ -313,7 +320,7 @@ public class HttpStoreServlet extends HttpServlet {
 		String pi = req.getPathInfo();
 		String details = pi;
 
-		log.debug( "Put.details: '" + details  + "'" );
+		log.debug( "digest.details: '" + details  + "'" );
 
 		ManagedDiskDescriptor mdd = null;
 		try {
@@ -352,6 +359,58 @@ public class HttpStoreServlet extends HttpServlet {
 			res.setContentType( "text/plain" );
 			PrintWriter pw = res.getWriter();
 			pw.println( "TODO: Store.digest text/plain" );
+		}
+
+	}
+
+	private void getAttribute( HttpServletRequest req, HttpServletResponse res )
+		throws IOException, ServletException {
+
+		// to get the details, need the pathInfo again...
+		String pi = req.getPathInfo();
+		String details = pi;
+
+		log.debug( "getAttribute.details: '" + details  + "'" );
+
+		ManagedDiskDescriptor mdd = null;
+		try {
+			mdd = fromPathInfo( details );
+		} catch( ParseException pe ) {
+			log.debug( "put send error" );
+			res.sendError( HttpServletResponse.SC_NOT_FOUND,
+						   "Malformed managed disk descriptor: " + details );
+			return;
+		}
+
+		// LOOK: check the content type...
+		String hdr = req.getHeader( "Content-Encoding" );
+
+		String key = "key";
+			
+		byte[] value = store.getAttribute( mdd, key );
+		
+		
+		if( false ) {
+		} else if( Utils.acceptsJavaObjects( req ) ) {
+			res.setContentType( "application/x-java-serialized-object" );
+			OutputStream os = res.getOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream( os );
+
+			/*
+			  Having serialization issues with the object returned
+			  from the store, what seems to be a HashMap$KeySet.  So
+			  expand to a regular List on output.
+			*/
+			oos.writeObject( value );
+		} else if( Utils.acceptsJson( req ) ) {
+			res.setContentType( "application/json" );
+			String json = gson.toJson( value );
+			PrintWriter pw = res.getWriter();
+			pw.print( json );
+		} else {
+			res.setContentType( "text/plain" );
+			PrintWriter pw = res.getWriter();
+			pw.println( "TODO: Store.getAttribute text/plain" );
 		}
 
 	}

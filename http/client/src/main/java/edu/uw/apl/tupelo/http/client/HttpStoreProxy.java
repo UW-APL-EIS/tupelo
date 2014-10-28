@@ -1,5 +1,6 @@
 package edu.uw.apl.tupelo.http.client;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.File;
@@ -100,13 +101,14 @@ public class HttpStoreProxy implements Store {
 
 	@Override
 	public Session newSession() throws IOException {
-		HttpGet g = new HttpGet( server + "newsession" );
-		g.addHeader( "Accept", "application/x-java-serialized-object" );
+		// LOOK: is a GET good enough here?  Want non-cacheable...
+		HttpPost p = new HttpPost( server + "newsession" );
+		p.addHeader( "Accept", "application/x-java-serialized-object" );
 	
-		log.debug( g.getRequestLine() );
+		log.debug( p.getRequestLine() );
 		
 		HttpClient req = new DefaultHttpClient( );
-		HttpResponse res = req.execute( g );
+		HttpResponse res = req.execute( p );
 		HttpEntity he = res.getEntity();
 		InputStream is = he.getContent();
 		ObjectInputStream ois = new ObjectInputStream( is );
@@ -131,7 +133,7 @@ public class HttpStoreProxy implements Store {
 	@Override
 	public void put( final ManagedDisk md ) throws IOException {
 		ManagedDiskDescriptor mdd = md.getDescriptor();
-		HttpPost p = new HttpPost( server + "data/put/" + mdd.getDiskID() +
+		HttpPost p = new HttpPost( server + "disks/data/put/" + mdd.getDiskID() +
 								   "/" + mdd.getSession() );
 		log.debug( p.getRequestLine() );
 
@@ -160,7 +162,7 @@ public class HttpStoreProxy implements Store {
 	@Override
 	public List<byte[]> digest( ManagedDiskDescriptor mdd )
 		throws IOException {
-		HttpGet g = new HttpGet( server + "digest/" + mdd.getDiskID() +
+		HttpGet g = new HttpGet( server + "disks/data/digest/" + mdd.getDiskID() +
 								 "/" + mdd.getSession() );
 		g.addHeader( "Accept", "application/x-java-serialized-object" );
 	
@@ -182,19 +184,66 @@ public class HttpStoreProxy implements Store {
 	}
 
 		
+	@Override
 	public Collection<String> attributeSet( ManagedDiskDescriptor mdd )
 		throws IOException {
-		return null;
+		HttpGet g = new HttpGet( server + "disks/attr/list/" + mdd.getDiskID() +
+								 "/" + mdd.getSession() );
+		g.addHeader( "Accept", "application/x-java-serialized-object" );
+	
+		log.debug( g.getRequestLine() );
+		
+		HttpClient req = new DefaultHttpClient( );
+		HttpResponse res = req.execute( g );
+		HttpEntity he = res.getEntity();
+		InputStream is = he.getContent();
+		ObjectInputStream ois = new ObjectInputStream( is );
+		try {
+			Collection<String>result = (Collection<String>)ois.readObject();
+			return result;
+		} catch( ClassNotFoundException cnfe ) {
+			throw new IOException( cnfe );
+		} finally {
+			ois.close();
+		}
 	}
 
-	public void setAttribute( ManagedDiskDescriptor mdd,
-							  String key, byte[] value ) throws IOException {
-	}
-
-
+	@Override
 	public byte[] getAttribute( ManagedDiskDescriptor mdd, String key )
 		throws IOException {
-		return null;
+		HttpGet g = new HttpGet( server + "disks/attr/get/" + mdd.getDiskID() +
+								 "/" + mdd.getSession() + "/" + key  );
+		g.addHeader( "Accept", "application/x-java-serialized-object" );
+		log.debug( g.getRequestLine() );
+		
+		HttpClient req = new DefaultHttpClient( );
+		HttpResponse res = req.execute( g );
+		HttpEntity he = res.getEntity();
+		InputStream is = he.getContent();
+		ObjectInputStream ois = new ObjectInputStream( is );
+		try {
+			byte[]result = (byte[])ois.readObject();
+			return result;
+		} catch( ClassNotFoundException cnfe ) {
+			throw new IOException( cnfe );
+		} finally {
+			ois.close();
+		}
+	}
+
+	@Override
+	public void setAttribute( ManagedDiskDescriptor mdd,
+							  String key, byte[] value ) throws IOException {
+		HttpPost p = new HttpPost( server + "disks/attr/get/" + mdd.getDiskID() +
+								   "/" + mdd.getSession() + "/" + key  );
+		log.debug( p.getRequestLine() );
+
+		ByteArrayInputStream bais = new ByteArrayInputStream( value );
+		InputStreamEntity ise = new InputStreamEntity
+			( bais, value.length, ContentType.APPLICATION_OCTET_STREAM );
+		p.setEntity( ise );
+		HttpClient req = new DefaultHttpClient( );
+		HttpResponse res = req.execute( p );
 	}
 
 	/*
@@ -206,6 +255,7 @@ public class HttpStoreProxy implements Store {
 		throw new UnsupportedOperationException( "HttpStoreProxy.locate" );
 	}
 
+	@Override
 	public Collection<ManagedDiskDescriptor> enumerate() throws IOException {
 		HttpGet g = new HttpGet( server + "enumerate" );
 		g.addHeader( "Accept", "application/x-java-serialized-object" );
