@@ -88,7 +88,7 @@ public class PutData {
 
 		Store s = Utils.buildStore( storeLocation );
 		if( debug )
-			System.out.println( "Store type: " + s );
+			System.out.println( "Store: " + s );
 		
 		System.out.println( "Using store: " + storeLocation );
 		System.out.println( "Store.usableSpace: " + s.getUsableSpace() );

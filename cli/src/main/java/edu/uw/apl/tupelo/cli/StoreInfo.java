@@ -1,5 +1,6 @@
 package edu.uw.apl.tupelo.cli;
 
+import java.net.ConnectException;
 import java.util.Collection;
 
 import org.apache.commons.cli.*;
@@ -70,11 +71,19 @@ public class StoreInfo {
 			System.out.println( "Store: " + store );
 
 		System.out.println( "Using store: " + storeLocation );
-		Collection<ManagedDiskDescriptor> stored = store.enumerate();
+
+		Collection<ManagedDiskDescriptor> stored = null;
+		try {
+			stored = store.enumerate();
+		} catch( ConnectException ce ) {
+			System.err.println( "Network Error. Is the remote Tupelo store up?" );
+			System.exit(0);
+		}
+		
 		System.out.println( "ManagedDisks: " + stored );
 
 		for( ManagedDiskDescriptor mdd : stored ) {
-			Collection<String> attrNames = store.attributeSet( mdd );
+			Collection<String> attrNames = store.listAttributes( mdd );
 			System.out.println( "Attributes for " + mdd + ": " + attrNames );
 		}			
 	}
