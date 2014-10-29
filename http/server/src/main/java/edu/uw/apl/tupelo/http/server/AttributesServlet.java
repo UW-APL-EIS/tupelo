@@ -89,7 +89,7 @@ public class AttributesServlet extends HttpServlet {
 		} else if( pi.startsWith( "/get/" ) ) {
 			String details = pi.substring( "/get/".length() );
 			getAttribute( req, res, details );
-		} else if( pi.equals( "/list/" ) ) {
+		} else if( pi.startsWith( "/list/" ) ) {
 			String details = pi.substring( "/list/".length() );
 			listAttributes( req, res, details );
 		} else {
@@ -221,7 +221,7 @@ public class AttributesServlet extends HttpServlet {
 		}
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( diskID, s );
 
-		Collection<String> ss = store.attributeSet( mdd );
+		Collection<String> ss = store.listAttributes( mdd );
 
 		if( false ) {
 		} else if( Utils.acceptsJavaObjects( req ) ) {

@@ -67,7 +67,7 @@ public class StoreInfo {
 
 		Store store = Utils.buildStore( storeLocation );
 		if( debug )
-			System.out.println( "Store type: " + store );
+			System.out.println( "Store: " + store );
 
 		System.out.println( "Using store: " + storeLocation );
 		Collection<ManagedDiskDescriptor> stored = store.enumerate();

@@ -32,6 +32,7 @@ public class HttpStoreProxyTest extends junit.framework.TestCase {
 	
 	protected void setUp() {
 		store = new HttpStoreProxy( "http://localhost:8888/tupelo" );
+		System.out.println( store );
 	}
 	
 	public void testNull() {
@@ -93,6 +94,18 @@ public class HttpStoreProxyTest extends junit.framework.TestCase {
 		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
 		assertNotNull( mdds );
 		System.out.println( "Enumerate: " + mdds );
+	}
+
+	public void testAttributeList() throws IOException {
+		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
+		assertNotNull( mdds );
+		if( mdds.isEmpty() )
+			return;
+		List<ManagedDiskDescriptor> asList = new ArrayList<ManagedDiskDescriptor>
+			( mdds );
+		ManagedDiskDescriptor mdd = asList.get(0);
+		Collection<String> ss = store.listAttributes( mdd );
+		System.out.println( ss );
 	}
 
 	public void testRoundTripAttribute() throws IOException {

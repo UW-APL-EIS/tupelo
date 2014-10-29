@@ -245,7 +245,7 @@ public class FilesystemStore implements Store {
 	}
 
 	@Override
-	public Collection<String> attributeSet( ManagedDiskDescriptor mdd )
+	public Collection<String> listAttributes( ManagedDiskDescriptor mdd )
 		throws IOException {
 		File dir = attrDir( root, mdd );
 		if( !dir.isDirectory() )

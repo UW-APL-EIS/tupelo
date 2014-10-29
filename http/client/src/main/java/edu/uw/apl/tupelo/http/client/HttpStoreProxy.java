@@ -60,6 +60,12 @@ public class HttpStoreProxy implements Store {
 	}
 
 	@Override
+	public String toString() {
+		// Something useful.  Do we need the class name ??
+		return getClass().getName() + ":" + server;
+	}
+	
+	@Override
 	public UUID getUUID() throws IOException {
 		HttpGet g = new HttpGet( server + "uuid" );
 		g.addHeader( "Accept", "application/x-java-serialized-object" );
@@ -185,7 +191,7 @@ public class HttpStoreProxy implements Store {
 
 		
 	@Override
-	public Collection<String> attributeSet( ManagedDiskDescriptor mdd )
+	public Collection<String> listAttributes( ManagedDiskDescriptor mdd )
 		throws IOException {
 		HttpGet g = new HttpGet( server + "disks/attr/list/" + mdd.getDiskID() +
 								 "/" + mdd.getSession() );

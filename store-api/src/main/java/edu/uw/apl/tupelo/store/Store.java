@@ -22,7 +22,7 @@ public interface Store {
 	public List<byte[]> digest( ManagedDiskDescriptor mdd )
 		throws IOException;
 	
-	public Collection<String> attributeSet( ManagedDiskDescriptor mdd )
+	public Collection<String> listAttributes( ManagedDiskDescriptor mdd )
 		throws IOException;
 
 	public void setAttribute( ManagedDiskDescriptor mdd,
