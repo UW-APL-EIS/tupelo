@@ -43,6 +43,7 @@ import org.apache.commons.logging.LogFactory;
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
+import edu.uw.apl.tupelo.store.ProgressMonitor;
 import edu.uw.apl.tupelo.store.Store;
 
 /**
@@ -164,6 +165,15 @@ public class HttpStoreProxy implements Store {
 		HttpClient req = new DefaultHttpClient( );
 		HttpResponse res = req.execute( p );
 	}
+
+	@Override
+	public void put( final ManagedDisk md, ProgressMonitor pm )
+		throws IOException {
+
+		// to do
+		throw new UnsupportedOperationException();
+	}
+	
 
 	@Override
 	public List<byte[]> digest( ManagedDiskDescriptor mdd )
