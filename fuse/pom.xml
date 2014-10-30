@@ -3,6 +3,11 @@
 	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <properties>
+    <!-- override this by activating the 'tester' profile -->
+    <skipTests>true</skipTests>
+  </properties>
+
   <parent>
     <groupId>edu.uw.apl</groupId>
     <artifactId>tupelo-parent</artifactId>
@@ -15,6 +20,15 @@
 
   <name>Tupelo Disk Management - Mountable FileSystem via Fuse</name>
   <url>http://maven.apache.org</url>
+
+  <profiles>
+    <profile>
+      <id>tester</id>
+      <properties>
+	<skipTests>false</skipTests>
+      </properties>
+    </profile>
+  </profiles>
 
   <dependencies>
     <dependency>
