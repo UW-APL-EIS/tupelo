@@ -81,7 +81,7 @@
     <repository>
       <id>tupelo.local</id>
       <name>tupelo</name>
-      <url>file:${project.basedir}/repoXXX</url>
+      <url>file:${project.basedir}/repo</url>
     </repository>
   </repositories>
 
