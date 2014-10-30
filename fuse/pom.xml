@@ -23,7 +23,7 @@
 
   <profiles>
     <profile>
-      <id>tester</id>
+      <id>fuser</id>
       <properties>
 	<skipTests>false</skipTests>
       </properties>
