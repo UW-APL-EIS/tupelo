@@ -19,6 +19,8 @@ public interface Store {
 
 	public void put( ManagedDisk md ) throws IOException;
 
+	public void put( ManagedDisk md, ProgressMonitor pm ) throws IOException;
+
 	public List<byte[]> digest( ManagedDiskDescriptor mdd )
 		throws IOException;
 	

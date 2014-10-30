@@ -29,6 +29,7 @@ import org.apache.commons.io.FileUtils;
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
+import edu.uw.apl.tupelo.store.ProgressMonitor;
 import edu.uw.apl.tupelo.store.Store;
 
 /**
@@ -175,7 +176,15 @@ public class FilesystemStore implements Store {
 		}
 	}
 
-	/**
+	@Override
+	public synchronized void put( ManagedDisk md, ProgressMonitor pm )
+		throws IOException {
+
+		// TODO
+	}
+	
+
+		/**
 	 * Produce a sha1 hash of each grain in the managed disk
 	 * identified by the supplied descriptor.
 	 
