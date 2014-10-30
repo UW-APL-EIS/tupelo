@@ -6,7 +6,7 @@
 
   <parent>
     <groupId>edu.uw.apl</groupId>
-    <artifactId>tupelo-parent</artifactId>
+    <artifactId>tupelo-store-parent</artifactId>
     <version>0.0.1</version>
   </parent>
 
