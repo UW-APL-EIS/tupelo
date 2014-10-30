@@ -48,6 +48,14 @@
     </dependency>
   </dependencies>
 
+  <repositories>
+    <repository>
+      <id>tupelo.local</id>
+      <name>tupelo</name>
+      <url>file:${project.basedir}/../repo</url>
+    </repository>
+  </repositories>
+
   <build>
     <defaultGoal>compile</defaultGoal>
     <plugins>

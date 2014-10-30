@@ -77,13 +77,6 @@
     </dependency>
   </dependencies>
 
-  <repositories>
-    <repository>
-      <id>tupelo.local</id>
-      <name>tupelo</name>
-      <url>file:${project.basedir}/repo</url>
-    </repository>
-  </repositories>
 
   <build>
     <defaultGoal>compile</defaultGoal>
@@ -108,6 +101,11 @@
 	  <groupId>org.apache.maven.plugins</groupId>
 	  <artifactId>maven-dependency-plugin</artifactId>
 	  <version>2.9</version>
+	</plugin>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-install-plugin</artifactId>
+	  <version>2.5.2</version>
 	</plugin>
       </plugins>
     </pluginManagement>

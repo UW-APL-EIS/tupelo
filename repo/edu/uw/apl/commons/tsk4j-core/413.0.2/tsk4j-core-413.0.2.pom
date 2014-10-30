@@ -23,8 +23,9 @@
     <version>413.0.0</version>
   </parent>
   
+  <groupId>edu.uw.apl.commons</groupId>
   <artifactId>tsk4j-core</artifactId>
-    <version>413.0.2</version>
+  <version>413.0.2</version>
   <packaging>jar</packaging>
   <name>
     TSK4J: Core - JNI Bindings to Sleuthkit C
