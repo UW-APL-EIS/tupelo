@@ -96,7 +96,7 @@ public class PutAttr {
 							" for managedDisk " + mdd );
 		store.setAttribute( mdd, key, ba );
 
-		Collection<String> keys = store.attributeSet( mdd );
+		Collection<String> keys = store.listAttributes( mdd );
 		System.out.println( "Stored Attributes: " + keys );
 	}
 
