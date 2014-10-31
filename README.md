@@ -34,7 +34,19 @@ Java home: /usr/lib/jvm/java-7-openjdk-amd64/jre
 Default locale: en_US, platform encoding: UTF-8
 OS name: "linux", version: "3.11.0-15-generic", arch: "amd64", family: "unix"
 
-Dependencies
+Install
+-------
+
+Once the artifacts above are in your local Maven repo, Tupelo build can proceed:
+
+$ cd /path/to/tupelo
+
+$ mvn install
+
+That's it!
+
+
+Dependencies (informational only, NOT required setup)
 ------------
 
 Tupelo dependencies (i.e. 3rd party code it builds against) include 
@@ -46,30 +58,11 @@ Tupelo dependencies (i.e. 3rd party code it builds against) include
 * native-lib-loader (loads JNI C code from classpath. Used by
   fuse4j,tsk4j)
 
-These artifacts (jars) are not yet available on public facing Maven
-repositories (i.e Central), and neither is their source code at any
-public git location.
-
-To overcome these temporary hurdles, the binary artifacts (jars) are
-included here, see the ./repos directory.  These can be installed into
-your local Maven repository (~/.m2/repository) via a provided script:
-
-$ cd /path/to/tupelo
-
-$ ./install-repos.sh
-
-This script uses Maven itself so Maven must be installed first, see above.
-
-Install
--------
-
-Once the artifacts above are in your local Maven repo, Tupelo build can proceed:
-
-$ cd /path/to/tupelo
-
-$ mvn install
-
-That's it!
+These artifacts (jars,poms) are not yet available on public facing
+Maven repositories (i.e Central), so are bundled into a project-local
+Maven repository at ./respository.  The modules that need these
+dependencies (cli and fuse) include this local repository in their
+pom.
 
 
 
