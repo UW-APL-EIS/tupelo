@@ -1,0 +1,114 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+			     http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+      This pom is purely a vehicle for copying Tupelo 3rd party
+      dependencies for users that DO have them built/installed into
+      this directory so that they can be added to git for users that
+      do NOT have them built/installed.  It is NOT part of the Tupelo
+      codebase build process.  We do NOT have the Tupelo super-pom for
+      a parent.  Conversely, the parent pom does NOT list us as a
+      module.
+  -->
+  <!--
+      This pom uses a profile named 'repo' to copy the dependencies
+      listed below into the current directory (actually, under
+      target/dependency, the default for the dependency plugin).
+
+      Without this profile being activated, this pom acts on behalf of
+      the non-power user, and the package phase installs the required
+      jars+poms into the user's local repo (via use of the install
+      plugin).  Note how in the install plugin configuration, we have
+      to supply exact pomFiles to be installed alongside the jar.
+      Without this, the pom found in the jar itself is NOT correctly
+      copied into the final repos, so dependency info is lost.  This
+      is a known bug for the install plugin 2.5.2, see
+      http://jira.codehaus.org/browse/MINSTALL-110.
+
+      We use the dependency plugin's unpack-dependency goal to put the
+      required poms onto the local filessytem. All very ugly!
+  -->
+
+  <groupId>edu.uw.apl</groupId>
+  <artifactId>tupelo-local-repo-builder</artifactId>
+  <version>0.0.1</version>
+  <packaging>pom</packaging>
+
+  <name>Tupelo Disk Management - Third Party Artifact Bundling</name>
+
+  <properties>
+    <localRepo>../.repository</localRepo>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>tsk4j-core</artifactId>
+      <version>413.0.2</version>
+    </dependency>
+    <!-- 
+	 LOOK: This dependency, tsk4j-parent, SHOULD be copied by the
+	 dependency plugin, set to 'addParentPoms' but this appears
+	 not to work
+    -->
+    <!--
+	<dependency>
+	<groupId>edu.uw.apl.commons</groupId>
+	<artifactId>tsk4j-parent</artifactId>
+	<version>413.0.0</version>
+	<type>pom</type>
+	</dependency>
+    -->
+
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>fuse4j-core</artifactId>
+      <version>2400.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>native-lib-loader</artifactId>
+      <version>2.0.0</version>
+    </dependency>
+  </dependencies>
+  
+  <profiles>
+    <profile>
+      <id>repo</id>
+      <build>
+	<defaultGoal>process-sources</defaultGoal>
+	<plugins>
+	  <plugin>
+	    <groupId>org.apache.maven.plugins</groupId>
+	    <artifactId>maven-dependency-plugin</artifactId>
+	    <version>2.9</version>
+	    <executions>
+	      <execution>
+		<id>copy-dependencies</id>
+		<goals>
+		  <goal>copy-dependencies</goal>
+		</goals>
+		<configuration>
+		  <useRepositoryLayout>true</useRepositoryLayout>
+		  <!-- 
+		       Artifacts the listed dependencies depend are on
+		       Maven Central so we exclude them here.
+		  -->
+		  <copyPom>true</copyPom>
+		  <addParentPoms>true</addParentPoms>
+		  <!--		  <excludeTransitive>true</excludeTransitive>-->
+		  <includeGroupIds>edu.uw.apl.commons</includeGroupIds>
+		  <outputDirectory>${localRepo}</outputDirectory>
+		</configuration>
+	      </execution>
+	    </executions>
+	  </plugin>
+	</plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
+

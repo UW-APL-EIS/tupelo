@@ -32,7 +32,7 @@
   <modules>
     <module>model</module>
     <module>store</module>
-    <module>fuse</module>
+    <module>fuse</module> 
     <module>http</module>
     <module>cli</module>
   </modules>

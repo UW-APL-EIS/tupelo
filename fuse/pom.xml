@@ -30,6 +30,14 @@
     </profile>
   </profiles>
 
+  <repositories>
+    <repository>
+      <id>tupelo.local</id>
+      <name>tupelo</name>
+      <url>file:${project.basedir}/../.repository</url>
+    </repository>
+  </repositories>
+
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -70,13 +78,6 @@
     </dependency>
   </dependencies>
   
-  <repositories>
-    <repository>
-      <id>tupelo.local</id>
-      <name>tupelo</name>
-      <url>file:${project.basedir}/../repo</url>
-    </repository>
-  </repositories>
 
   <build>
     <plugins>

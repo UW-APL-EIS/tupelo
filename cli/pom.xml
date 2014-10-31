@@ -13,6 +13,14 @@
   <name>Tupelo Disk Management - Command Line Utilities</name>
   <url>http://maven.apache.org</url>
 
+  <repositories>
+    <repository>
+      <id>tupelo.local</id>
+      <name>tupelo</name>
+      <url>file:${project.basedir}/../.repository</url>
+    </repository>
+  </repositories>
+
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -48,13 +56,6 @@
     </dependency>
   </dependencies>
 
-  <repositories>
-    <repository>
-      <id>tupelo.local</id>
-      <name>tupelo</name>
-      <url>file:${project.basedir}/../repo</url>
-    </repository>
-  </repositories>
 
   <build>
     <defaultGoal>compile</defaultGoal>
