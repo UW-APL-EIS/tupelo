@@ -1,0 +1,47 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>edu.uw.apl</groupId>
+    <artifactId>tupelo-parent</artifactId>
+    <version>0.0.1</version>
+  </parent>
+
+  <groupId>edu.uw.apl</groupId>
+  <artifactId>tupelo-logging</artifactId>
+  <version>0.0.1</version>
+  <name>Tupelo Disk Management - Logging Infrastructure</name>
+  <url>http://maven.apache.org</url>
+
+  <repositories>
+    <repository>
+      <id>tupelo.local</id>
+      <name>tupelo</name>
+      <url>file:${project.basedir}/../.repository</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+    </dependency>
+    
+    <!-- 
+	 Logging to rabbitmq needs that appender.  We do NOT need this
+	 at build time, but by including it here we eliminate other
+	 modules needing it, they instead just depend on us.
+    -->
+    <dependency>
+      <groupId>com.plant42</groupId>
+      <artifactId>rabbitmq-log4j-appender</artifactId>
+      <version>1.0.0</version>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+
+
+  <build>
+    <defaultGoal>compile</defaultGoal>
+  </build>
+</project>
