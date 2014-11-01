@@ -83,8 +83,11 @@ public class AttributesServlet extends HttpServlet {
 	public void doGet( HttpServletRequest req, HttpServletResponse res )
 		throws IOException, ServletException {
 
+		String sp = req.getServletPath();
+		log.debug( "Get.ServletPath: " + sp );
 		String pi = req.getPathInfo();
 		log.debug( "Get.PathInfo: " + pi );
+
 		if( false ) {
 		} else if( pi.startsWith( "/get/" ) ) {
 			String details = pi.substring( "/get/".length() );
@@ -106,6 +109,8 @@ public class AttributesServlet extends HttpServlet {
 	public void doPost( HttpServletRequest req, HttpServletResponse res )
 		throws IOException, ServletException {
 		
+		String sp = req.getServletPath();
+		log.debug( "Post.ServletPath: " + sp );
 		String pi = req.getPathInfo();
 		log.debug( "Post.PathInfo: " + pi );
 

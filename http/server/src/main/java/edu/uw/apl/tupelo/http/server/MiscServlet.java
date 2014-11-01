@@ -82,6 +82,9 @@ public class MiscServlet extends HttpServlet {
 		throws IOException, ServletException {
 
 		String sp = req.getServletPath();
+		log.debug( "Get.ServletPath: " + sp );
+		String pi = req.getPathInfo();
+		log.debug( "Get.PathInfo: " + pi );
 
 		if( sp.equals( "/uuid" ) ) {
 			uuid( req, res );
@@ -101,6 +104,10 @@ public class MiscServlet extends HttpServlet {
 		throws IOException, ServletException {
 		
 		String sp = req.getServletPath();
+		log.debug( "Post.ServletPath: " + sp );
+		String pi = req.getPathInfo();
+		log.debug( "Post.PathInfo: " + pi );
+
 
 		if( sp.equals( "/newsession" ) ) {
 			newSession( req, res );

@@ -41,6 +41,19 @@
   </servlet-mapping>	
 -->
   <servlet>
+    <servlet-name>LogLevelServlet</servlet-name>
+    <description></description>
+    <servlet-class>
+      edu.uw.apl.tupelo.http.server.LogLevelServlet
+    </servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>LogLevelServlet</servlet-name>
+    <url-pattern>/logging/*</url-pattern>
+  </servlet-mapping>	
+
+  <servlet>
     <servlet-name>MiscServlet</servlet-name>
     <description></description>
     <servlet-class>

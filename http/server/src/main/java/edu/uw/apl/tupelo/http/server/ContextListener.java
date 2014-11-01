@@ -19,12 +19,21 @@ import org.apache.commons.logging.LogFactory;
 
 public class ContextListener implements ServletContextListener {
 
+	public ContextListener() {
+		log = LogFactory.getLog( getClass() );
+	}
+	
     public void contextInitialized( ServletContextEvent sce ) {
+		log.debug( "ContextInitialized" );
 
 		ServletContext sc = sce.getServletContext();
 
-		locateVersion( sc );
-		locateDataRoot( sc );
+		try {
+			locateVersion( sc );
+			locateDataRoot( sc );
+		} catch( IOException ioe ) {
+			log.warn( ioe );
+		}
 	}
 
 	/**
@@ -60,7 +69,7 @@ public class ContextListener implements ServletContextListener {
 		sc.setAttribute( VERSIONKEY, version );
 	}
 	
-	private void locateDataRoot( ServletContext sc ) {
+	private void locateDataRoot( ServletContext sc ) throws IOException {
 		String rootS = sc.getInitParameter( DATAROOTKEY );
 		if( rootS == null ) {
 			String uh = System.getProperty( "user.home" );
@@ -68,9 +77,9 @@ public class ContextListener implements ServletContextListener {
 			f = new File( f, ".tupelo" );
 			rootS = f.getPath();
 		}
-		File dataRoot = new File( rootS );
+		File dataRoot = new File( rootS ).getCanonicalFile();
 		dataRoot.mkdirs();
-		System.out.println( "dataroot: " + dataRoot );
+		log.info( "Store Root: " + dataRoot );
 		/*
 		  Properties p = new Properties();
 		try {
@@ -113,9 +122,13 @@ public class ContextListener implements ServletContextListener {
 		sc.setAttribute( STOREKEY, store );
 	}
 
+	@Override
     public void contextDestroyed( ServletContextEvent sce ) {
+		log.info( "ContextDestroyed" );
 	}
 
+	private Log log;
+	
 	static public final String VERSIONKEY = "version";
 	static public final String DATAROOTKEY = "dataroot";
 	static public final String STOREKEY = "store";

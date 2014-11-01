@@ -76,8 +76,11 @@ public class DataServlet extends HttpServlet {
 	public void doGet( HttpServletRequest req, HttpServletResponse res )
 		throws IOException, ServletException {
 
+		String sp = req.getServletPath();
+		log.debug( "Get.ServletPath: " + sp );
 		String pi = req.getPathInfo();
 		log.debug( "Get.PathInfo: " + pi );
+
 		if( false ) {
 		} else if( pi.equals( "/enumerate" ) ) {
 			enumerate( req, res );
@@ -99,6 +102,8 @@ public class DataServlet extends HttpServlet {
 	public void doPost( HttpServletRequest req, HttpServletResponse res )
 		throws IOException, ServletException {
 		
+		String sp = req.getServletPath();
+		log.debug( "Post.ServletPath: " + sp );
 		String pi = req.getPathInfo();
 		log.debug( "Post.PathInfo: " + pi );
 
