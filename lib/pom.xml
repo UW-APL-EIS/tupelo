@@ -68,10 +68,17 @@
       <artifactId>fuse4j-core</artifactId>
       <version>2400.0.1</version>
     </dependency>
+
     <dependency>
       <groupId>edu.uw.apl.commons</groupId>
       <artifactId>native-lib-loader</artifactId>
       <version>2.0.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.plant42</groupId>
+      <artifactId>rabbitmq-log4j-appender</artifactId>
+      <version>1.0.0</version>
     </dependency>
   </dependencies>
   
@@ -100,7 +107,9 @@
 		  <copyPom>true</copyPom>
 		  <addParentPoms>true</addParentPoms>
 		  <!--		  <excludeTransitive>true</excludeTransitive>-->
-		  <includeGroupIds>edu.uw.apl.commons</includeGroupIds>
+		  <includeGroupIds>
+		    edu.uw.apl.commons,com.plant42
+		  </includeGroupIds>
 		  <outputDirectory>${localRepo}</outputDirectory>
 		</configuration>
 	      </execution>
