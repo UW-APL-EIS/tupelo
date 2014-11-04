@@ -135,6 +135,10 @@ public class Session implements java.io.Serializable,
 		return "" + source + "/" + toString();
 	}
 
+
+	static public Session testSession() {
+		return new Session( UUID.randomUUID(), Calendar.getInstance(), 16 );
+	}
 	
 	static final String UUIDRE =
 		"\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}";
