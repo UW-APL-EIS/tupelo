@@ -1,5 +1,8 @@
 package edu.uw.apl.tupelo.amqp.client;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +22,29 @@ import edu.uw.apl.tupelo.amqp.objects.JSONSerializers;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 
+/**
+ * Put a 'who-has file content matching this hash' request on to a
+ * RabbitMQ message bus.  Both the request and response(s) are
+ * JSON-formatted.  See the 'objects' module (sibling to this client)
+ * for definitions of the JSON encodings.  In short, the FileHashQuery
+ * is a pair of key/values, e.g.
+ *
+ * { "algorithm" : "md5", "hashes" : ["hash1hex", "hash2hex" ] }
+ *
+ * The file hashes (assumed to be md5 hashes, LOOK extend to handle e.g. sha1)
+ * are read from
+ *
+ * (a) cmd line arguments.  Use xargs to convert a text file of hashes
+ * to cmd line args, e.g. cat FILE | xargs filehashclient
+ *
+ * (b) stdin, if no cmd line arguments found. Use directly, e.g.
+ *
+ * $ filehashclient < FILE
+ * $ cat FILE | filehashclient
+ * $ echo HASH | filehashclient
+ *
+ * @see FileHashQuery
+ */
 public class FileHashClient {
 
 	static public void main( String[] args ) throws Exception {
@@ -46,7 +72,7 @@ public class FileHashClient {
 		hashes = new ArrayList<String>();
 	}
 
-	public void readArgs( String[] args ) {
+	public void readArgs( String[] args ) throws IOException {
 		Options os = new Options();
 		os.addOption( "d", false, "Debug" );
 		os.addOption( "v", false, "Verbose" );
@@ -55,8 +81,7 @@ public class FileHashClient {
 					  BROKERURLDEFAULT );
 
 		final String USAGE =
-			FileHashClient.class.getName() +
-			" [-d] [-v] [-u brokerURL]";
+			FileHashClient.class.getName() + " [-d] [-v] [-u brokerURL]";
 		final String HEADER = "";
 		final String FOOTER = "";
 		
@@ -74,11 +99,26 @@ public class FileHashClient {
 			brokerUrl = cl.getOptionValue( "u" );
 		}
 		args = cl.getArgs();
-		for( String arg : args ) {
-			arg = arg.trim();
-			if( arg.isEmpty() || arg.startsWith( "#" ) )
-				continue;
-			hashes.add( arg );
+		if( args.length > 0 ) {
+			// hashes are in cmd line args
+			for( String arg : args ) {
+				arg = arg.trim();
+				if( arg.isEmpty() || arg.startsWith( "#" ) )
+					continue;
+				hashes.add( arg );
+			}
+		} else {
+			// hashes are on stdin
+			InputStreamReader isr = new InputStreamReader( System.in );
+			BufferedReader br = new BufferedReader( isr );
+			String line;
+			while( (line = br.readLine()) != null ) {
+				line = line.trim();
+				if( line.isEmpty() || line.startsWith( "#" ) )
+					continue;
+				hashes.add( line );
+			}
+			br.close();
 		}
 	}
 
