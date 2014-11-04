@@ -1,5 +1,6 @@
 package edu.uw.apl.tupelo.amqp.client;
 
+import java.lang.reflect.Type;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
@@ -9,6 +10,7 @@ import java.util.List;
 import org.apache.commons.cli.*;
 import org.apache.commons.codec.binary.Hex;
 import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -19,6 +21,7 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 import edu.uw.apl.tupelo.amqp.objects.FileHashQuery;
 import edu.uw.apl.tupelo.amqp.objects.FileHashResponse;
 import edu.uw.apl.tupelo.amqp.objects.JSONSerializers;
+import edu.uw.apl.tupelo.amqp.objects.RPCObject;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 
@@ -63,6 +66,7 @@ public class FileHashClient {
 	FileHashClient() {
 		brokerUrl = BROKERURLDEFAULT;
 		GsonBuilder gb = new GsonBuilder();
+		gb.serializeNulls();
 		gb.disableHtmlEscaping();
 		gb.registerTypeAdapter(Session.class,
 							   new JSONSerializers.SessionSerializer() );
@@ -144,7 +148,12 @@ public class FileHashClient {
 			byte[] bs = Hex.decodeHex( cs );
 			fhq.add( bs );
 		}
-		String json = gson.toJson( fhq );
+		RPCObject<FileHashQuery> rpc1 = RPCObject.asRPCObject( fhq,
+															   "filehash" );
+		String json = gson.toJson( rpc1 );
+
+		System.out.println( json );
+		
 		channel.basicPublish( EXCHANGE, "who-has", bp, json.getBytes() );
 
         QueueingConsumer consumer = new QueueingConsumer(channel);
@@ -157,8 +166,9 @@ public class FileHashClient {
 		
 		// look: check contentType
 		json = message;
-		FileHashResponse fhr = (FileHashResponse)gson.fromJson
-			( json, FileHashResponse.class );
+		Type fhrType = new TypeToken<RPCObject<FileHashResponse>>(){}.getType();
+		RPCObject<FileHashResponse> rpc2 = gson.fromJson( json, fhrType );
+		FileHashResponse fhr = rpc2.appdata;
 		for( FileHashResponse.Hit h : fhr.hits ) {
 			System.out.println( h.path );
 		}

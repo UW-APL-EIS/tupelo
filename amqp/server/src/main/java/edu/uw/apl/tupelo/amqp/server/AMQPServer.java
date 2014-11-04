@@ -1,5 +1,6 @@
 package edu.uw.apl.tupelo.amqp.server;
 
+import java.lang.reflect.Type;
 import java.io.File;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
@@ -17,6 +18,7 @@ import org.apache.commons.cli.*;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.log4j.Logger;
 import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -33,6 +35,7 @@ import edu.uw.apl.tupelo.http.client.HttpStoreProxy;
 import edu.uw.apl.tupelo.amqp.objects.FileHashQuery;
 import edu.uw.apl.tupelo.amqp.objects.FileHashResponse;
 import edu.uw.apl.tupelo.amqp.objects.JSONSerializers;
+import edu.uw.apl.tupelo.amqp.objects.RPCObject;
 
 public class AMQPServer {
 
@@ -53,6 +56,7 @@ public class AMQPServer {
 		storeLocation = STORELOCATIONDEFAULT;
 		brokerUrl = BROKERURLDEFAULT;
 		GsonBuilder gb = new GsonBuilder();
+		gb.serializeNulls();
 		gb.disableHtmlEscaping();
 		gb.registerTypeAdapter(Session.class,
 							   new JSONSerializers.SessionSerializer() );
@@ -125,8 +129,12 @@ public class AMQPServer {
 			String json = message;
 			
             System.out.println(" [x] Received '" + json + "'");
-			FileHashQuery fhq = (FileHashQuery)gson.fromJson
-				( json, FileHashQuery.class );
+
+			Type fhqType =
+				new TypeToken<RPCObject<FileHashQuery>>(){}.getType();
+			RPCObject<FileHashQuery> rpc1 = gson.fromJson( json, fhqType );
+			FileHashQuery fhq = rpc1.appdata;
+
 			FileHashResponse fhr = new FileHashResponse( fhq.algorithm );
 			/*
 			  LOOK: load all the Store's md5 hash data on every query ??
@@ -171,7 +179,9 @@ public class AMQPServer {
 			BasicProperties resProps = new BasicProperties.Builder()
 				.contentType( "application/json" )
 				.build();
-			json = gson.toJson( fhr );
+			RPCObject<FileHashResponse> rpc2 = RPCObject.asRPCObject
+				( fhr, "filehash" );
+			json = gson.toJson( rpc2 );
 			channel.basicPublish( "", reqProps.getReplyTo(),
 								  resProps, json.getBytes() );
             System.out.println(" [x] Sent '" + json + "'");
