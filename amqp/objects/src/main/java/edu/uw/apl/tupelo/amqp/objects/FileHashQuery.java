@@ -3,6 +3,11 @@ package edu.uw.apl.tupelo.amqp.objects;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A FileHashQuery goes on the amqp bus as JSON-encoded text:
+ *
+ * { "algorithm" : "md5", "hashes" : ["hash1hex", "hash2hex", ... ] }
+ */
 public class FileHashQuery implements java.io.Serializable {
 	
 	public FileHashQuery( String algorithm ) {
@@ -14,7 +19,7 @@ public class FileHashQuery implements java.io.Serializable {
 		hashes.add( hash );
 	}
 
-	// Intended to be accessed by amqp.client, amqp,server code only...
+	// Intended to be accessed by amqp.client, amqp.server code only...
 	public final String algorithm;
 	public final List<byte[]> hashes;
 }

@@ -1,6 +1,5 @@
 package edu.uw.apl.tupelo.amqp.objects;
 
-
 import com.google.gson.*;
 
 public class FileHashQueryTest extends junit.framework.TestCase {
