@@ -22,8 +22,10 @@ public class FileHashResponseTest extends junit.framework.TestCase {
 
 	public void test1() {
 		FileHashResponse r = new FileHashResponse( "md5" );
-		r.add( new byte[20], new ManagedDiskDescriptor( "diskID",
-														Session.CANNED ), "/" );
+		String diskID = "seagate1234";
+		Session session = Session.testSession();
+		r.add( new byte[20], new ManagedDiskDescriptor( diskID, session ),
+			   "/" );
 		String s = gson.toJson( r );
 		System.out.println( "Response: " + s );
 
