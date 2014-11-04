@@ -20,7 +20,7 @@ import edu.uw.apl.tupelo.model.Session;
  * @see FileHashResponseTest
 */
 
-public class FileHashResponse implements java.io.Serializable {
+public class FileHashResponse {
 
 	public FileHashResponse( String algorithm ) {
 		this.algorithm = algorithm;
