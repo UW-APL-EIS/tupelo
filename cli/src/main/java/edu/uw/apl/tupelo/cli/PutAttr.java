@@ -19,7 +19,7 @@ import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
  * supplied local file.
  */
 
-public class PutAttr {
+public class PutAttr extends CliBase {
 
 	static public void main( String[] args ) {
 		PutAttr main = new PutAttr();
@@ -33,39 +33,27 @@ public class PutAttr {
 	}
 
 	public PutAttr() {
-		storeLocation = Utils.STORELOCATIONDEFAULT;
-	}
-
-	static private void printUsage( Options os, String usage,
-									String header, String footer ) {
-		HelpFormatter hf = new HelpFormatter();
-		hf.setWidth( 80 );
-		hf.printHelp( usage, header, os, footer );
 	}
 
 	public void readArgs( String[] args ) {
-		Options os = Utils.commonOptions();
+		Options os = commonOptions();
+		String usage = commonUsage() + "diskID sessionID key valueFile";
 
-		final String USAGE =
-			PutAttr.class.getName() +
-			" [-s storeLocation] diskID sessionID key valueFile";
 		final String HEADER = "";
 		final String FOOTER = "";
-		
 		CommandLineParser clp = new PosixParser();
 		CommandLine cl = null;
 		try {
 			cl = clp.parse( os, args );
 		} catch( ParseException pe ) {
-			printUsage( os, USAGE, HEADER, FOOTER );
+			printUsage( os, usage, HEADER, FOOTER );
 			System.exit(1);
 		}
-		if( cl.hasOption( "s" ) ) {
-			storeLocation = cl.getOptionValue( "s" );
-		}
+		commonParse( os, cl, usage, HEADER, FOOTER );
+
 		args = cl.getArgs();
 		if( args.length < 4 ) {
-			printUsage( os, USAGE, HEADER, FOOTER );
+			printUsage( os, usage, HEADER, FOOTER );
 			System.exit(1);
 		}
 		diskID = args[0];
@@ -100,7 +88,6 @@ public class PutAttr {
 		System.out.println( "Stored Attributes: " + keys );
 	}
 
-	String storeLocation;
 	String diskID, sessionID;
 	String key;
 	File valueFile;

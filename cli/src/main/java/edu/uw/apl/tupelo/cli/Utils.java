@@ -21,6 +21,8 @@ public class Utils {
 
 	static public Options commonOptions() {
 		Options os = new Options();
+		os.addOption( "d", false, "Debug" );
+		os.addOption( "h", false, "Help" );
 		os.addOption( "s", true,
 					  "Store url/directory. Defaults to " +
 					  STORELOCATIONDEFAULT );

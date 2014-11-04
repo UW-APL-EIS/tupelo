@@ -3,6 +3,7 @@ package edu.uw.apl.tupelo.cli;
 import java.net.ConnectException;
 import java.util.Collection;
 
+import org.apache.log4j.LogManager;
 import org.apache.commons.cli.*;
 
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
@@ -14,7 +15,7 @@ import edu.uw.apl.tupelo.store.Store;
  * (ManagedDisks and Attributes) and print results to stdout.
  */
 
-public class StoreInfo {
+public class StoreInfo extends CliBase {
 
 	static public void main( String[] args ) {
 		StoreInfo main = new StoreInfo();
@@ -27,41 +28,26 @@ public class StoreInfo {
 				e.printStackTrace();
 			System.exit(-1);
 		}
+		LogManager.shutdown();
 	}
 
 	public StoreInfo() {
-		storeLocation = Utils.STORELOCATIONDEFAULT;
-	}
-
-	static private void printUsage( Options os, String usage,
-									String header, String footer ) {
-		HelpFormatter hf = new HelpFormatter();
-		hf.setWidth( 80 );
-		hf.printHelp( usage, header, os, footer );
 	}
 
 	public void readArgs( String[] args ) {
-		Options os = Utils.commonOptions();
-		os.addOption( "d", false, "Debug" );
-
-		final String USAGE =
-			HashData.class.getName() + " [-d] [-s storeLocation]";
+		Options os = commonOptions();
+		String usage = commonUsage();
 		final String HEADER = "";
 		final String FOOTER = "";
-		
 		CommandLineParser clp = new PosixParser();
 		CommandLine cl = null;
 		try {
 			cl = clp.parse( os, args );
 		} catch( ParseException pe ) {
-			printUsage( os, USAGE, HEADER, FOOTER );
+			printUsage( os, usage, HEADER, FOOTER );
 			System.exit(1);
 		}
-		debug = cl.hasOption( "d" );
-		if( cl.hasOption( "s" ) ) {
-			storeLocation = cl.getOptionValue( "s" );
-		}
-		args = cl.getArgs();
+		commonParse( os, cl, usage, HEADER, FOOTER );
 	}
 	
 	public void start() throws Exception {
@@ -69,7 +55,8 @@ public class StoreInfo {
 		Store store = Utils.buildStore( storeLocation );
 		if( debug )
 			System.out.println( "Store: " + store );
-
+		log.info( getClass() + " " + storeLocation );
+		
 		System.out.println( "Using store: " + storeLocation );
 
 		Collection<ManagedDiskDescriptor> stored = null;
@@ -88,8 +75,7 @@ public class StoreInfo {
 		}			
 	}
 	
-	String storeLocation;
-	static boolean debug;
+	
 }
 
 // eof

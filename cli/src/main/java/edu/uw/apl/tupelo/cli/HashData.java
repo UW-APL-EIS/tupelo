@@ -55,7 +55,7 @@ import edu.uw.apl.commons.sleuthkit.volsys.VolumeSystem;
  *
  */
 
-public class HashData {
+public class HashData extends CliBase {
 
 	static public void main( String[] args ) {
 		HashData main = new HashData();
@@ -71,43 +71,27 @@ public class HashData {
 	}
 
 	public HashData() {
-		storeLocation = Utils.STORELOCATIONDEFAULT;
-	}
-
-	static private void printUsage( Options os, String usage,
-									String header, String footer ) {
-		HelpFormatter hf = new HelpFormatter();
-		hf.setWidth( 80 );
-		hf.printHelp( usage, header, os, footer );
 	}
 
 	public void readArgs( String[] args ) {
-		Options os = Utils.commonOptions();
-		os.addOption( "d", false, "Debug" );
+		Options os = commonOptions();
 		os.addOption( "v", false, "Verbose" );
 
-		final String USAGE =
-			HashData.class.getName() +
-			" [-d] [-v] [-s storeLocation] diskID sessionID";
+		String usage = commonUsage() + "[-v] diskID sessionID";
 		final String HEADER = "";
 		final String FOOTER = "";
-		
 		CommandLineParser clp = new PosixParser();
 		CommandLine cl = null;
 		try {
 			cl = clp.parse( os, args );
 		} catch( ParseException pe ) {
-			printUsage( os, USAGE, HEADER, FOOTER );
+			printUsage( os, usage, HEADER, FOOTER );
 			System.exit(1);
 		}
-		debug = cl.hasOption( "d" );
 		verbose = cl.hasOption( "v" );
-		if( cl.hasOption( "s" ) ) {
-			storeLocation = cl.getOptionValue( "s" );
-		}
 		args = cl.getArgs();
 		if( args.length < 2 ) {
-			printUsage( os, USAGE, HEADER, FOOTER );
+			printUsage( os, usage, HEADER, FOOTER );
 			System.exit(1);
 		}
 		diskID = args[0];
@@ -271,9 +255,8 @@ public class HashData {
 	}
 	
 
-	String storeLocation;
 	String diskID, sessionID;
-	static boolean debug, verbose;
+	static boolean verbose;
 
 	static byte[] DIGESTBUFFER = new byte[ 1024*1024 ];
 	static MessageDigest MD5 = null;
@@ -283,6 +266,6 @@ public class HashData {
 		} catch( NoSuchAlgorithmException never ) {
 		}
 	}
-	}
+}
 
 // eof

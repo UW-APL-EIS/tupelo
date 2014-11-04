@@ -17,10 +17,14 @@ import edu.uw.apl.tupelo.store.Store;
 
 /**
  * Simple Tupelo Utility: add some arbitrary disk image file to a
- * local Tupelo Filesystem-based Store.
+ * local Tupelo Filesystem-based Store. To use:
+ *
+ * PutData imageFile
+ *
+ * see the supported options, below
  */
 
-public class PutData {
+public class PutData extends CliBase {
 
 	static public void main( String[] args ) {
 		PutData main = new PutData();
@@ -36,40 +40,30 @@ public class PutData {
 	}
 
 	public PutData() {
-		storeLocation = Utils.STORELOCATIONDEFAULT;
-	}
-
-	static private void printUsage( Options os, String usage,
-									String header, String footer ) {
-		HelpFormatter hf = new HelpFormatter();
-		hf.setWidth( 80 );
-		hf.printHelp( usage, header, os, footer );
 	}
 
 	public void readArgs( String[] args ) {
-		Options os = Utils.commonOptions();
-		os.addOption( "d", false, "Debug" );
+		Options os = commonOptions();
 		os.addOption( "f", false,
-					  "Force flatDisk, default decides based on unmanaged data size" );
+					  "Force flat managed disk, default decides based on unmanaged data size" );
+		os.addOption( "o", false,
+					  "Force stream-optimized managed disk, default decides based on unmanaged data size" );
+		String usage = commonUsage() + "[-f] [-o] unmanagedData";
 
-		final String USAGE =
-			PutData.class.getName() + " [-s storeLocation] [-f] unmanagedData";
 		final String HEADER = "";
 		final String FOOTER = "";
-		
 		CommandLineParser clp = new PosixParser();
 		CommandLine cl = null;
 		try {
 			cl = clp.parse( os, args );
 		} catch( ParseException pe ) {
-			printUsage( os, USAGE, HEADER, FOOTER );
+			printUsage( os, usage, HEADER, FOOTER );
 			System.exit(1);
 		}
-		debug = cl.hasOption( "d" );
+		commonParse( os, cl, usage, HEADER, FOOTER );
+
 		forceFlatDisk = cl.hasOption( "f" );
-		if( cl.hasOption( "s" ) ) {
-			storeLocation = cl.getOptionValue( "s" );
-		}
+		forceStreamOptimizedDisk = cl.hasOption( "o" );
 		args = cl.getArgs();
 		if( args.length > 0 ) {
 			rawData = new File( args[0] );
@@ -79,7 +73,7 @@ public class PutData {
 				System.exit(-1);
 			}
 		} else {
-			printUsage( os, USAGE, HEADER, FOOTER );
+			printUsage( os, usage, HEADER, FOOTER );
 			System.exit(1);
 		}
 	}
@@ -90,7 +84,8 @@ public class PutData {
 		if( debug )
 			System.out.println( "Store: " + s );
 		
-		System.out.println( "Using store: " + storeLocation );
+		log.info( getClass() + " " + storeLocation );
+
 		System.out.println( "Store.usableSpace: " + s.getUsableSpace() );
 		Collection<ManagedDiskDescriptor> mdds1 = s.enumerate();
 		System.out.println( "Stored data: " + mdds1 );
@@ -103,10 +98,16 @@ public class PutData {
 							" (" + ud.size() + " bytes)" );
 
 		ManagedDisk md = null;
-		if( forceFlatDisk || ud.size() < 1024L * 1024 * 1024 ) {
+		if( forceFlatDisk ) {
 			md = new FlatDisk( ud, session );
-		} else {
+		} else if( forceStreamOptimizedDisk ) {
 			md = new StreamOptimizedDisk( ud, session );
+		} else {
+			if( ud.size() < 1024L * 1024 * 1024 ) {
+				md = new FlatDisk( ud, session );
+			} else {
+				md = new StreamOptimizedDisk( ud, session );
+			}
 		}
 		s.put( md );
 
@@ -115,11 +116,8 @@ public class PutData {
 	}
 
 
-	boolean forceFlatDisk;
-	String storeLocation;
+	boolean forceFlatDisk, forceStreamOptimizedDisk;
 	File rawData;
-
-	static boolean debug;
 }
 
 // eof

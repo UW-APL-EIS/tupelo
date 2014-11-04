@@ -1,7 +1,6 @@
 package edu.uw.apl.tupelo.cli;
 
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
+import org.apache.commons.cli.*;
 import org.apache.log4j.Logger;
 
 /**
@@ -22,9 +21,32 @@ public class CliBase {
 		hf.printHelp( usage, header, os, footer );
 	}
 
+	protected Options commonOptions() {
+		Options os = Utils.commonOptions();
+		return os;
+	}
+	
+	protected String commonUsage() {
+		return getClass().getName() + " [-d] [-s storeLocation] ";
+	}
+	
+	protected void commonParse( Options os, CommandLine cl, String usage,
+								String header, String footer ) {
+		boolean help = cl.hasOption( "h" );
+		if( help ) {
+			printUsage( os, usage, header, footer );
+			System.exit(1);
+		}
+		debug = cl.hasOption( "d" );
+		if( cl.hasOption( "s" ) ) {
+			storeLocation = cl.getOptionValue( "s" );
+		}
+	}
+	
 	protected String storeLocation;
 	protected Logger log;
 
+	
 	static protected boolean debug;
 }
 
