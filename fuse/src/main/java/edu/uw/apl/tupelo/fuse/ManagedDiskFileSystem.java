@@ -31,7 +31,7 @@ import edu.uw.apl.tupelo.store.Store;
  * Note how we access the 'Store' object totally by the base Store
  * interface.  We do NOT need to know here HOW the Store is
  * implemented (though of course the likely implementation is a
- * FilesystemStore.
+ * FilesystemStore).
  */
 public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 
@@ -61,6 +61,7 @@ public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 		/*
 		  The -f says no fork, we need this!!
 		  The -s says single-threaded, we need this!!
+		  The -r says read-only, which makes sense here
 		*/
 		String[] args = { mountPoint.getPath(), "-f", "-s", "-r"  };
 
@@ -78,16 +79,21 @@ public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 		}
 	}
 
-	public void umount() throws Exception {
+	/**
+	 * @return The exit code of the 'fusermount -u' sub-process
+	 */
+	public int umount() throws Exception {
 		String cmdLine = "fusermount -u " + mountPoint;
 		log.info( "Execing: " + cmdLine );
 		//		Process p = Runtime.getRuntime().exec( cmdLine );
-		ProcessBuilder pb = new ProcessBuilder( "fusermount", "-u", mountPoint.toString() );
+		ProcessBuilder pb = new ProcessBuilder( "fusermount", "-u",
+												mountPoint.toString() );
 		pb.redirectErrorStream( true );
 		pb.redirectOutput( new File( "mdfs.pb" ) );
 		Process p = pb.start();
 		p.waitFor();
 		log.info( "Result: " + p.exitValue() );
+		return p.exitValue();
 	}
 
 	// LOOK: how do we handle io errors from store?
@@ -95,7 +101,7 @@ public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 		try {
 			return store.enumerate();
 		} catch( IOException ioe ) {
-			return Collections.EMPTY_LIST;
+			return Collections.emptyList();
 		}
 	}
 

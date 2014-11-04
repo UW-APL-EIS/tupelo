@@ -17,8 +17,30 @@ public class ManagedDiskFileSystemTest extends junit.framework.TestCase {
 	public void testNull() {
 	}
 
-	public void testEmptyStore() throws Exception {
-		Store store = new FilesystemStore( new File( "test-store" ), false );
+	public void testMountUnmount() throws Exception {
+		boolean loadManagedDisks = false;
+		Store store = new FilesystemStore( new File( "test-store" ),
+										   loadManagedDisks );
+
+		File mount = new File( "test-mount" );
+		mount.mkdirs();
+		ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( store );
+
+		boolean ownThread = true;
+		mdfs.mount( mount, ownThread );
+
+		// Wait for the mount point to become available
+		Thread.sleep( 1000 * 4 );
+
+		// and just unmount it
+		int sc = mdfs.umount();
+		assertEquals( sc, 0 );
+	}
+
+	public void testCanAccessPut() throws Exception {
+		boolean loadManagedDisks = false;
+		Store store = new FilesystemStore( new File( "test-store" ),
+										   loadManagedDisks );
 
 		File f = new File( "src/test/resources/1m" );
 		if( !f.exists() )
@@ -32,18 +54,22 @@ public class ManagedDiskFileSystemTest extends junit.framework.TestCase {
 		File mount = new File( "test-mount" );
 		mount.mkdirs();
 		ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( store );
+		boolean ownThread = true;
+		mdfs.mount( mount, ownThread );
 
-		/*
-		try {
-			// -f == no fork, -s == single-threaded
-			String[] fmArgs = { mount.getName(),
-								"-f", "-s" };//, "-oallow_root" };
-			FuseMount.mount( fmArgs, mdfs, null );
-		} catch (Exception e) {
-            e.printStackTrace();
-		}
-		*/
-		mdfs.mount( mount, false );
+		// Wait for the mount point to become available
+		Thread.sleep( 1000 * 4 );
+
+		// Now locate in the mdfs the data we just put...
+		String cmd = "ls " + mount + "/" + f.getName() + "/" + session;
+		System.out.println( cmd );
+		Process p = Runtime.getRuntime().exec( cmd );
+		p.waitFor();
+		int sc = p.exitValue();
+		assertEquals( sc, 0 );
+
+		sc = mdfs.umount();
+		assertEquals( sc, 0 );
 	}
 }
 
