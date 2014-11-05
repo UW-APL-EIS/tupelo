@@ -37,35 +37,37 @@ public class ContextListener implements ServletContextListener {
 	}
 
 	/**
-	   A Maven build buries a properties file in the war.  This prop
-	   file contains the Maven version of the module, which we can use
-	   to identify ourselves.
+	   A Maven-based build can be configured (the war plugin) to
+	   output various specification/implementation strings into a
+	   jar/war. We look for those here.  Alas, it looks like the
+	   Package-based inspection approach doesn't work for war files,
+	   so we drop down to a more manual way, inspecting the resource
+	   META-INF/MANIFEST.MF.
 
-	   Testing note: if we are testing the webapp using 'mvn
+	   @see http://stackoverflow.com/questions/14934299/how-to-get-package-version-at-running-tomcat
+
+	   Testing note: If we are testing the webapp using 'mvn
 	   jetty:run', we need to make this 'mvn jetty:run-war', since the
 	   former runs the webapp directly from the filesystem, e.g. using
 	   src/main/webapp as document root.  And no 'war' packaging is
-	   done so the prop we are looking for will not exist.
+	   done so the details we are looking for will not exist.
 	*/
 	private void locateVersion( ServletContext sc ) {
-		String version = "unknown";
-		String mavenGroupID = "edu.uw.apl.mwa";
-		String mavenArtifactID = "tupelo-webapp-server";
-		String mavenPomProperties =	"/META-INF/maven/" + mavenGroupID +
-			"/" + mavenArtifactID + "/pom.properties";
-		InputStream is = sc.getResourceAsStream( mavenPomProperties );
-		if( is != null ) {
-			Properties p = new Properties();
-			try {
-				p.load( is );
-				is.close();
-				String value = p.getProperty( "version" );
-				if( value != null )
-					version = value;
-			} catch( IOException ioe ) {
-				System.err.println( ioe );
+		Package p = getClass().getPackage();
+		String version = p.getImplementationVersion();
+		if( version == null ) {
+			Properties prp = new Properties();
+			InputStream is = sc.getResourceAsStream( "/META-INF/MANIFEST.MF" );
+			if( is != null ) {
+				try {
+					prp.load( is );
+					is.close();
+				} catch( IOException ioe ) {
+				}
 			}
+			version = prp.getProperty( "Implementation-Version" );
 		}
+		log.info( "Version: " + version );
 		sc.setAttribute( VERSIONKEY, version );
 	}
 	
@@ -80,43 +82,6 @@ public class ContextListener implements ServletContextListener {
 		File dataRoot = new File( rootS ).getCanonicalFile();
 		dataRoot.mkdirs();
 		log.info( "Store Root: " + dataRoot );
-		/*
-		  Properties p = new Properties();
-		try {
-			FileInputStream fis = new FileInputStream( configS );
-			p.load( fis );
-			fis.close();
-		} catch( IOException ioe ) {
-			log.warn( ioe );
-		}
-		String rootS = p.getProperty( "root" );
-		if( rootS == null ) {
-			String uh = System.getProperty( "user.home" );
-			rootS = uh + "/.manuka2/server";
-		}
-		*/
-		//		Logger log = Logger.getLogger( getClass().getPackage().getName() );
-		/*
-		  Logger log = Logger.getLogger( "edu.uw.apl.mwa.tupelo" );
-		log.setLevel( Level.DEBUG );
-		log.setAdditivity( false );
-		*/
-		
-		/*
-		  try {
-			File logDir = new File( dataRoot, "logs" );
-			File logFile = new File( logDir, "webapp.log" );
-			FileAppender fa = new FileAppender( new SimpleLayout(),
-												logFile.getPath() );
-			log.addAppender( fa );
-		} catch( IOException ioe ) {
-			System.err.println( ioe );
-		}
-		*/
-		
-		//		File root = new File( dataRoot, "server" );
-		//		log.info( "DataStore root: " + root );
-
 		Store store = new FilesystemStore( dataRoot );
 		
 		sc.setAttribute( STOREKEY, store );
