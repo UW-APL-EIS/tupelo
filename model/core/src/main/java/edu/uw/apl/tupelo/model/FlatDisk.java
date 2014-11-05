@@ -95,7 +95,17 @@ public class FlatDisk extends ManagedDisk {
 	public void readFromWriteTo( InputStream is, OutputStream os )
 		throws IOException {
 		header.writeTo( os );
-		IOUtils.copyLarge( is, os );
+		if( true ) {
+			IOUtils.copyLarge( is, os );
+		} else {
+			byte[] ba = new byte[1024*1024];
+			while( true ) {
+				int nin = is.read( ba );
+				if( nin < 0 )
+					break;
+				os.write( ba, 0, nin );
+			}
+		}
 	}
 	
 	public void writeTo( File f ) throws IOException {

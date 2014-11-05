@@ -304,7 +304,6 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					gtIndex++;
 					lba += header.grainSize;
 				}
-
 				/*
 				  A table's worth of grains just written, next comes
 				  the grain table describing them (their locations in
@@ -315,6 +314,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 				MetadataMarker mdm = new MetadataMarker
 					( fullGrainTableSizeSectors, MetadataMarker.TYPE_GT );
 				mdm.writeTo( dos );
+				dos.flush();
 
 
 				/*
@@ -352,7 +352,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		MetadataMarker mdm = new MetadataMarker
 			( grainDirectorySizeSectors, MetadataMarker.TYPE_GD );
 		mdm.writeTo( dos );
-
+		
 		// Record the gd offset so we can place it in the footer...
 		long gdOffset = dos.size() / Constants.SECTORLENGTH;
 		log.info( "Footer gdOffset: " + gdOffset );
@@ -389,8 +389,9 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		mdm.writeTo( dos );
 					 
 		log.info( "Written " + dos.size() );
-		dos.close();
-		is.close();
+		dos.flush();
+		//dos.close();
+		//is.close();
 	}
 
 	/**
