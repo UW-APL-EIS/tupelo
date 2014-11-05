@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# This codebase built using JDK 1.7 and requires a JRE 1.7 also...
+
+JARDIR=/opt/dims/jars
+ARTIFACT=tupelo-cli
+VERSION=0.0.1
+JAR=$ARTIFACT-$VERSION.jar
+PACKAGE=edu.uw.apl.tupelo.cli
+
+CLAZZ=PutData
+
+#echo `which java`
+
+exec java -cp $JARDIR/$JAR $PACKAGE.$CLAZZ "$@"
+
+# eof

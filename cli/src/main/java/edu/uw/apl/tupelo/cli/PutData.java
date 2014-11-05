@@ -48,7 +48,7 @@ public class PutData extends CliBase {
 					  "Force flat managed disk, default decides based on unmanaged data size" );
 		os.addOption( "o", false,
 					  "Force stream-optimized managed disk, default decides based on unmanaged data size" );
-		String usage = commonUsage() + "[-f] [-o] unmanagedData";
+		String usage = commonUsage() + "[-f] [-o] /path/to/unmanagedData";
 
 		final String HEADER = "";
 		final String FOOTER = "";

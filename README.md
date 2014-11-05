@@ -1,11 +1,12 @@
 Tupelo - A Disk Management System
+=================================
 
 Prerequisites
 -------------
 
 Tupelo is Java code, organized to build using Maven.  Tupelo is a
 'multi-module' Maven codebase.  Being Java and using Maven, Tupelo has
-two very obvious tool prerequisities:
+two very obvious tool prerequisites:
 
 A 1.7+ version of the Java Development Kit (JDK).  For installation on Ubuntu:
 
@@ -13,7 +14,7 @@ $ sudo apt-get install openjdk-7-jdk
 
 will install the OpenJDK toolset.  You may prefer the Sun/Oracle
 toolset, but that takes more work to install. See
-e.g. http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
+e.g. http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html.
 
 Apache Maven 3.0.5 or greater (earlier 2.* versions may work fine, but
 3.0.5 is our current reference). See install instructions at
@@ -22,10 +23,10 @@ http://maven.apache.org/download.cgi.  For quick install on Ubuntu:
 $ sudo apt-get install maven
 
 After installation of both tools, run 'mvn -v' which shows Maven's
-version and which JDK it has located.  You are hoping to see something very close to this:
+version and which JDK it has located.  You are hoping to see something
+very close to this:
 
 $ mvn -v
-
 
 Apache Maven 3.0.4
 Maven home: /usr/share/maven
@@ -37,17 +38,46 @@ OS name: "linux", version: "3.11.0-15-generic", arch: "amd64", family: "unix"
 Install
 -------
 
-Once the artifacts above are in your local Maven repo, Tupelo build can proceed:
+$ cd /path/to/tupelo-git-repo
 
-$ cd /path/to/tupelo
+$ mvn package
 
-$ mvn install
+will compile and package up all the Java code into what Maven calls
+'artifacts', which are just carefully named Java jar files.  You can
+alternatively execute
 
-That's it!
+$ make package
 
+which uses the local Makefile to invoke Maven. Then, 
+
+$ make install
+
+will take the jars and copy them to /opt/dims/jars, and copy driver
+shell scripts from ./bin to /opt/dims/bin.
+
+Unit tests
+----------
+
+The above compile/package/install process skips all unit tests.  To
+run them (and some can take minutes to complete), we use a Maven
+profile called 'tester', like this:
+
+$ mvn test -Ptester
+
+which will run all the unit tests.  The unit tests for the http/client
+sub-module will fail unless you first fire up a 'Tupelo web-based
+store', like this (in a different terminal)
+
+$ cd /path/to/tupelo-git-repo/http/server
+
+$ mvn jetty:run
+
+which spawns the Jetty web container to host the Tupelo web-based
+store.  The http/client unit tests then access this store via
+url base http://localhost:8888/tupelo/
 
 Dependencies (informational only, NOT required setup)
-------------
+----------------------------------------------------
 
 Tupelo dependencies (i.e. 3rd party code it builds against) include 
 
@@ -59,10 +89,12 @@ Tupelo dependencies (i.e. 3rd party code it builds against) include
   fuse4j,tsk4j)
 
 These artifacts (jars,poms) are not yet available on public facing
-Maven repositories (i.e Central), so are bundled into a project-local
-Maven repository at ./respository.  The modules that need these
-dependencies (cli and fuse) include this local repository in their
-pom.
+Maven repositories (i.e. Maven Central), so are bundled into a
+project-local Maven repository at ./repository.  The modules that
+depend on these artifacts (cli and fuse) include this local repository
+in their pom.
+
+That's all folks...
 
 
 

@@ -4,6 +4,12 @@
 			     http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <properties>
+    <!-- Override this by activating the 'tester' profile -->
+    <skipTests>true</skipTests>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
   <groupId>edu.uw.apl</groupId>
   <artifactId>tupelo-parent</artifactId>
   <version>0.0.1</version>
@@ -12,15 +18,21 @@
   <name>Tupelo Disk Management - Parent</name>
   <url>http://eis.apl.uw.edu</url>
   
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
-
   <organization>
     <name>Applied Physics Laboratory, University of Washington</name>
     <url>http://www.apl.uw.edu</url>
   </organization>
-  
+
+  <profiles>
+    <profile>
+      <id>tester</id>
+      <properties>
+	<skipTests>false</skipTests>
+      </properties>
+    </profile>
+  </profiles>
+
+
   <developers>
     <developer>
       <id>stuart</id>

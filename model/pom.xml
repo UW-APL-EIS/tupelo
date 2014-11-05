@@ -18,8 +18,8 @@
 
   <modules>
     <module>core</module>
-<!--
     <module>physical</module>
+<!--
     <module>virtual</module>
 -->
   </modules>

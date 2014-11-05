@@ -4,11 +4,6 @@
 			     http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <properties>
-    <!-- Override this by activating the 'web' profile -->
-    <skipTests>true</skipTests>
-  </properties>
-
   <parent>
     <groupId>edu.uw.apl</groupId>
     <artifactId>tupelo-http-parent</artifactId>
@@ -19,15 +14,6 @@
   <artifactId>tupelo-http-client</artifactId>
   <version>0.0.1</version>
   <name>Tupelo Disk Management - Http Store Proxy</name>
-
-  <profiles>
-    <profile>
-      <id>web</id>
-      <properties>
-	<skipTests>false</skipTests>
-      </properties>
-    </profile>
-  </profiles>
 
   <dependencies>
     <dependency>
