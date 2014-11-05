@@ -64,7 +64,7 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 
 	}
 
-	public void _testNuga2() throws IOException {
+	public void testNuga2() throws IOException {
 		File f = new File( "data/nuga2.dd" );
 		if( !f.exists() )
 			return;
