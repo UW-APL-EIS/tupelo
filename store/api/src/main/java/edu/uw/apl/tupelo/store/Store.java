@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.ProgressMonitor;
 import edu.uw.apl.tupelo.model.Session;
 
 public interface Store {
@@ -19,7 +20,8 @@ public interface Store {
 
 	public void put( ManagedDisk md ) throws IOException;
 
-	public void put( ManagedDisk md, ProgressMonitor pm ) throws IOException;
+	public void put( ManagedDisk md, ProgressMonitor.Callback cb,
+					 int progressUpdateIntervalSecs ) throws IOException;
 
 	public List<byte[]> digest( ManagedDiskDescriptor mdd )
 		throws IOException;

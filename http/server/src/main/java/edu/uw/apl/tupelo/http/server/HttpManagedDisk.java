@@ -63,6 +63,11 @@ public class HttpManagedDisk extends ManagedDisk {
 	}
 
 	@Override
+	public void readFromWriteTo( InputStream is, OutputStream os ) {
+		throw new IllegalStateException( getClass() + ".readFromWriteTo" );
+	}
+
+	@Override
 	public InputStream getInputStream() throws IOException {
 		throw new IllegalStateException( getClass() + ".getInputStream!!" );
 	}

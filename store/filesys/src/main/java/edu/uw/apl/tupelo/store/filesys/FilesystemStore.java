@@ -29,7 +29,7 @@ import org.apache.commons.io.FileUtils;
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
-import edu.uw.apl.tupelo.store.ProgressMonitor;
+import edu.uw.apl.tupelo.model.ProgressMonitor;
 import edu.uw.apl.tupelo.store.Store;
 
 /**
@@ -177,7 +177,8 @@ public class FilesystemStore implements Store {
 	}
 
 	@Override
-	public synchronized void put( ManagedDisk md, ProgressMonitor pm )
+	public synchronized void put( ManagedDisk md, ProgressMonitor.Callback cb,
+								  int progressUpdateIntervalSecs )
 		throws IOException {
 
 		// TODO

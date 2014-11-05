@@ -15,7 +15,7 @@ import edu.uw.apl.tupelo.model.Constants;
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
-import edu.uw.apl.tupelo.store.ProgressMonitor;
+import edu.uw.apl.tupelo.model.ProgressMonitor;
 import edu.uw.apl.tupelo.store.Store;
 
 /**
@@ -60,12 +60,16 @@ public class NullStore implements Store {
 	}
 
 	@Override
-	public void put( ManagedDisk md, ProgressMonitor pm ) throws IOException {
+	public synchronized void put( ManagedDisk md, ProgressMonitor.Callback cb,
+								  int progressUpdateIntervalSecs )
+		throws IOException {
+
 		/*
 		  We do NOT just want to be an empty implementation.
 		  Rather, we want keep the progress monitor informed
 		  so use a /dev/null like OutputStream
 		*/
+		// TODO
 	}
 
 	@Override
