@@ -1,9 +1,11 @@
-package edu.uw.apl.tupelo.store;
+package edu.uw.apl.tupelo.model;
+
+import java.io.FilterInputStream;
 
 /**
- * Monitoring how Store operations are proceeding.  A way to
- * print the familiar "X % finished" to the user, keeping
- * them informed of operations
+ * Used for monitoring how ManagedDisk (and Store) operations are
+ * proceeding.  A way to print the familiar "X % finished" to the
+ * user, keeping them informed of possibly lengthy operations.
  */
 public interface ProgressMonitor {
 
@@ -15,6 +17,7 @@ public interface ProgressMonitor {
 	 * store put
 	 */
 	public void percentComplete( int percent, long elapsed );
+
 }
 
 // eof

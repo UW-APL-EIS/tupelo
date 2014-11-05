@@ -26,6 +26,15 @@ abstract public class ManagedDisk {
 		this.managedData = managedData;
 		log = LogFactory.getLog( getClass() );
 	}
+
+	/**
+	 * Solely for the benefit of ProgressMonitor operations, who
+	 * need a handle on the InputStream of the unmanagedData associated
+	 * with a ManagedDisk, to monitor the Unmanaged -> Managed data transfer.
+	 */
+	public UnmanagedDisk getUnmanaged() {
+		return unmanagedData;
+	}
 	
 	public boolean hasParent() {
 		return !header.uuidParent.equals( Constants.NULLUUID );
@@ -47,8 +56,10 @@ abstract public class ManagedDisk {
 	
 	abstract public void setParent( ManagedDisk md );
 
-	//	abstract public void writeTo( File f ) throws IOException;
 	abstract public void writeTo( OutputStream os ) throws IOException;
+
+	abstract public void readFromWriteTo( InputStream is, OutputStream os )
+		throws IOException;
 
 	abstract public InputStream getInputStream() throws IOException;
 

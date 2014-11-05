@@ -22,7 +22,6 @@ import java.io.IOException;
  
 public interface UnmanagedDisk {
 
-
 	public String getID();
 	
 	public long size();

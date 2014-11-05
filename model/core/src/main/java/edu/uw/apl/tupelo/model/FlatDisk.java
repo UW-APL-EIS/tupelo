@@ -85,6 +85,19 @@ public class FlatDisk extends ManagedDisk {
 		is.close();
 	}
 
+	/**
+	 * @param is An InputStream implementation likely to be
+	 * participating in a byte count operation for ProgressMonitor
+	 * purposes.  All data is to be read from this stream, NOT from
+	 * the result of the FlatDisk's own ManagedDisk.getInputStream()
+	 */
+	@Override
+	public void readFromWriteTo( InputStream is, OutputStream os )
+		throws IOException {
+		header.writeTo( os );
+		IOUtils.copyLarge( is, os );
+	}
+	
 	public void writeTo( File f ) throws IOException {
 		FileOutputStream fos = new FileOutputStream( f );
 		BufferedOutputStream bos = new BufferedOutputStream( fos, 1024*1024 );

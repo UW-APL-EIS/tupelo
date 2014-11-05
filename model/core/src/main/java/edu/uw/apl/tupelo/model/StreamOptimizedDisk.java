@@ -183,7 +183,24 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			throw new IllegalStateException
 				( header.diskID + ": unmanagedData null" );
 		InputStream is = unmanagedData.getInputStream();
-
+		readFromWriteTo( is, os );
+		is.close();
+	}
+	
+	/**
+	 * @param is An InputStream implementation likely to be
+	 * participating in a byte count operation for ProgressMonitor
+	 * purposes.  All data is to be read from this stream, NOT from
+	 * the result of the StreamOptimizedDisk's own
+	 * ManagedDisk.getInputStream().
+	 *
+	 * Unlike FlatDisk however, our own writeTo( OutputStream ) calls
+	 * this, since the write operation is involved and we do NOT want
+	 * to duplicate it.
+	 */
+	@Override
+	public void readFromWriteTo( InputStream is, OutputStream os )
+		throws IOException {
 		DataOutputStream dos = new DataOutputStream( os );
 		header.writeTo( (DataOutput)dos );
 		
