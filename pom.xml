@@ -47,6 +47,7 @@
     <module>store</module>
     <module>fuse</module> 
     <module>http</module>
+    <module>amqp</module>
     <module>cli</module>
   </modules>
 
