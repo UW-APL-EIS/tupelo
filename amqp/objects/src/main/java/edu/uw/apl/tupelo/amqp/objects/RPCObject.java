@@ -67,7 +67,7 @@ public class RPCObject<T>  {
 
 	static private String VERSION = "UNKOWN";
 	static {
-		Package p = DIMSBase.class.getPackage();
+		Package p = RPCObject.class.getPackage();
 		try {
 			VERSION = p.getImplementationVersion();
 			// System.err.println( "Version: " + VERSION );
