@@ -67,6 +67,10 @@
   </servlet-mapping>	
   <servlet-mapping>
     <servlet-name>MiscServlet</servlet-name>
+    <url-pattern>/version</url-pattern>
+  </servlet-mapping>	
+  <servlet-mapping>
+    <servlet-name>MiscServlet</servlet-name>
     <url-pattern>/usablespace</url-pattern>
   </servlet-mapping>	
   <servlet-mapping>
