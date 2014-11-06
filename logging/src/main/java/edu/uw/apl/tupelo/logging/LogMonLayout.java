@@ -85,7 +85,7 @@ public class LogMonLayout extends Layout {
 
 	private final UUID uuid;
 	
-	static private final String ISO8601 = "yyyy-MM-dd'T'HH:mm:ssZ";
+	static private final String ISO8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS000XXX";
 
 	static private String HOSTNAME = "UNKNOWN";
 	static {
@@ -95,7 +95,6 @@ public class LogMonLayout extends Layout {
 		} catch( UnknownHostException uhe ) {
 		}
 	}
-		
 }
 
 // eof
