@@ -46,7 +46,6 @@ public class FlatDisk extends ManagedDisk {
 		header = new Header( diskID, session, DiskTypes.FLAT, parent,
 							 capacity, GRAINSIZE_DEFAULT );
 		header.dataOffset = Header.SIZEOF;
-
 	}
 
 	// Called from ManagedDisk.readFrom()
@@ -68,6 +67,7 @@ public class FlatDisk extends ManagedDisk {
 		throw new IllegalStateException( getClass() + ".setParent!!" );
 	}
 
+	@Override
 	public void writeTo( OutputStream os ) throws IOException {
 		if( unmanagedData == null )
 			throw new IllegalStateException
@@ -75,10 +75,39 @@ public class FlatDisk extends ManagedDisk {
 		InputStream is = unmanagedData.getInputStream();
 
 		header.writeTo( os );
-		IOUtils.copyLarge( is, os );
+		// IOUtils uses 4k buffers, pah!
+		if( false ) {
+			byte[] ba = new byte[1024*1024*16];
+			IOUtils.copyLarge( is, os, ba );
+		} else {
+			IOUtils.copyLarge( is, os );
+		}
 		is.close();
 	}
 
+	/**
+	 * @param is An InputStream implementation likely to be
+	 * participating in a byte count operation for ProgressMonitor
+	 * purposes.  All data is to be read from this stream, NOT from
+	 * the result of the FlatDisk's own ManagedDisk.getInputStream()
+	 */
+	@Override
+	public void readFromWriteTo( InputStream is, OutputStream os )
+		throws IOException {
+		header.writeTo( os );
+		if( true ) {
+			IOUtils.copyLarge( is, os );
+		} else {
+			byte[] ba = new byte[1024*1024];
+			while( true ) {
+				int nin = is.read( ba );
+				if( nin < 0 )
+					break;
+				os.write( ba, 0, nin );
+			}
+		}
+	}
+	
 	public void writeTo( File f ) throws IOException {
 		FileOutputStream fos = new FileOutputStream( f );
 		BufferedOutputStream bos = new BufferedOutputStream( fos, 1024*1024 );
@@ -97,26 +126,20 @@ public class FlatDisk extends ManagedDisk {
 	}
 
 	@Override
-	public RandomAccessRead getRandomAccessRead() throws IOException {
+	public SeekableInputStream getSeekableInputStream() throws IOException {
 		return new FlatDiskRandomAccessRead();
 	}
 
-	class FlatDiskRandomAccessRead extends AbstractRandomAccessRead {
+	class FlatDiskRandomAccessRead extends SeekableInputStream {
 		FlatDiskRandomAccessRead() throws IOException {
+			super( size() );
 			raf = new RandomAccessFile( managedData, "r" );
 			raf.seek( header.dataOffset );
-			size = size();
-			posn = 0;
 		}
 
 		@Override
 		public void close() throws IOException {
 			raf.close();
-		}
-
-		@Override
-		public long length() throws IOException {
-			return size;
 		}
 
 		@Override
@@ -141,27 +164,12 @@ public class FlatDisk extends ManagedDisk {
 		*/
 		   
 		@Override
-		public int read( byte[] ba, int off, int len ) throws IOException {
+		public int readImpl( byte[] ba, int off, int len ) throws IOException {
 
-			/*
-			  checks from the contract for InputStream, which docs for
-			  RandomAccessFile say it honors
-			*/
-			if( ba == null )
-				throw new NullPointerException();
-			if( off < 0 || len < 0 || off + len > ba.length ) {
-				throw new IndexOutOfBoundsException();
-			}
-			if( len == 0 )
-				return 0;
-			
-			if( posn >= size ) {
-				return -1;
-			}
-			
 			long actualL = Math.min( size - posn, len );
-			int actual = (int)actualL;
-			//logger.debug( "Actual " + actualL + " " + actual );
+			int actual = actualL > Integer.MAX_VALUE ? Integer.MAX_VALUE :
+				(int)actualL;
+
 			int total = 0;
 			while( total < actual ) {
 				int nin = raf.read( ba, off+total, len-total );
@@ -172,11 +180,7 @@ public class FlatDisk extends ManagedDisk {
 		}
 
 		private final RandomAccessFile raf;
-		private final long size;
-		private long posn;
 	}
-
-	
 }
 
 // eof

@@ -57,7 +57,7 @@ abstract public class ManagedDiskInputStream extends InputStream {
 		if( n == -1 ) {
 			throw new IOException();
 		}
-		posn += n;
+		//		posn += n;
 		return n;
 	}
 

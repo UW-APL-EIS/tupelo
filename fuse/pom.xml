@@ -9,16 +9,20 @@
     <version>0.0.1</version>
   </parent>
 
-  <properties>
-    <aol>${os.arch}-${os.name}</aol>
-  </properties>
-
-  <artifactId>tupelo-fuse-${aol}</artifactId>
+  <artifactId>tupelo-fuse</artifactId>
   <version>0.0.1</version>
   <packaging>jar</packaging>
 
   <name>Tupelo Disk Management - Mountable FileSystem via Fuse</name>
   <url>http://maven.apache.org</url>
+
+  <repositories>
+    <repository>
+      <id>tupelo.local</id>
+      <name>tupelo</name>
+      <url>file:${project.basedir}/../.repository</url>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>
@@ -29,8 +33,8 @@
 
     <!-- 
 	 For fuse test cases, we must build some form of Store, so we
-	 build a FileSystem one.  Dependency thus only at test scope,
-	 not at regular runtime
+	 build a FileSystem one.  The dependency on the store-filesys
+	 artifact is thus only at test scope, not at regular runtime.
     -->
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -41,8 +45,8 @@
 
     <dependency>
       <groupId>edu.uw.apl.commons</groupId>
-      <artifactId>fuse4j-core-${aol}</artifactId>
-      <version>2.4.0.0-SNAPSHOT</version>
+      <artifactId>fuse4j-core</artifactId>
+      <version>2400.0.1</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
@@ -60,35 +64,25 @@
     </dependency>
   </dependencies>
   
-  <build>
-    <defaultGoal>compile</defaultGoal>
-      <plugins>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-compiler-plugin</artifactId>
-	  <version>2.0.2</version>
-	  <configuration>
-	    <source>1.7</source>
-	    <target>1.7</target>
-	  </configuration>
-	</plugin>
 
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-jar-plugin</artifactId>
-	  <configuration>
-	    <archive>                   
-	      <manifest>
-		<addDefaultImplementationEntries>
-		  true
-		</addDefaultImplementationEntries>
-		<addDefaultSpecificationEntries>
-		  true
-		</addDefaultSpecificationEntries>
-	      </manifest>
-	    </archive>
-	  </configuration>
-	</plugin>
+  <build>
+    <plugins>
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-jar-plugin</artifactId>
+	<configuration>
+	  <archive>                   
+	    <manifest>
+	      <addDefaultImplementationEntries>
+		true
+	      </addDefaultImplementationEntries>
+	      <addDefaultSpecificationEntries>
+		true
+	      </addDefaultSpecificationEntries>
+	    </manifest>
+	  </archive>
+	</configuration>
+      </plugin>
     </plugins>
   </build>
 </project>

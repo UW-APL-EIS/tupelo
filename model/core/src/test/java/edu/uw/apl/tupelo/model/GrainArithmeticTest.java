@@ -20,6 +20,10 @@ public class GrainArithmeticTest extends junit.framework.TestCase {
 		test( 1024L * 1024L * 1024L * 6, 128, 512 );
 	}
 
+	public void _test128g() {
+		test( 1024L * 1024L * 1024L * 128L, 128, 512 );
+	}
+
 	private void test( long limit, int grainSize, int numGTEsPerGT ) {
 		long grainSizeBytes = grainSize * Constants.SECTORLENGTH;
 		int log2GrainSize = log2( grainSizeBytes );

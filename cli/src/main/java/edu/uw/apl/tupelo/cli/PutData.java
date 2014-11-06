@@ -6,18 +6,25 @@ import java.util.Collection;
 
 import org.apache.commons.cli.*;
 
+import edu.uw.apl.tupelo.model.DiskImage;
 import edu.uw.apl.tupelo.model.FlatDisk;
+import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
+import edu.uw.apl.tupelo.model.StreamOptimizedDisk;
+import edu.uw.apl.tupelo.model.UnmanagedDisk;
 import edu.uw.apl.tupelo.store.Store;
-import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 
 /**
  * Simple Tupelo Utility: add some arbitrary disk image file to a
- * local Tupelo Filesystem-based Store.
+ * local Tupelo Filesystem-based Store. To use:
+ *
+ * PutData imageFile
+ *
+ * see the supported options, below
  */
 
-public class PutData {
+public class PutData extends CliBase {
 
 	static public void main( String[] args ) {
 		PutData main = new PutData();
@@ -26,85 +33,91 @@ public class PutData {
 			main.start();
 		} catch( Exception e ) {
 			System.err.println( e );
+			if( debug )
+				e.printStackTrace();
 			System.exit(-1);
 		}
 	}
 
 	public PutData() {
-		storeLocation = STORELOCATIONDEFAULT;
-	}
-
-	static private void printUsage( Options os, String usage,
-									String header, String footer ) {
-		HelpFormatter hf = new HelpFormatter();
-		hf.setWidth( 80 );
-		hf.printHelp( usage, header, os, footer );
 	}
 
 	public void readArgs( String[] args ) {
-		Options os = new Options();
-		os.addOption( "s", true, "Store location, defaults to " +
-					  STORELOCATIONDEFAULT );
-		os.addOption( "f", false, "Force flatDisk, default decides based on size" );
+		Options os = commonOptions();
+		os.addOption( "f", false,
+					  "Force flat managed disk, default decides based on unmanaged data size" );
+		os.addOption( "o", false,
+					  "Force stream-optimized managed disk, default decides based on unmanaged data size" );
+		String usage = commonUsage() + "[-f] [-o] /path/to/unmanagedData";
 
-		final String USAGE =
-			PutData.class.getName() + " [-s storeLocation] [-f] rawData";
 		final String HEADER = "";
 		final String FOOTER = "";
-		
 		CommandLineParser clp = new PosixParser();
 		CommandLine cl = null;
 		try {
 			cl = clp.parse( os, args );
 		} catch( ParseException pe ) {
-			printUsage( os, USAGE, HEADER, FOOTER );
+			printUsage( os, usage, HEADER, FOOTER );
 			System.exit(1);
 		}
+		commonParse( os, cl, usage, HEADER, FOOTER );
+
 		forceFlatDisk = cl.hasOption( "f" );
-		if( cl.hasOption( "s" ) ) {
-			storeLocation = cl.getOptionValue( "s" );
-		}
+		forceStreamOptimizedDisk = cl.hasOption( "o" );
 		args = cl.getArgs();
 		if( args.length > 0 ) {
-			rawData = new java.io.File( args[0] );
+			rawData = new File( args[0] );
 			if( !rawData.exists() ) {
 				// like bash would do, write to stderr...
 				System.err.println( rawData + ": No such file or directory" );
 				System.exit(-1);
 			}
 		} else {
-			printUsage( os, USAGE, HEADER, FOOTER );
+			printUsage( os, usage, HEADER, FOOTER );
 			System.exit(1);
 		}
 	}
 	
 	public void start() throws IOException {
 
-		File dir = new File( storeLocation );
-		Store s = new FilesystemStore( dir );
-		System.out.println( "Store.usableSpace:" + s.getUsableSpace() );
+		Store s = Utils.buildStore( storeLocation );
+		if( debug )
+			System.out.println( "Store: " + s );
+		
+		log.info( getClass() + " " + storeLocation );
+
+		System.out.println( "Store.usableSpace: " + s.getUsableSpace() );
 		Collection<ManagedDiskDescriptor> mdds1 = s.enumerate();
 		System.out.println( "Stored data: " + mdds1 );
 
 		Session session = s.newSession();
-		String diskID = rawData.getName();
-		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( diskID, session );
+		UnmanagedDisk ud = new DiskImage( rawData );
+		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
+															   session );
 		System.out.println( "Storing: " + mdd +
-							"(" + rawData.length() + " bytes)" );
-		
-		FlatDisk d = new FlatDisk( rawData, diskID, session );
-		s.put( d );
+							" (" + ud.size() + " bytes)" );
+
+		ManagedDisk md = null;
+		if( forceFlatDisk ) {
+			md = new FlatDisk( ud, session );
+		} else if( forceStreamOptimizedDisk ) {
+			md = new StreamOptimizedDisk( ud, session );
+		} else {
+			if( ud.size() < 1024L * 1024 * 1024 ) {
+				md = new FlatDisk( ud, session );
+			} else {
+				md = new StreamOptimizedDisk( ud, session );
+			}
+		}
+		s.put( md );
 
 		Collection<ManagedDiskDescriptor> mdds2 = s.enumerate();
 		System.out.println( "Stored data: " + mdds2 );
 	}
 
 
-	boolean forceFlatDisk;
-	String storeLocation;
+	boolean forceFlatDisk, forceStreamOptimizedDisk;
 	File rawData;
-
-	static final String STORELOCATIONDEFAULT = "./test-store";
 }
 
 // eof

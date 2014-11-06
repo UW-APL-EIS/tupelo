@@ -1,18 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <!-- 
-     Though THIS module has no native (JNI) code, it depends on others
-     (tupelo-fuse, tsk4j) which DO have native code.  Hence the need
-     to specify the AOL (Architecture-OperatingSystem-Linker) info, as
-     best as Java/Maven can.  If you DEPEND on an 'aol'-ed artifact,
-     YOU are an aol-ed artifact.
-  -->
-
-  <properties>
-    <aol>${os.arch}-${os.name}</aol>
-  </properties>
-
   <parent>
     <groupId>edu.uw.apl</groupId>
     <artifactId>tupelo-parent</artifactId>
@@ -20,10 +8,18 @@
   </parent>
 
   <groupId>edu.uw.apl</groupId>
-  <artifactId>tupelo-cli-${aol}</artifactId>
+  <artifactId>tupelo-cli</artifactId>
   <version>0.0.1</version>
   <name>Tupelo Disk Management - Command Line Utilities</name>
   <url>http://maven.apache.org</url>
+
+  <repositories>
+    <repository>
+      <id>tupelo.local</id>
+      <name>tupelo</name>
+      <url>file:${project.basedir}/../.repository</url>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>
@@ -33,13 +29,24 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>tupelo-fuse-${aol}</artifactId>
+      <artifactId>tupelo-http-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <!-- For logging to rabbitmq -->
+      <groupId>${project.groupId}</groupId>
+      <artifactId>tupelo-logging</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>tupelo-fuse</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>edu.uw.apl.commons</groupId>
-      <artifactId>tsk4j-core-${aol}</artifactId>
-      <version>413.0.0</version>
+      <artifactId>tsk4j-core</artifactId>
+      <version>413.0.2</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
@@ -49,7 +56,12 @@
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
     </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+    </dependency>
   </dependencies>
+
 
   <build>
     <defaultGoal>compile</defaultGoal>
@@ -80,7 +92,6 @@
       <plugin>
 	<groupId>org.apache.maven.plugins</groupId>
 	<artifactId>maven-dependency-plugin</artifactId>
-	<version>2.8</version>
 	<executions>
 	  <execution>
 	    <id>copy-dependencies</id>

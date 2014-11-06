@@ -26,6 +26,15 @@ abstract public class ManagedDisk {
 		this.managedData = managedData;
 		log = LogFactory.getLog( getClass() );
 	}
+
+	/**
+	 * Solely for the benefit of ProgressMonitor operations, who
+	 * need a handle on the InputStream of the unmanagedData associated
+	 * with a ManagedDisk, to monitor the Unmanaged -> Managed data transfer.
+	 */
+	public UnmanagedDisk getUnmanaged() {
+		return unmanagedData;
+	}
 	
 	public boolean hasParent() {
 		return !header.uuidParent.equals( Constants.NULLUUID );
@@ -33,19 +42,28 @@ abstract public class ManagedDisk {
 
 	/**
 	 * Needed by Store implementations to attached a final managedData file
-	 * to an supplied ManagedDisk object (e.g. in put())
+	 * to a supplied ManagedDisk object (e.g. in put()).  The ManagedDisk
+	 * object likely stays in memory, so needs its association to the
+	 * final store location on disk.
 	 */
 	public void setManagedData( File f ) {
 		managedData = f;
 	}
+
+	public void setCompression( Compressions c ) {
+		header.compressAlgorithm = c;
+	}
 	
 	abstract public void setParent( ManagedDisk md );
 
-	abstract public void writeTo( File f ) throws IOException;
+	abstract public void writeTo( OutputStream os ) throws IOException;
+
+	abstract public void readFromWriteTo( InputStream is, OutputStream os )
+		throws IOException;
 
 	abstract public InputStream getInputStream() throws IOException;
 
-	abstract public RandomAccessRead getRandomAccessRead() throws IOException;
+	abstract public SeekableInputStream getSeekableInputStream() throws IOException;
 
 	static public ManagedDisk readFrom( File managedDisk ) throws IOException {
 		ManagedDisk result = null;
@@ -82,6 +100,10 @@ abstract public class ManagedDisk {
 		return header.uuidParent;
 	}
 
+	public long grainSizeBytes() {
+		return header.grainSize * Constants.SECTORLENGTH;
+	}
+	
 	protected void setHeader( Header h ) {
 		header = h;
 	}
@@ -121,6 +143,7 @@ abstract public class ManagedDisk {
 			this.capacity = capacity;
 			this.grainSize = grainSize;
 			this.numGTEsPerGT = NUMGTESPERGT;
+			this.compressAlgorithm = Compressions.NONE;
 		}
 
 		Header( InputStream is ) throws IOException {
@@ -170,7 +193,8 @@ abstract public class ManagedDisk {
 			gdOffset = di.readLong();
 			rgdOffset = di.readLong();
 			dataOffset = di.readLong();
-			compressAlgorithm = di.readInt();
+			int compressAlgorithmInt = di.readInt();
+			compressAlgorithm = Compressions.values()[compressAlgorithmInt];
 		}
 
 		// LOOK: may not need this??
@@ -207,7 +231,7 @@ abstract public class ManagedDisk {
 			dop.writeLong( gdOffset );
 			dop.writeLong( rgdOffset );
 			dop.writeLong( dataOffset );
-			dop.writeInt( compressAlgorithm );
+			dop.writeInt( compressAlgorithm.ordinal() );
 
 			byte[] pad = new byte[SIZEOF - FIELDSIZETOTAL];
 			dop.write( pad );
@@ -228,7 +252,7 @@ abstract public class ManagedDisk {
 		int numGTEsPerGT;
 		long gdOffset, rgdOffset;
 		long dataOffset;
-		int compressAlgorithm;
+		Compressions compressAlgorithm;
 		
 		// almost CODEINE, wot no N
 		static public final int MAGIC = 0xC0DE10E;
@@ -259,6 +283,8 @@ abstract public class ManagedDisk {
 	
 	public enum DiskTypes { ERROR, FLAT, STREAMOPTIMIZED };
 	
+	public enum Compressions { NONE, DEFLATE, GZIP, SNAPPY };
+
 	// Tupelo Managed Disk == tmd
 	static public final String FILESUFFIX = ".tmd";
 	

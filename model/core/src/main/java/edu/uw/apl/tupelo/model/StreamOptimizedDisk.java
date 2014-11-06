@@ -15,9 +15,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.UUID;
-import java.util.zip.DeflaterOutputStream;
+import java.util.zip.Deflater;;
+import java.util.zip.DataFormatException;
+import java.util.zip.Inflater;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.io.FileUtils;
+
+
+import org.xerial.snappy.Snappy;
 
 /**
  * Named after VMWare's own 'stream optimized sparse extent', a way of
@@ -48,16 +55,24 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		header = new Header( diskID, session, DiskTypes.STREAMOPTIMIZED,
 							 parent, capacity, grainSize );
 
+		grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
+		grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
 		// dataOffset essentially meaningless for this type of data layout...
 		header.dataOffset = 0;
+		header.compressAlgorithm = Compressions.DEFLATE;
 	}
 	
 
 	// Called from ManagedDisk.readFrom()
-	public StreamOptimizedDisk( File managedData, Header h ) throws IOException {
+	public StreamOptimizedDisk( File managedData, Header h )
+		throws IOException {
 		super( null, managedData );
 		header = h;
-		zeroGrain = new byte[(int)(header.grainSize * Constants.SECTORLENGTH)];
+		grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
+		grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
+		zeroGrain = header.grainSize == GRAINSIZE_DEFAULT ?	ZEROGRAIN_DEFAULT:
+			new byte[(int)grainSizeBytes];
+		zeroGrainTable = new byte[(int)grainTableCoverageBytes];
 		readMetaData();
 	}
 
@@ -99,45 +114,52 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		log.info( "Footer.gdOffset: " + footer.gdOffset );
 		bais.close();
 
+		// sanity check, locate the GD marker, precedes the GD
 		if( true ) {
 			raf.seek( footer.gdOffset * Constants.SECTORLENGTH -
 					  Constants.SECTORLENGTH );
 			MetadataMarker mdm = MetadataMarker.readFrom( raf );
-			log.info( "Expected GD: actual " + mdm );
+			log.debug( "Expected GD: actual " + mdm );
 		}
 		
 		long grainCount = footer.capacity / footer.grainSize;
 		int grainTableCount = (int)alignUp(grainCount, footer.numGTEsPerGT) /
 			footer.numGTEsPerGT;
-		grainDirectory = new long[grainTableCount];
-		grainTables = new long[grainTableCount][];
+		long[] gdes = new long[grainTableCount];
 		raf.seek( footer.gdOffset * Constants.SECTORLENGTH );
-		for( int i = 0; i < grainDirectory.length; i++ ) {
+		for( int i = 0; i < gdes.length; i++ ) {
 			long gde = raf.readInt() & 0xffffffffL;
-			grainDirectory[i] = gde;
-			if( gde == 0 )
-				continue;
-			log.info( i + " " + gde );
+			log.debug( i + " " + gde );
+			gdes[i] = gde;
 		}
-
-		for( int i = 0; i < grainDirectory.length; i++ ) {
-			long gde = grainDirectory[i];
-			if( gde == 0 )
+		grainDirectory = new long[grainTableCount][];
+		for( int i = 0; i < gdes.length; i++ ) {
+			long gde = gdes[i];
+			
+			if( gde == 0 ) {
+				grainDirectory[i] = ZEROGDE;
 				continue;
-			long[] grainTable = new long[footer.numGTEsPerGT];
-
-			if( true ) {
-				raf.seek( gde * Constants.SECTORLENGTH - Constants.SECTORLENGTH );
-				MetadataMarker mdm = MetadataMarker.readFrom( raf );
-				log.info( "Expected GT at " + i + ": actual " + mdm );
 			}
-
+			if( gde == -1 ) {
+				grainDirectory[i] = PARENTGDE;
+				continue;
+			}
+			
+			// sanity check, locate the GT marker, precedes the GT
+			if( true ) {
+				raf.seek( gde * Constants.SECTORLENGTH -
+						  Constants.SECTORLENGTH );
+				MetadataMarker mdm = MetadataMarker.readFrom( raf );
+				log.debug( "Expected GT: actual " + mdm );
+			}
+			
 			raf.seek( gde * Constants.SECTORLENGTH );
+			long[] grainTable = new long[footer.numGTEsPerGT];
 			for( int gt = 0; gt < grainTable.length; gt++ ) {
 				long gte = raf.readInt() & 0xffffffffL;
 				grainTable[gt] = gte;
 			}
-			grainTables[i] = grainTable;
+			grainDirectory[i] = grainTable;
 		}
 		raf.close();
 	}
@@ -155,12 +177,30 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	  table.  Then, if we find all zeros, we can completely omit that
 	  grain table and set that grain directory entry to 0.
 	*/
+	@Override
 	public void writeTo( OutputStream os ) throws IOException {
 		if( unmanagedData == null )
 			throw new IllegalStateException
 				( header.diskID + ": unmanagedData null" );
 		InputStream is = unmanagedData.getInputStream();
-
+		readFromWriteTo( is, os );
+		is.close();
+	}
+	
+	/**
+	 * @param is An InputStream implementation likely to be
+	 * participating in a byte count operation for ProgressMonitor
+	 * purposes.  All data is to be read from this stream, NOT from
+	 * the result of the StreamOptimizedDisk's own
+	 * ManagedDisk.getInputStream().
+	 *
+	 * Unlike FlatDisk however, our own writeTo( OutputStream ) calls
+	 * this, since the write operation is involved and we do NOT want
+	 * to duplicate it.
+	 */
+	@Override
+	public void readFromWriteTo( InputStream is, OutputStream os )
+		throws IOException {
 		DataOutputStream dos = new DataOutputStream( os );
 		header.writeTo( (DataOutput)dos );
 		
@@ -173,6 +213,9 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		int gtIndex = 0;
 		long lba = 0;
 
+		// In pathological cases, the compression expands input!
+		byte[] compressedGrainBuffer = new byte[(int)(2*grainSizeBytes)];
+
 		/*
 		  So that all data structures line up on a sector boundary in the
 		  managed file, we pad where necessary (so use a subset of this)
@@ -180,7 +223,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		byte[] padding = new byte[Constants.SECTORLENGTH];
 		/*
 		  Remember: any offset in a GD or GT is an offset (in sectors)
-		  into the _managed_ data file.  The 'lba' values assiged to
+		  into the _managed_ data file.  The 'lba' values assigned to
 		  compressed grain marker represent offsets (in sectors) in
 		  the _unmanaged_ (i.e. real) data
 		*/
@@ -188,48 +231,48 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		int wholeGrainTables = (int)(grainCount / header.numGTEsPerGT );
 		log.info( "Whole Grain Tables " + wholeGrainTables  );
 		if( wholeGrainTables > 0 ) {
-			long grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
-			long grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
-			log.debug( "Grain Table Coverage Bytes " + grainTableCoverageBytes  );
 			byte[] ba = new byte[(int)grainTableCoverageBytes];
 			BufferedInputStream bis = new BufferedInputStream( is, ba.length );
 			for( int gt = 0; gt < wholeGrainTables; gt++ ) {
-				log.info( "GDIndex " + gdIndex );
+				log.debug( "GDIndex " + gdIndex );
 				int nin = bis.read( ba );
 				if( nin != ba.length )
 					throw new IllegalStateException( "Partial read!" );
 				gtIndex = 0;
-				// The whole grain table could be zeros...
-				boolean allZeros = true;
-				for( int b = 0; b < ba.length; b++ ) {
-					if( ba[b] != 0 ) {
-						//						log.debug( "!Zero GD at " + b );
-						allZeros = false;
-						break;
+
+				if( true ) {
+					// The whole grain table could be zeros...
+					boolean allZeros = true;
+					for( int b = 0; b < ba.length; b++ ) {
+						if( ba[b] != 0 ) {
+							//		log.debug( "!Zero GD at " + b );
+							allZeros = false;
+							break;
+						}
 					}
-				}
-				if( allZeros ) {
-					log.debug( "Zero GDE at " + gdIndex );
-					grainDirectory[gdIndex] = 0;
-					gdIndex++;
-					lba += header.grainSize * header.numGTEsPerGT;
-					continue;
+					if( allZeros ) {
+						log.debug( "Zero GDE at " + gdIndex );
+						grainDirectory[gdIndex] = 0;
+						gdIndex++;
+						lba += header.grainSize * header.numGTEsPerGT;
+						continue;
+					}
 				}
 				
 				// Some grains in the table could be zeros...
 				for( int g = 0; g < grainTable.length; g++ ) {
 					int offset = (int)(grainSizeBytes * g);
 					log.debug( "GT Offset " + offset );
-					allZeros = true;
+					boolean allZeros = true;
 					for( int b = 0; b < grainSizeBytes; b++ ) {
 						if( ba[offset+b] != 0 ) {
-							//						log.debug( "!Zero GT at " + b );
+							//log.debug( "!Zero GT at " + b );
 							allZeros = false;
 							break;
 						}
 					}
 					if( allZeros ) {
-						log.debug( "Zero GT at " + gtIndex );
+						log.debug( "Zero GT at " + gdIndex + " " + gtIndex );
 						grainTable[gtIndex] = 0;
 						gtIndex++;
 						lba += header.grainSize;
@@ -237,21 +280,22 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					}
 
 					// This grain is not zeros, compress
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					DeflaterOutputStream dfos = new DeflaterOutputStream( baos );
-					dfos.write( ba, offset, (int)grainSizeBytes );
-					byte[] compressed = baos.toByteArray();
-					log.debug( "Compressed: " + compressed.length );
+					int compressedLength =
+						compressGrain( ba, offset, (int)grainSizeBytes,
+									   compressedGrainBuffer );
+					log.debug( "Deflating " + gt + " "+ g +
+								  " = " + compressedLength );
+
 
 					/*
 					  Record in the grain table where in the managed
 					  data this compressed grain sits
 					*/
 					grainTable[gtIndex] = dos.size() / Constants.SECTORLENGTH;
-					GrainMarker gm = new GrainMarker( lba, compressed.length );
+					GrainMarker gm = new GrainMarker( lba, compressedLength );
 					gm.writeTo( dos );
-					dos.write( compressed );
-					long written = GrainMarker.SIZEOF + compressed.length;
+					dos.write( compressedGrainBuffer, 0, compressedLength );
+					long written = GrainMarker.SIZEOF + compressedLength;
 					// to do: pad to next sector of os
 					int padLen = (int)
 						(alignUp( written, Constants.SECTORLENGTH ) - written);
@@ -260,7 +304,6 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					gtIndex++;
 					lba += header.grainSize;
 				}
-
 				/*
 				  A table's worth of grains just written, next comes
 				  the grain table describing them (their locations in
@@ -271,6 +314,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 				MetadataMarker mdm = new MetadataMarker
 					( fullGrainTableSizeSectors, MetadataMarker.TYPE_GT );
 				mdm.writeTo( dos );
+				dos.flush();
 
 
 				/*
@@ -308,16 +352,20 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		MetadataMarker mdm = new MetadataMarker
 			( grainDirectorySizeSectors, MetadataMarker.TYPE_GD );
 		mdm.writeTo( dos );
-
+		
 		// Record the gd offset so we can place it in the footer...
 		long gdOffset = dos.size() / Constants.SECTORLENGTH;
 		log.info( "Footer gdOffset: " + gdOffset );
 
 		// This is the grain directory write...
 		for( int gde = 0; gde < grainDirectory.length; gde++ ) {
+			log.debug( "GD: " + gde + " "+ grainDirectory[gde] );
 			dos.writeInt( (int)grainDirectory[gde] );
 		}
-
+		int written = 4 * grainDirectory.length;
+		int padLen = (int)alignUp( written, Constants.SECTORLENGTH ) - written;
+		dos.write( padding, 0, padLen );
+		
 		/*
 		  The footer (a copy of the header) follows the grain
 		  directory (after its own marker that is).  The footer's
@@ -341,11 +389,86 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		mdm.writeTo( dos );
 					 
 		log.info( "Written " + dos.size() );
-		dos.close();
-		is.close();
+		dos.flush();
+		//dos.close();
+		//is.close();
+	}
+
+	/**
+	 * @return The compressed data count, in bytes
+	 */
+	private int compressGrain( byte[] ba, int offset, int len, byte[] output )
+		throws IOException {
+		int result = 0;
+		switch( header.compressAlgorithm ) {
+		case DEFLATE:
+			Deflater def = new Deflater();// Deflater.BEST_COMPRESSION );
+			def.setInput( ba, offset, len );
+			def.finish();
+			result = def.deflate( output );
+			def.end();
+			break;
+		case GZIP:
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			GZIPOutputStream gzos = new GZIPOutputStream( baos );
+			gzos.write( ba, offset, len );
+			gzos.finish();
+			//			gzos.close();
+			byte[] ba2 = baos.toByteArray();
+			System.arraycopy( ba2, 0, output, 0, ba2.length );
+			result = ba2.length;
+			/*
+			  System.out.println( result );
+			if( true )
+					System.exit(0);
+			*/
+			break;
+		case SNAPPY:
+			result = Snappy.compress( ba, offset, len, output, 0 );
+			break;
+		}
+		return result;
 	}
 	
-
+	/**
+	 * @return The uncompressed data count, in bytes
+	 */
+	private int uncompressGrain( byte[] ba, int offset, int len, byte[] output )
+		throws DataFormatException, IOException {
+		int result = 0;
+		switch( header.compressAlgorithm ) {
+		case DEFLATE:
+			Inflater inf = new Inflater();
+			inf.setInput( ba, offset, len );
+			result = inf.inflate( output );
+			inf.end();
+			break;
+		case GZIP:
+			ByteArrayInputStream bais = new ByteArrayInputStream( ba );
+			GZIPInputStream gzis = new GZIPInputStream( bais );
+			int total = 0;
+			while( total < output.length ) {
+				int nin = gzis.read( output, total, output.length - total );
+				//				System.out.println( nin + " " + total );
+				if( nin == -1 )
+					break;
+				total += nin;
+			}
+			gzis.close();
+			result = total;
+			break;
+		case SNAPPY:
+			if( true ) {
+				if( !Snappy.isValidCompressedBuffer( ba, offset, len ) )
+				throw new DataFormatException( "!isValidCompressedBuffer" );
+			}
+			result = Snappy.uncompress( ba, offset, len, output, 0 );
+			// to do
+			break;
+		}
+		return result;
+	}
+	
 	public void writeTo( File f ) throws IOException {
 		FileOutputStream fos = new FileOutputStream( f );
 		long defaultGrainTableCoverageBytes = GRAINSIZE_DEFAULT *
@@ -359,22 +482,28 @@ public class StreamOptimizedDisk extends ManagedDisk {
 
 	@Override
 	public InputStream getInputStream() throws IOException {
-		return new SODInputStream( size() );
+		return new SODRandomAccessRead( size() );
 	}
 
 	@Override
-	public RandomAccessRead getRandomAccessRead() throws IOException {
-		return null;
+	public SeekableInputStream getSeekableInputStream() throws IOException {
+		return new SODRandomAccessRead( size() );
 	}
 
-
-	class SODInputStream extends ManagedDiskInputStream {
-		SODInputStream( long size ) throws IOException {
+	class SODRandomAccessRead extends SeekableInputStream {
+		SODRandomAccessRead( long size ) throws IOException {
 			super( size );
 			raf = new RandomAccessFile( managedData, "r" );
-			grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
-			grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
-			posn = 0;
+			log2GrainSize = log2( grainSizeBytes );
+			log2GrainTableCoverage = log2( grainTableCoverageBytes );
+			//			log.info( grainSizeBytes + " " + grainTableSizeBytes );
+			log.info( "log2 " + log2GrainSize + " " + log2GrainTableCoverage );
+			/*
+			  Twice a grain since in pathological cases, compression
+			  actually EXPANDS the grain!
+			*/
+			compressedGrainBuffer = new byte[(int)(2*grainSizeBytes)];
+			grainBuffer = new byte[(int)grainSizeBytes];
 			dPos();
 		}
 
@@ -384,36 +513,97 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		}
 		   
 		@Override
+		public void seek( long s ) throws IOException {
+			// according to java.io.RandomAccessFile, no restriction on seek
+			posn = s;
+			dPos();
+		}
+
+		@Override
+		public long skip( long n ) throws IOException {
+			long result = super.skip( n );
+			dPos();
+			return result;
+		}
+		
+		@Override
 		public int readImpl( byte[] ba, int off, int len ) throws IOException {
+
+			log.debug( "Posn " + posn + " len  " + len );
 
 			// do min in long space, since size - posn may overflow int...
 			long actualL = Math.min( size - posn, len );
 
-			// LOOK: check int.max_value, else could get -ve by casting
-			int actual = (int)actualL;
+			// Cannot blindly coerce a long to int, could be -ve
+			int actual = actualL > Integer.MAX_VALUE ? Integer.MAX_VALUE :
+				(int)actualL;
 
 			//logger.debug( "Actual " + actualL + " " + actual );
 			int total = 0;
 			while( total < actual ) {
 				int left = actual - total;
-				int inGrain = (int)(grainSizeBytes - gOffset );
-				int fromGrain = Math.min( left, inGrain );
-				// LOOK: turn the switch into ifs, since cannot switch on long ??
-				int gde = (int)grainDirectory[gdIndex];
-				switch( gde ) {
-				case 0:
-					System.arraycopy( zeroGrain, 0, ba, off+total, fromGrain );
-					break;
-				default:
-					// to do
-					;
+				long[] gde = grainDirectory[gdIndex];
+				if( false ) {
+				} else if( gde == ZEROGDE ) {
+					log.debug( "Zero GD : "+ gdIndex );
+					int grainTableOffset = (int)
+						(gtIndex * grainSizeBytes + gOffset);
+					int inGrainTable = (int)
+						(grainTableCoverageBytes - grainTableOffset);
+					int fromGrainTable = Math.min( left, inGrainTable );
+					System.arraycopy( zeroGrainTable, grainTableOffset,
+									  ba, off+total, fromGrainTable );
+					log.debug( len + " " + actual + " " +
+							   left + " " + inGrainTable + " " +
+							   fromGrainTable );
+					total += fromGrainTable;
+					posn += fromGrainTable;
+				} else if( gde == PARENTGDE ) {
+					throw new IllegalStateException( "PARENTGDE!" );
+				} else {
+					int inGrain = (int)(grainSizeBytes - gOffset );
+					int fromGrain = Math.min( left, inGrain );
+					log.debug( len + " " + actual + " " + left + " " +
+							   inGrain +
+							   " " + fromGrain );
+					long grainMarker = gde[gtIndex];
+					if( grainMarker == 0 ) {
+						log.debug( "Zero GT : "+ gdIndex + " " + gtIndex );
+						System.arraycopy( zeroGrain, 0,
+										  ba, off+total, fromGrain );
+					} else {
+						// LOOK: same as last grain accessed ???
+						raf.seek( grainMarker * Constants.SECTORLENGTH );
+						GrainMarker gm = GrainMarker.readFrom( raf );
+						int nin = raf.read( compressedGrainBuffer,
+											0, gm.size );
+						if( nin != gm.size )
+							throw new IllegalStateException
+								( "Partial read: "+ nin + " " + gm.size);
+						log.debug( "Inflating " + gdIndex + " "+ gtIndex +
+								  " = " + nin + " " + gm.lba );
+						try {
+							int actualLength = uncompressGrain
+								( compressedGrainBuffer, 0, nin, grainBuffer );
+							if( actualLength != grainSizeBytes )
+								throw new IllegalStateException
+									( "Bad inflate len: " + actualLength );
+							System.arraycopy( grainBuffer, (int)gOffset,
+											  ba, off+total, fromGrain );
+						} catch( DataFormatException dfe ) {
+							// now what ???
+							log.warn( dfe );
+						}
+					}
+					total += fromGrain;
+					posn += fromGrain;
 				}
-				total += fromGrain;
-				posn += fromGrain;
+				log.debug( total + " " + posn );
 				dPos();
 			}
 			return total;
 		}
+
 
 		/**
 		   Called whenever the local posn changes value.
@@ -435,27 +625,35 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			if( posn >= size )
 				return;
 
-			// LOOK: use pow2 here to eliminate / and % ops !!
+			// Note: All arithmetic using shifts/masks not multiply/divide !!
 			
-			long unmanagedOffset = posn;
-			gdIndex = (int)(posn / grainTableCoverageBytes);
-			// this next operation MUST be done in long space, NOT int...
-			gtIndex = (int)((posn - grainTableCoverageBytes * gdIndex) /
-							grainSizeBytes);
-			gOffset = (int)(posn % grainSizeBytes);
+			gdIndex = (int)(posn >>> log2GrainTableCoverage);
+			long inTable = posn - ((long)gdIndex << log2GrainTableCoverage);
+			gtIndex = (int)(inTable >>> log2GrainSize);
+			gOffset = inTable & (grainSizeBytes - 1);
 
 			if( log.isDebugEnabled() )
 				log.debug( "gdIndex: " + gdIndex +
 							  " gtIndex: " + gtIndex +
 							  " gOffset: " + gOffset );
 		}
-
 	
 		private final RandomAccessFile raf;
-		private final long grainSizeBytes, grainTableCoverageBytes;
-		private int gdIndex, gtIndex, gOffset;
+		private int log2GrainSize, log2GrainTableCoverage;
+		private byte[] compressedGrainBuffer;
+		private byte[] grainBuffer;
+		private int gdIndex, gtIndex;
+		private long gOffset;
 	}
 	
+	static int log2( long i ) {
+		for( int p = 0; p < 32; p++ ) {
+			if( i == 1 << p )
+				return p;
+		}
+		throw new IllegalArgumentException( "Not a pow2: " + i );
+	}
+
 	/**
 	   struct GrainMarker {
 	     long lba;
@@ -471,6 +669,12 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			dos.writeLong( lba );
 			dos.writeInt( size );
 		}
+		static GrainMarker readFrom( DataInput di ) throws IOException {
+			long lba = di.readLong();
+			int size = di.readInt();
+			return new GrainMarker( lba, size );
+		}
+		
 		final long lba;
 		final int size;
 
@@ -532,9 +736,17 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	}
 	
 	private ManagedDisk parent;
+	private long grainSizeBytes, grainTableCoverageBytes;
 	private byte[] zeroGrain;
-	private long[] grainDirectory;
-	private long[][] grainTables;
+	private byte[] zeroGrainTable;
+	private long[][] grainDirectory;
+
+	
+	static private final byte[] ZEROGRAIN_DEFAULT =
+		new byte[(int)(GRAINSIZE_DEFAULT * Constants.SECTORLENGTH)];
+
+	static private long[] ZEROGDE = new long[0];
+	static private long[] PARENTGDE = new long[0];
 }
 
 // eof

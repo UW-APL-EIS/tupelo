@@ -1,5 +1,6 @@
 package edu.uw.apl.tupelo.model;
 
+import java.util.Comparator;
 import java.util.regex.Pattern;
 
 /**
@@ -70,6 +71,27 @@ public class ManagedDiskDescriptor implements java.io.Serializable {
 
 	static public final Pattern DISKIDREGEX = Pattern.compile
 		( "[A-Za-z0-9_:\\-\\. ]+" );
+
+	/*
+	  For a 'sensible' sort ordering that 'looks good' when displaying
+	  a list of ManagedDiskDescriptors, do lexocographic sort on WHAT
+	  (the disk id) followed by time order sort on WHEN (the session)
+
+	*/
+	
+	static public final Comparator<ManagedDiskDescriptor>
+		DEFAULTCOMPARATOR = new Comparator<ManagedDiskDescriptor>() {
+		@Override
+		public int compare( ManagedDiskDescriptor o1,
+							ManagedDiskDescriptor o2 ) {
+			int i = o1.getDiskID().compareTo( o2.getDiskID() );
+			if( i != 0 )
+				return i;
+			return o1.getSession().compareTo( o2.getSession() );
+		}
+	};
+
+	static final long serialVersionUID = 2833866706524676569L;
 
 }
 
