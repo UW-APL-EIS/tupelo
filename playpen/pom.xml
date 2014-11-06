@@ -1,0 +1,49 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>edu.uw.apl</groupId>
+  <artifactId>tupelo-playpen</artifactId>
+  <version>0.0.1</version>
+  <packaging>jar</packaging>
+
+  <name>Tupelo Disk Management - Playpen/Testing</name>
+  <url>http://maven.apache.org</url>
+
+  <organization>
+    <name>Applied Physics Laboratory, University of Washington</name>
+    <url>http://www.apl.uw.edu</url>
+  </organization>
+  
+  <developers>
+    <developer>
+      <id>stuart</id>
+      <name>Stuart Maclean</name>
+      <email>stuart@apl.uw.edu</email>
+    </developer>
+  </developers>
+  
+  <dependencies>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.17</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <version>1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <defaultGoal>compile</defaultGoal>
+  </build>
+</project>
