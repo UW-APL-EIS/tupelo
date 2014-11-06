@@ -90,13 +90,14 @@ public class PutData extends CliBase {
 		Store s = null;
 		if( dryrun ) {
 			s = new NullStore();
+			log.info( getClass() + " " + storeLocation );
 		} else {
 			s = Utils.buildStore( storeLocation );
+			log.info( getClass() + " " + storeLocation );
 		}
 		if( debug )
 			System.out.println( "Store: " + s );
 		
-		log.info( getClass() + " " + storeLocation );
 
 		System.out.println( "Store.usableSpace: " + s.getUsableSpace() );
 		Collection<ManagedDiskDescriptor> mdds1 = s.enumerate();

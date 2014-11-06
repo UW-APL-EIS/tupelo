@@ -33,6 +33,11 @@ import edu.uw.apl.tupelo.store.Store;
 public class NullStore implements Store {
 
 	@Override
+	public String toString() {
+		return "/dev/null";
+	}
+	
+	@Override
 	public UUID getUUID() throws IOException {
 		return Constants.NULLUUID;
 	}

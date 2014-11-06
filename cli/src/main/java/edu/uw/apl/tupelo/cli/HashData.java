@@ -88,6 +88,8 @@ public class HashData extends CliBase {
 			printUsage( os, usage, HEADER, FOOTER );
 			System.exit(1);
 		}
+		commonParse( os, cl, usage, HEADER, FOOTER );
+
 		verbose = cl.hasOption( "v" );
 		args = cl.getArgs();
 		if( args.length < 2 ) {
@@ -133,22 +135,42 @@ public class HashData extends CliBase {
 					}
 				}
 			} );
+		
+		// LOOK: wait for the fuse mount to finish.  Grr hate arbitrary sleeps!
 		Thread.sleep( 1000 * 2 );
 
 		File f = mdfs.pathTo( mdd );
 		System.out.println( "Located Managed Data: " + f );
 		Image i = new Image( f );
+
+		System.out.println( "Trying volume system on " + f );
+		try {
+			boolean b = walkVolumeSystem( i );
+			if( !b ) {
+				System.out.println( "Trying file system on " + f );
+				walkFileSystem( i );
+			}
+		} finally {
+			// MUST release i else leaves mdfs non-unmountable
+			i.close();
+		}
+	}
+	
+
+	/**
+	 * @return true if a volume system found (and thus traversed), false
+	 * otherwise.  False result lets us try the image as a standalone
+	 * filesystem
+	 */
+	private boolean walkVolumeSystem( Image i ) throws Exception {
+
 		VolumeSystem vs = null;
 		try {
 			vs = new VolumeSystem( i );
-		} catch( IllegalArgumentException iae ) {
-			// MUST release i else leaves mdfs non-unmountable
-			i.close();
-			System.err.println( "No volume system on " + f );
-			System.exit( 1 );
+		} catch( Exception iae ) {
+			return false;
 		}
 		
-		//		Thread.sleep( 1000 * 10 );
 		List<Partition> ps = vs.getPartitions();
 		try {
 			for( Partition p : ps ) {
@@ -157,21 +179,35 @@ public class HashData extends CliBase {
 				System.out.println( "At sector " + p.start() +
 									", located " + p.description() );
 				Map<String,byte[]> fileHashes = new HashMap<String,byte[]>();
-				walk( i, p.start(), fileHashes );
+				FileSystem fs = new FileSystem( i, p.start() );
+				walk( fs, fileHashes );
+				fs.close();
 				System.out.println( " FileHashes : " + fileHashes.size() );
 				record( fileHashes, p.start(), p.length() );
 			}
 		} finally {
-			// MUST release i else leaves mdfs non-unmountable
+			// MUST release vs else leaves mdfs non-unmountable
 			vs.close();
-			i.close();
+		}
+		return true;
+	}
+
+	private void walkFileSystem( Image i ) throws Exception {
+		Map<String,byte[]> fileHashes = new HashMap<String,byte[]>();
+		FileSystem fs = new FileSystem( i );
+		try {
+			walk( fs, fileHashes );
+			System.out.println( "FileHashes: " + fileHashes.size() );
+			// signify a standalone file system via a 0,0 sector interval
+			record( fileHashes, 0, 0 );
+		} finally {
+			fs.close();
 		}
 	}
 	
-	private void walk( Image i, long start,
+	private void walk( FileSystem fs,
 					   final Map<String,byte[]> fileHashes )
 		throws Exception {
-		FileSystem fs = new FileSystem( i, start );
 		DirectoryWalk.Callback cb = new DirectoryWalk.Callback() {
 				public int apply( WalkFile f, String path ) {
 					try {
@@ -214,9 +250,9 @@ public class HashData extends CliBase {
 			return;
 
 		if( debug )
-			System.out.println( path + "/" + name );
+			System.out.println( "'" + path + "' '" + name + "'" );
 
-		String wholeName = path + "/" + name;
+		String wholeName = path + name;
 		byte[] digest = digest( defa );
 		fileHashes.put( wholeName, digest );
 	}

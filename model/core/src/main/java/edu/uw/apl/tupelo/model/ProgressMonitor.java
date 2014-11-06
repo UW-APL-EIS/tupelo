@@ -65,12 +65,11 @@ public class ProgressMonitor {
 		Runnable r = new Runnable() {
 				public void run() {
 					long start = System.currentTimeMillis();
-					boolean done = false;
-					while( !done ) {
+					while( true ) {
 						try {
 							Thread.sleep( updateIntervalSecs * 1000L );
 						} catch( InterruptedException ie ) {
-							done = true;
+							break;
 						}
 						/*
 						  Even with done from a sleep interrupt,
@@ -83,7 +82,7 @@ public class ProgressMonitor {
 						long elapsed = now - start;
 						cb.update( in, out, elapsed / 1000 );
 						if( in == md.size() )
-							done = true;
+							break;
 					}
 				}
 			};
