@@ -147,7 +147,7 @@ public class FilesystemStore implements Store {
 		synchronized( tempFile ) {
 			log.debug( "Locked " + tempFile );
 			FileOutputStream fos = new FileOutputStream( tempFile );
-			BufferedOutputStream bos = new BufferedOutputStream( fos, 1024*1024*16 );
+			BufferedOutputStream bos = new BufferedOutputStream( fos, 1024*64 );
 			md.writeTo( bos );
 			bos.close();
 			fos.close();
@@ -181,7 +181,55 @@ public class FilesystemStore implements Store {
 								  int progressUpdateIntervalSecs )
 		throws IOException {
 
-		// TODO
+		// LOOK: this is same code as put(ManagedDisk) but with the progmon..
+
+		ManagedDiskDescriptor mdd = md.getDescriptor();
+		if( descriptorMap.containsKey( mdd ) )
+			throw new IllegalArgumentException( "Already stored: " + mdd );
+		
+		String fileName = asFileName( mdd );
+		File tempFile = new File( tempDir, fileName );
+		log.info( "Writing to " + tempFile );
+		/*
+		  Since the temp file itself is to be used as a lock,
+		  canonicalise it first to avoid any unintended side-stepping
+		  of lock requirements.  Since this is where the expensive
+		  operation occurs, we maintain the accessibility of the wider
+		  store object itself...
+		*/
+		tempFile = tempFile.getCanonicalFile();
+		synchronized( tempFile ) {
+			log.debug( "Locked " + tempFile );
+			FileOutputStream fos = new FileOutputStream( tempFile );
+			BufferedOutputStream bos = new BufferedOutputStream( fos, 1024*64 );
+			ProgressMonitor pm = new ProgressMonitor
+				( md, bos, cb, progressUpdateIntervalSecs );
+			pm.start();
+			bos.close();
+			fos.close();
+			log.debug( "Unlocked " + tempFile );
+		}
+
+		// we are now adding to the Store proper, so need the lock....
+		synchronized( this ) {
+			File outDir = diskDataDir( root, mdd );
+			outDir.mkdirs();
+			File outFile = new File( outDir, fileName );
+			log.info( "Moving to " + outFile );
+			tempFile.renameTo( outFile );
+			log.info( "Moved to " + outFile );
+			md.setManagedData( outFile );
+
+			// Access controls in place to guard against file system screw ups..
+			outFile.setWritable( writable );
+			// Since only ever supposed to be a single file in the dir, protect the dir
+			outDir.setWritable( writable );
+			
+			// LOOK: link to parent ??
+			descriptorMap.put( mdd, md );
+			String path = asPathName( mdd );
+			pathMap.put( path, md );
+		}
 	}
 	
 

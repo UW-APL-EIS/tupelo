@@ -69,7 +69,10 @@ public class NullStore implements Store {
 		  Rather, we want keep the progress monitor informed
 		  so use a /dev/null like OutputStream
 		*/
-		// TODO
+		NullOutputStream nos = new NullOutputStream();
+		ProgressMonitor pm = new ProgressMonitor( md, nos, cb,
+												  progressUpdateIntervalSecs );
+		pm.start();
 	}
 
 	@Override
