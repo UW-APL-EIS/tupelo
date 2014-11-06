@@ -49,9 +49,8 @@ public class ProgressMonitor {
 							long managedBytesWritten, long elapsed );
 	}
 	
-	// Deliberate package access only...
-	ProgressMonitor( ManagedDisk md, OutputStream os,
-					 Callback cb, int updateIntervalSecs )
+	public ProgressMonitor( ManagedDisk md, OutputStream os,
+							Callback cb, int updateIntervalSecs )
 		throws IOException {
 		this.md = md;
 		InputStream is = md.getUnmanaged().getInputStream();
@@ -83,6 +82,8 @@ public class ProgressMonitor {
 						long now = System.currentTimeMillis();
 						long elapsed = now - start;
 						cb.update( in, out, elapsed / 1000 );
+						if( in == md.size() )
+							done = true;
 					}
 				}
 			};
@@ -91,7 +92,10 @@ public class ProgressMonitor {
 		md.readFromWriteTo( cis, cos );
 		cis.close();
 		cos.close();
-		t.interrupt();
+		try {
+			t.join();
+		} catch( InterruptedException ie ) {
+		}
 	}
 
 	public void interrupt() {

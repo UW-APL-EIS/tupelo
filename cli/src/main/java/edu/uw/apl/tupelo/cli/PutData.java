@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.commons.cli.*;
+import org.apache.log4j.LogManager;
 
 import edu.uw.apl.tupelo.model.DiskImage;
 import edu.uw.apl.tupelo.model.FlatDisk;
@@ -13,7 +14,9 @@ import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.model.StreamOptimizedDisk;
 import edu.uw.apl.tupelo.model.UnmanagedDisk;
+import edu.uw.apl.tupelo.model.ProgressMonitor;
 import edu.uw.apl.tupelo.store.Store;
+import edu.uw.apl.tupelo.store.null_.NullStore;
 
 /**
  * Simple Tupelo Utility: add some arbitrary disk image file to a
@@ -37,6 +40,8 @@ public class PutData extends CliBase {
 				e.printStackTrace();
 			System.exit(-1);
 		}
+		// Will call close() on all loggers which will shutdown any amqp stuff.
+		LogManager.shutdown();
 	}
 
 	public PutData() {
@@ -44,6 +49,8 @@ public class PutData extends CliBase {
 
 	public void readArgs( String[] args ) {
 		Options os = commonOptions();
+		os.addOption( "n", false,
+					  "Dryrun, use null store (like /dev/null)" );
 		os.addOption( "f", false,
 					  "Force flat managed disk, default decides based on unmanaged data size" );
 		os.addOption( "o", false,
@@ -62,6 +69,7 @@ public class PutData extends CliBase {
 		}
 		commonParse( os, cl, usage, HEADER, FOOTER );
 
+		dryrun = cl.hasOption( "n" );
 		forceFlatDisk = cl.hasOption( "f" );
 		forceStreamOptimizedDisk = cl.hasOption( "o" );
 		args = cl.getArgs();
@@ -79,8 +87,12 @@ public class PutData extends CliBase {
 	}
 	
 	public void start() throws IOException {
-
-		Store s = Utils.buildStore( storeLocation );
+		Store s = null;
+		if( dryrun ) {
+			s = new NullStore();
+		} else {
+			s = Utils.buildStore( storeLocation );
+		}
 		if( debug )
 			System.out.println( "Store: " + s );
 		
@@ -91,7 +103,7 @@ public class PutData extends CliBase {
 		System.out.println( "Stored data: " + mdds1 );
 
 		Session session = s.newSession();
-		UnmanagedDisk ud = new DiskImage( rawData );
+		final UnmanagedDisk ud = new DiskImage( rawData );
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
 															   session );
 		System.out.println( "Storing: " + mdd +
@@ -109,14 +121,24 @@ public class PutData extends CliBase {
 				md = new StreamOptimizedDisk( ud, session );
 			}
 		}
-		s.put( md );
+		ProgressMonitor.Callback cb = new ProgressMonitor.Callback() {
+				@Override
+				public void update( long in, long out, long elapsed ) {
+					double pc = in / (double)ud.size() * 100;
+					System.out.print( (int)pc + "% " );
+					System.out.flush();
+					if( in == ud.size() )
+						System.out.println();
+				}
+			};
+		s.put( md, cb, 5 );
 
 		Collection<ManagedDiskDescriptor> mdds2 = s.enumerate();
 		System.out.println( "Stored data: " + mdds2 );
 	}
 
 
-	boolean forceFlatDisk, forceStreamOptimizedDisk;
+	boolean forceFlatDisk, forceStreamOptimizedDisk, dryrun;
 	File rawData;
 }
 

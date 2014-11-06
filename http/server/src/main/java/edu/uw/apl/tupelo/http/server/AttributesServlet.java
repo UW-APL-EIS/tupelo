@@ -61,7 +61,7 @@ public class AttributesServlet extends HttpServlet {
 
     public void init( ServletConfig config ) throws ServletException {
         super.init( config );
-		log = LogFactory.getLog( getClass() );
+		log = LogFactory.getLog( getClass().getPackage().getName() );
 
 		/*
 		  Locate our Store handler from the context.  The
@@ -74,6 +74,9 @@ public class AttributesServlet extends HttpServlet {
 		GsonBuilder gsonb = new GsonBuilder();
 		gsonb.registerTypeAdapter(Session.class, Constants.SESSIONSERIALIZER );
 		gson = gsonb.create();
+
+		//		log.info( getClass() + " " + log );
+
 	}
 	
 	/**
