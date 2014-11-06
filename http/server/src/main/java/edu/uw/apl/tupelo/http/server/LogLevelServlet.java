@@ -17,16 +17,18 @@ import org.apache.log4j.Level;
  * webapp.  'Edit the log4j.properties file and reload the war' - just
  * say no!
  *
- * Likely used in the scenario 'The web site is not working.  Do a wget/curl
- * to change the log level and monitor the amqp message bus (since we have
- * a rabbitmq appender configured)'. Note that we respond to POST, not GET.
+ * Likely used in the scenario 'The web site is not working.  Do a
+ * wget/curl to change the log level and monitor the amqp message bus
+ * (since we have a rabbitmq appender configured)'. Note that we
+ * respond to POST, not GET.
  *
  * One gotcha: Apache commons logging, though a nice facade for log4j,
  * provides no way to set a log level.  So here, and here only, we use
- * log4j classes directly, pah! Elsewhere in this web app, we use commons
- * logging (why?!)
+ * log4j classes directly, pah! Elsewhere in this web app, we use
+ * commons logging (why?!)
  *
- * The expected url layout (i.e. path entered into web.xml) for this servlet is
+ * The expected url layout (i.e. path entered into web.xml) for this
+ * servlet is
  *
  * /logging/debug
  * /logging/info, etc
@@ -37,10 +39,11 @@ public class LogLevelServlet extends HttpServlet {
     public void init( ServletConfig config ) throws ServletException {
         super.init( config );
 		/*
-		  All servlets in this web app use the same logger, named
+		  All servlets in this web app use the SAME logger, named
 		  in the log4j.properties by our package name
 		*/
-		log = Logger.getLogger( getClass() );
+		log = Logger.getLogger( getClass().getPackage().getName() );
+		//		log.info( getClass() + " " + log );
 	}
 	
 	@Override
@@ -66,6 +69,7 @@ public class LogLevelServlet extends HttpServlet {
 		*/
 		log.setLevel( next );
 		log.info( current + " -> " + next );
+
 	}
 	
 	private Logger log;

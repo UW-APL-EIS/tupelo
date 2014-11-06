@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,7 +63,7 @@ public class DataServlet extends HttpServlet {
 	@Override
     public void init( ServletConfig config ) throws ServletException {
         super.init( config );
-		log = LogFactory.getLog( getClass() );
+		log = LogFactory.getLog( getClass().getPackage().getName() );
 
 		/*
 		  locate our Store handler from the context.  The bootstrapping
@@ -145,7 +146,14 @@ public class DataServlet extends HttpServlet {
 		} else {
 			res.setContentType( "text/plain" );
 			PrintWriter pw = res.getWriter();
-			for( ManagedDiskDescriptor mdd : mdds ) {
+			/*
+			  Just to be nice to a web browser users, sort the
+			  result so it 'looks good'
+			*/
+			List<ManagedDiskDescriptor> sorted =
+				new ArrayList<ManagedDiskDescriptor>( mdds );
+			Collections.sort( sorted, ManagedDiskDescriptor.DEFAULTCOMPARATOR );
+			for( ManagedDiskDescriptor mdd : sorted ) {
 				pw.println( mdd.toString() );
 			}
 			pw.close();

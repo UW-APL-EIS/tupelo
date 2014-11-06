@@ -59,7 +59,7 @@ public class MiscServlet extends HttpServlet {
 
     public void init( ServletConfig config ) throws ServletException {
         super.init( config );
-		log = LogFactory.getLog( getClass() );
+		log = LogFactory.getLog( getClass().getPackage().getName() );
 
 		/*
 		  Locate our Store handler from the context.  The
@@ -72,6 +72,8 @@ public class MiscServlet extends HttpServlet {
 		GsonBuilder gsonb = new GsonBuilder();
 		gsonb.registerTypeAdapter(Session.class, Constants.SESSIONSERIALIZER );
 		gson = gsonb.create();
+
+		//		log.info( getClass() + " " + log );
 	}
 	
 	/**
@@ -86,6 +88,11 @@ public class MiscServlet extends HttpServlet {
 		String pi = req.getPathInfo();
 		log.debug( "Get.PathInfo: " + pi );
 
+		if( sp.equals( "/version" ) ) {
+			version( req, res );
+			return;
+		}
+
 		if( sp.equals( "/uuid" ) ) {
 			uuid( req, res );
 			return;
@@ -94,6 +101,16 @@ public class MiscServlet extends HttpServlet {
 			usableSpace( req, res );
 			return;
 		}
+
+		/*
+		  LOOK: Should we allow GETs for content that by definition
+		  changes on each request??
+		*/
+		if( sp.equals( "/newsession" ) ) {
+			newSession( req, res );
+			return;
+		}
+
 	}
 	
 	/**
@@ -115,6 +132,31 @@ public class MiscServlet extends HttpServlet {
 		}
 	}
 	
+		
+	private void version( HttpServletRequest req, HttpServletResponse res )
+		throws IOException, ServletException {
+
+		ServletContext sc = getServletConfig().getServletContext();
+		String result = (String)sc.getAttribute( ContextListener.VERSIONKEY );
+		
+		if( false ) {
+		} else if( Utils.acceptsJavaObjects( req ) ) {
+			res.setContentType( "application/x-java-serialized-object" );
+			OutputStream os = res.getOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream( os );
+			oos.writeObject( result );
+		} else if( Utils.acceptsJson( req ) ) {
+			res.setContentType( "application/json" );
+			String json = gson.toJson( result );
+			PrintWriter pw = res.getWriter();
+			pw.print( json );
+		} else {
+			res.setContentType( "text/plain" );
+			PrintWriter pw = res.getWriter();
+			pw.println( "" + result );
+		}
+	}
+
 		
 	private void uuid( HttpServletRequest req, HttpServletResponse res )
 		throws IOException, ServletException {

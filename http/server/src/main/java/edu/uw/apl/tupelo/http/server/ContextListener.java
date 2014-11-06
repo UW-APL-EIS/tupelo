@@ -20,7 +20,7 @@ import org.apache.commons.logging.LogFactory;
 public class ContextListener implements ServletContextListener {
 
 	public ContextListener() {
-		log = LogFactory.getLog( getClass() );
+		log = LogFactory.getLog( getClass().getPackage().getName() );
 	}
 	
     public void contextInitialized( ServletContextEvent sce ) {
