@@ -1,6 +1,5 @@
 package edu.uw.apl.tupelo.amqp.server;
 
-import java.lang.reflect.Type;
 import java.io.File;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
@@ -13,18 +12,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.UUID;
 
 import org.apache.commons.cli.*;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.log4j.Logger;
-import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
-
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.QueueingConsumer;
-import com.rabbitmq.client.AMQP.BasicProperties;
 
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
@@ -32,10 +23,15 @@ import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 import edu.uw.apl.tupelo.http.client.HttpStoreProxy;
 
-import edu.uw.apl.tupelo.amqp.objects.FileHashQuery;
-import edu.uw.apl.tupelo.amqp.objects.FileHashResponse;
-import edu.uw.apl.tupelo.amqp.objects.JSONSerializers;
-import edu.uw.apl.tupelo.amqp.objects.RPCObject;
+/**
+ * A 'main' front end around the primary logic in {@link
+ * FileHashService}.  Does cmd line processing to extract from the
+ * user (and by defaults) values for a Tupelo store location and a
+ * RabbitMQ broker location.
+ *
+ * LOOK: Currently we know about a single store only.  Extend to
+ * many??
+ */
 
 public class AMQPServer {
 
@@ -55,14 +51,6 @@ public class AMQPServer {
 	AMQPServer() {
 		storeLocation = STORELOCATIONDEFAULT;
 		brokerUrl = BROKERURLDEFAULT;
-		GsonBuilder gb = new GsonBuilder();
-		gb.serializeNulls();
-		gb.disableHtmlEscaping();
-		gb.registerTypeAdapter(Session.class,
-							   new JSONSerializers.SessionSerializer() );
-		gb.registerTypeAdapter(byte[].class,
-							   new JSONSerializers.MessageDigestSerializer() );
-		gson = gb.create();
 		log = Logger.getLogger( getClass() );
 	}
 
@@ -104,101 +92,22 @@ public class AMQPServer {
 
 	public void start() throws Exception {
 		store = buildStore( storeLocation );
+
+		// Print some info about the store state..
+		UUID id = store.getUUID();
+		System.out.println( "Store id : " + id );
 		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
-		
-		ConnectionFactory cf = new ConnectionFactory();
-		cf.setUri( brokerUrl );
-		Connection connection = cf.newConnection();
-		Channel channel = connection.createChannel();
+		List<ManagedDiskDescriptor> sorted =
+			new ArrayList<ManagedDiskDescriptor>( mdds );
+		Collections.sort( sorted, ManagedDiskDescriptor.DEFAULTCOMPARATOR );
+		System.out.println( "Store managed disks: " );
+		for( ManagedDiskDescriptor mdd : sorted )
+			System.out.println( mdd );
 
-		channel.exchangeDeclare( EXCHANGE, "direct" );
-		
-		String queueName = channel.queueDeclare().getQueue();
-		channel.queueBind( queueName, EXCHANGE, "who-has" );
-
-        QueueingConsumer consumer = new QueueingConsumer(channel);
-        channel.basicConsume(queueName, true, consumer);
-
-        while (true) {
-            QueueingConsumer.Delivery delivery = consumer.nextDelivery();
-
-			// LOOK: algorithm match
-			
-			String message = new String( delivery.getBody() );
-			// LOOK: check mime type aka contentType
-			String json = message;
-			
-            System.out.println(" [x] Received '" + json + "'");
-
-			Type fhqType =
-				new TypeToken<RPCObject<FileHashQuery>>(){}.getType();
-			RPCObject<FileHashQuery> rpc1 = gson.fromJson( json, fhqType );
-			FileHashQuery fhq = rpc1.appdata;
-
-			FileHashResponse fhr = new FileHashResponse( fhq.algorithm );
-			/*
-			  LOOK: load all the Store's md5 hash data on every query ??
-			  Better to load it once (but then what if stored updated?)
-			*/
-			for( ManagedDiskDescriptor mdd : mdds ) {
-				List<String> ss = loadFileHashes( mdd );
-				/*
-				  The file content of MANY paths can hash to the
-				  SAME value, typically when the file is empty
-				*/
-				Map<BigInteger,List<String>> haystack = new
-					HashMap<BigInteger,List<String>>();
-				for( String s : ss ) {
-					String[] toks = s.split( "\\s+", 2 );
-					if( toks.length < 2 ) {
-						log.warn( s );
-						continue;
-					}
-					String md5Hex = toks[0];
-					String path = toks[1];
-					byte[] md5 = Hex.decodeHex( md5Hex.toCharArray() );
-					BigInteger bi = new BigInteger( 1, md5 );
-					List<String> paths = haystack.get( bi );
-					if( paths == null ) {
-						paths = new ArrayList<String>();
-						haystack.put( bi, paths );
-					}
-					paths.add( path );
-				}
-				for( byte[] hash : fhq.hashes ) {
-					BigInteger needle = new BigInteger( 1, hash );
-					List<String> paths = haystack.get( needle );
-					if( paths == null )
-						continue;
-					for( String path : paths )
-						fhr.add( hash, mdd, path );
-				}					
-			}
-			
-			BasicProperties reqProps = delivery.getProperties();
-			BasicProperties resProps = new BasicProperties.Builder()
-				.contentType( "application/json" )
-				.build();
-			RPCObject<FileHashResponse> rpc2 = RPCObject.asRPCObject
-				( fhr, "filehash" );
-			json = gson.toJson( rpc2 );
-			channel.basicPublish( "", reqProps.getReplyTo(),
-								  resProps, json.getBytes() );
-            System.out.println(" [x] Sent '" + json + "'");
-			
-        }
+		// And start the main service...
+		FileHashService fhs = new FileHashService( store, brokerUrl );
+		fhs.start();
 	}
-			
-	/*
-	  BasicProperties reqProps = delivery.getProperties();
-			String reqContentType = reqProps.getContentType();
-
-			BasicProperties resProps = new BasicProperties.Builder()
-				.build();
-			String message = new String(delivery.getBody());
-
-            System.out.println(" [x] Received '" + message + "'");
-	*/
 	
 	static public Store buildStore( String storeLocation ) {
 		Store s = null;
@@ -214,30 +123,6 @@ public class AMQPServer {
 		}
 		return s;
 	}
-
-	/*
-	  Load the 'md5' attribute data from the store for the given
-	  ManagedDiskDescriptor.  Just load the whole lines, do NOT parse
-	  anything at this point.
-	*/
-	private List<String> loadFileHashes( ManagedDiskDescriptor mdd )
-		throws IOException {
-		byte[] ba = store.getAttribute( mdd, "md5" );
-		if( ba == null )
-			return Collections.emptyList();
-		List<String> result = new ArrayList<String>();
-		ByteArrayInputStream bais = new ByteArrayInputStream( ba );
-		InputStreamReader isr = new InputStreamReader( bais );
-		LineNumberReader lnr = new LineNumberReader( isr );
-		String line = null;
-		while( (line = lnr.readLine()) != null ) {
-			line = line.trim();
-			if( line.isEmpty() || line.startsWith( "#") )
-				continue;
-			result.add( line );
-		}
-		return result;
-	}
 	
 	static private void printUsage( Options os, String usage,
 									String header, String footer ) {
@@ -249,19 +134,15 @@ public class AMQPServer {
 	private String storeLocation;
 	private Store store;
 	private String brokerUrl;
-	private Gson gson;
-	
 	private Logger log;
 	
-
 	static boolean debug, verbose;
 	
 	static final String STORELOCATIONDEFAULT = "./test-store";
 
+	// LOOK: Get credentials out of source code!
 	static final String BROKERURLDEFAULT =
 		"amqp://rpc_user:rpcm3pwd@rabbitmq.prisem.washington.edu";
-	
-	static final String EXCHANGE = "tupelo";
 }
 
 // eof
