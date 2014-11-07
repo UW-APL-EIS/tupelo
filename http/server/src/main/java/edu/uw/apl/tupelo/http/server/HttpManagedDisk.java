@@ -74,10 +74,24 @@ public class HttpManagedDisk extends ManagedDisk {
 												 ".getInputStream!!" );
 	}
 
+	/**
+	 * An HttpManagedDisk just sees a byte stream from the http
+	 * request (POST) of the client side ManagedDisk put.  It does NOT
+	 * know which type of object was being pushed, FlatDisk,
+	 * StreamOptimizedDisk, etc.  So how can we verify here that the
+	 * upload actually worked?  Well, after a store put, load the
+	 * managedData and create a delegate ManagedDisk and have THAT do
+	 * the verify. The static ManagedDisk.readFrom routine does the
+	 * work of creating the correct ManagedDisk impl, so here we never
+	 * even need to know it.
+	 */
+	 
 	@Override
 	public void verify() throws IOException {
-		throw new UnsupportedOperationException( getClass() +
-												 ".verify!!" );
+		if( managedData == null )
+			throw new IllegalStateException( "Verify failed. noManagedData" );
+		ManagedDisk delegate = ManagedDisk.readFrom( managedData );
+		delegate.verify();
 	}
 
 	@Override
