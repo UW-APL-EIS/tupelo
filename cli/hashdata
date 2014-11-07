@@ -7,8 +7,8 @@ PACKAGE=edu.uw.apl.tupelo.cli
 
 CLAZZ=HashData
 
-#JAVA_OPTS="-Dlog4j.configuration=log4j.hashdata"
-JAVA_OPTS="-Dlog4j.configuration=log4j.hashdata -Dlog4j.debug"
+JAVA_OPTS="-Dlog4j.configuration=log4j.hashdata"
+#JAVA_OPTS="-Dlog4j.configuration=log4j.hashdata -Dlog4j.debug"
 #JAVA_OPTS="-Dlog4j.debug"
 
 #echo $JAVA_OPTS

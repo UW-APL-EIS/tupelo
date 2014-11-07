@@ -6,11 +6,13 @@ log4j.appender.stdout=org.apache.log4j.ConsoleAppender
 log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
 log4j.appender.stdout.target=System.err
 
+log4j.logger.edu.uw.apl.tupelo=warn,stdout
+
 log4j.logger.edu.uw.apl.tupelo.fuse=warn,stdout
 log4j.additivity.edu.uw.apl.tupelo.fuse=false
 
-log4j.logger.edu.uw.apl.tupelo=info,stdout
-log4j.additivity.edu.uw.apl.tupelo=false
+log4j.logger.edu.uw.apl.tupelo.cli=info,stdout
+log4j.additivity.edu.uw.apl.tupelo.cli=false
 
 log4j.logger.fuse=warn,stdout
 log4j.additivity.fuse=false

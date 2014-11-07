@@ -58,6 +58,7 @@ public class StoreInfo extends CliBase {
 		log.info( getClass() + " " + storeLocation );
 		
 		System.out.println( "Using store: " + storeLocation );
+		System.out.println( "Usable Space: " + store.getUsableSpace() );
 
 		Collection<ManagedDiskDescriptor> stored = null;
 		try {
