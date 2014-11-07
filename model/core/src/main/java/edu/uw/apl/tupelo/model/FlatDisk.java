@@ -107,7 +107,32 @@ public class FlatDisk extends ManagedDisk {
 			}
 		}
 	}
-	
+
+	/**
+	 * The best a FlatDisk can do to verify that a file on disk really
+	 * is the managed representation of the associated unmanaged data
+	 * is to compare sizes.  A FlatDisk should simpy be a
+	 * Header.SIZEOF bigger than its unmanaged version.
+	 *
+	 * Note how this impl does NOT read any file content, we could
+	 * compare unmanaged + managed content, but how much ? Random
+	 * sectors?
+	 *
+	 * @throws IllegalStateException
+	 */
+	@Override
+	public void verify() throws IOException {
+		if( unmanagedData == null )
+			throw new IllegalStateException( "Verify failed. noUnmanagedData" );
+		if( managedData == null )
+			throw new IllegalStateException( "Verify failed. noManagedData" );
+		long usize = unmanagedData.size();
+		long msize = managedData.length();
+		if( usize + Header.SIZEOF != msize )
+			throw new IllegalStateException( "Verify failed: bad size compare");
+	}
+
+
 	public void writeTo( File f ) throws IOException {
 		FileOutputStream fos = new FileOutputStream( f );
 		BufferedOutputStream bos = new BufferedOutputStream( fos, 1024*1024 );

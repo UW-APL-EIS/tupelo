@@ -19,7 +19,9 @@ import org.apache.commons.logging.LogFactory;
 abstract public class ManagedDisk {
 
 	/**
-	 * Expected one and only one of these is non-null
+	 * Expected one and only one of these is non-null at construction
+	 * time.  As a ManagedDisk transitions to a store, its managedData
+	 * file may be set, by that store.
 	 */
 	protected ManagedDisk( UnmanagedDisk unmanagedData, File managedData ) {
 		this.unmanagedData = unmanagedData;
@@ -53,7 +55,7 @@ abstract public class ManagedDisk {
 	public void setCompression( Compressions c ) {
 		header.compressAlgorithm = c;
 	}
-	
+
 	abstract public void setParent( ManagedDisk md );
 
 	abstract public void writeTo( OutputStream os ) throws IOException;
@@ -61,9 +63,20 @@ abstract public class ManagedDisk {
 	abstract public void readFromWriteTo( InputStream is, OutputStream os )
 		throws IOException;
 
+	/**
+	 * Called by store implementations (e.g. filesystem store) to
+	 * verify that what got stored onto store disk really is a
+	 * complete ManagedDisk entity.
+	 *
+	 * @throws IOException
+	 * @throws IllegalStateException to indicate verification failure.
+	 */
+	abstract public void verify() throws IOException;
+
 	abstract public InputStream getInputStream() throws IOException;
 
-	abstract public SeekableInputStream getSeekableInputStream() throws IOException;
+	abstract public SeekableInputStream getSeekableInputStream()
+		throws IOException;
 
 	static public ManagedDisk readFrom( File managedDisk ) throws IOException {
 		ManagedDisk result = null;

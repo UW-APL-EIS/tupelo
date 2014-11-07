@@ -395,6 +395,47 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	}
 
 	/**
+	 * The best a StreamOptimizedDisk can do to verify that a file on
+	 * disk really is the managed representation of the associated
+	 * unmanaged data is to assert the following:
+	 *
+	 * The last-but-one sector is a valid Header (has magic number
+	 * etc).  Recall the 'footer', a copy of the Header but with true
+	 * grainDirectory offset, is added during the write.
+	 *
+	 * The final sector of the file is all zeros, this denotes the EOS
+	 * marker added during the write.
+	 *
+	 * Note how this impl does NOT read any unmanaged/managed content,
+	 * only StreamOptimizedDisk meta-data.  We could compare unmanaged
+	 * + managed content, but how much ? Random sectors?  And we'd
+	 * have to uncompress grains too. We're asserting here that if the
+	 * meta-data looks OK, the unmanaged -> managed transfer went OK.
+	 *
+	 * @throws IllegalStateException
+	 */
+	@Override
+	public void verify() throws IOException  {
+		if( unmanagedData == null )
+			throw new IllegalStateException( "Verify failed. noUnmanagedData" );
+		if( managedData == null )
+			throw new IllegalStateException( "Verify failed. noManagedData" );
+		RandomAccessFile raf = new RandomAccessFile( managedData, "r" );
+		try {
+			raf.seek( raf.length() - 2 * Constants.SECTORLENGTH );
+			Header h = new Header( raf );
+			byte[] ba = new byte[Constants.SECTORLENGTH];
+			raf.readFully( ba );
+			for( int i = 0; i < ba.length; i++ ) {
+				if( ba[i] != 0 )
+					throw new IllegalStateException( "Verify failed: Bad EOS" );
+			}
+		} finally {
+			raf.close();
+		}
+	}
+
+	/**
 	 * @return The compressed data count, in bytes
 	 */
 	private int compressGrain( byte[] ba, int offset, int len, byte[] output )
