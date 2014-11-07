@@ -429,8 +429,6 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	 */
 	@Override
 	public void verify() throws IOException  {
-		if( unmanagedData == null )
-			throw new IllegalStateException( "Verify failed. noUnmanagedData" );
 		if( managedData == null )
 			throw new IllegalStateException( "Verify failed. noManagedData" );
 		RandomAccessFile raf = new RandomAccessFile( managedData, "r" );
