@@ -81,17 +81,20 @@ Dependencies (informational only, NOT required setup)
 
 Tupelo dependencies (i.e. 3rd party code it builds against) include 
 
-* fuse4j (Java-enabled fuse filesystems)
+* fuse4j (Java-enabled fuse filesystems).  Used by fuse module.
 
-* tsk4j (Java-enabled Sleuthkit disk forensics software)
+* tsk4j (Java-enabled Sleuthkit disk forensics software).  Used by cli module.
 
 * native-lib-loader (loads JNI C code from classpath. Used by
-  fuse4j,tsk4j)
+  fuse4j, tsk4j artifacts above.
+
+* rabbitmq-log4j-appender (Allow log4j statements to go to RabbitMQ broker).
+  Used by logging module.
 
 These artifacts (jars,poms) are not yet available on public facing
 Maven repositories (i.e. Maven Central), so are bundled into a
 project-local Maven repository at ./repository.  The modules that
-depend on these artifacts (cli and fuse) include this local repository
+depend on these artifacts (cli, fuse, logging) include this local repository
 in their pom.
 
 That's all folks...

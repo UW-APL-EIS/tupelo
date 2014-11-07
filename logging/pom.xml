@@ -18,6 +18,9 @@
       <id>tupelo.local</id>
       <name>tupelo</name>
       <url>file:${project.basedir}/../.repository</url>
+      <releases>
+	<updatePolicy>always</updatePolicy>
+      </releases>
     </repository>
   </repositories>
 
@@ -35,7 +38,7 @@
     <dependency>
       <groupId>com.plant42</groupId>
       <artifactId>rabbitmq-log4j-appender</artifactId>
-      <version>1.0.0</version>
+      <version>1.0.1</version>
       <scope>runtime</scope>
     </dependency>
   </dependencies>
