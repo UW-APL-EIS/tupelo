@@ -57,7 +57,7 @@ public class Info {
 
 		System.out.println();
 		System.out.println
-			( "A 'file has response' is sent by a Tupelo amqp service." );
+			( "A 'file hash response' is sent by a Tupelo amqp service." );
 		System.out.println( "It is received by a Tupelo amqp client." );
 		System.out.println();
 		System.out.println
