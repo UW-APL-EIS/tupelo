@@ -9,14 +9,14 @@ public class PhysicalDiskTest extends junit.framework.TestCase {
 
 	public void testNativeLoad() throws Exception {
 		File f = new File( "/dev/sda" );
-		if( !f.exists() )
+		if( !f.canRead() )
 			return;
 		PhysicalDisk pd = new PhysicalDisk( f );
 	}
 
 	public void testNativeSize1() throws Exception {
 		File f = new File( "/dev/sda" );
-		if( !f.exists() )
+		if( !f.canRead() )
 			return;
 		PhysicalDisk pd = new PhysicalDisk( f );
 		long sz = pd.size();
@@ -25,7 +25,7 @@ public class PhysicalDiskTest extends junit.framework.TestCase {
 
 	public void testNativeSize2() throws Exception {
 		File f = new File( "/dev/sdb" );
-		if( !f.exists() )
+		if( !f.canRead() )
 			return;
 		PhysicalDisk pd = new PhysicalDisk( f );
 		long sz = pd.size();
@@ -40,7 +40,16 @@ public class PhysicalDiskTest extends junit.framework.TestCase {
 	 */
 	public void testNativeSerialNum1() throws Exception {
 		File f = new File( "/dev/sda" );
-		if( !f.exists() )
+		if( !f.canRead() )
+			return;
+		PhysicalDisk pd = new PhysicalDisk( f );
+		String id = pd.getID();
+		System.out.println( f + " -> " + id );
+	}
+
+	public void testNativeSerialNum2() throws Exception {
+		File f = new File( "/dev/sdb" );
+		if( !f.canRead() )
 			return;
 		PhysicalDisk pd = new PhysicalDisk( f );
 		String id = pd.getID();
