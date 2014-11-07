@@ -1,0 +1,5 @@
+#!/bin/sh
+
+java -cp target/tupelo-amqp-objects-0.0.1.jar edu.uw.apl.tupelo.amqp.objects.Info
+
+# eof
