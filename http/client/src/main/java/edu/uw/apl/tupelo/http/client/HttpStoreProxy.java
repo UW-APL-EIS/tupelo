@@ -164,21 +164,50 @@ public class HttpStoreProxy implements Store {
 		t.start();
 		HttpClient req = new DefaultHttpClient( );
 		HttpResponse res = req.execute( p );
+		try {
+			t.join();
+		} catch( InterruptedException ie ) {
+		}
 	}
 
 	@Override
-	public synchronized void put( ManagedDisk md, ProgressMonitor.Callback cb,
-								  int progressUpdateIntervalSecs )
+	public synchronized void put( final ManagedDisk md,
+								  final ProgressMonitor.Callback cb,
+								  final int progressUpdateIntervalSecs )
 		throws IOException {
 
-		/*
-		  We do NOT just want to be an empty implementation.
-		  Rather, we want keep the progress monitor informed
-		  so use a /dev/null like OutputStream
-		*/
-		// to do
-		throw new UnsupportedOperationException();
-		// TODO
+		ManagedDiskDescriptor mdd = md.getDescriptor();
+		HttpPost p = new HttpPost( server + "disks/data/put/" +
+								   mdd.getDiskID() +
+								   "/" + mdd.getSession() );
+		log.debug( p.getRequestLine() );
+
+		final PipedOutputStream pos = new PipedOutputStream();
+		PipedInputStream pis = new PipedInputStream( pos );
+		InputStreamEntity ise = new InputStreamEntity
+			( pis, -1, ContentType.APPLICATION_OCTET_STREAM );
+		ise.setChunked( true );
+		p.setEntity( ise );
+		Runnable r = new Runnable() {
+				public void run() {
+					try {
+						ProgressMonitor pm = new ProgressMonitor
+							( md, pos, cb, progressUpdateIntervalSecs );
+						pm.start();
+						pos.close();
+					} catch( IOException ioe ) {
+						log.error( ioe );
+					}
+				}
+			};
+		Thread t = new Thread( r );
+		t.start();
+		HttpClient req = new DefaultHttpClient( );
+		HttpResponse res = req.execute( p );
+		try {
+			t.join();
+		} catch( InterruptedException ie ) {
+		}
 	}
 	
 
