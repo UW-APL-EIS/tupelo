@@ -1,5 +1,6 @@
 package edu.uw.apl.tupelo.model;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -81,6 +82,38 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		File f = new File( "nuga2.dd" + ManagedDisk.FILESUFFIX );
 		if( !f.exists() )
 			return;
+		ManagedDisk md = ManagedDisk.readFrom( f );
+		InputStream is = md.getInputStream();
+		String md5 = Utils.md5sum( is );
+		is.close();
+		System.out.println( md5 );
+		if( false ) {
+			byte[] ba = new byte[1024*1024];
+			int nin = is.read( ba );
+			System.out.println( nin );
+		}
+	}
+
+	public void test1g() throws IOException {
+		File f = new File( "data/sda.1g" );
+		if( !f.exists() )
+			return;
+		System.out.println( "Test " + f );
+		UnmanagedDisk ud = new DiskImage( f );
+		ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
+		File out = new File( f.getName() + ManagedDisk.FILESUFFIX );
+		FileOutputStream fos = new FileOutputStream( out );
+		BufferedOutputStream bos = new BufferedOutputStream( fos, 1024*1024 );
+		md.writeTo( bos );
+		bos.close();
+		fos.close();
+	}
+
+	public void testManaged1g() throws IOException {
+		File f = new File( "sda.1g" + ManagedDisk.FILESUFFIX );
+		if( !f.exists() )
+			return;
+		System.out.println( "Test " + f );
 		ManagedDisk md = ManagedDisk.readFrom( f );
 		InputStream is = md.getInputStream();
 		String md5 = Utils.md5sum( is );

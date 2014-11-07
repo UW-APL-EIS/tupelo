@@ -12,7 +12,7 @@ public class GrainArithmeticTest extends junit.framework.TestCase {
 		test( 1024L * 1024L * 32, 128, 512 );
 	}
 
-	public void test1g() {
+	public void _test1g() {
 		test( 1024L * 1024L * 1024L, 128, 512 );
 	}
 
