@@ -56,7 +56,9 @@ public class PutData extends CliBase {
 					  "Force flat managed disk, default based on unmanaged size" );
 		os.addOption( "o", false,
 					  "Force stream-optimized managed disk, default based on unmanaged size" );
-		String usage = commonUsage() + " [-f] [-o] [-n] /path/to/unmanagedData";
+		os.addOption( "q", false,
+					  "Quiet, do not print progress" );
+		String usage = commonUsage() + " [-f] [-o] [-n] [-q] /path/to/unmanagedData";
 
 		final String HEADER =
 			"Transfer an unmanaged disk image to a Tupelo store.";
@@ -74,6 +76,7 @@ public class PutData extends CliBase {
 		dryrun = cl.hasOption( "n" );
 		forceFlatDisk = cl.hasOption( "f" );
 		forceStreamOptimizedDisk = cl.hasOption( "o" );
+		quiet = cl.hasOption( "q" );
 		args = cl.getArgs();
 		if( args.length == 1 ) {
 			rawData = new File( args[0] );
@@ -128,27 +131,34 @@ public class PutData extends CliBase {
 				md = new StreamOptimizedDisk( ud, session );
 			}
 		}
-		ProgressMonitor.Callback cb = new ProgressMonitor.Callback() {
-				@Override
-				public void update( long in, long out, long elapsed ) {
-					double pc = in / (double)ud.size() * 100;
-					System.out.print( (int)pc + "% " );
-					System.out.flush();
-					if( in == ud.size() ) {
-						System.out.println();
-						System.out.printf( "Unmanaged size: %12d\n", ud.size());
-						System.out.printf( "Managed   size: %12d\n", out );
+		if( quiet ) {
+			s.put( md );
+		} else {
+			ProgressMonitor.Callback cb = new ProgressMonitor.Callback() {
+					@Override
+					public void update( long in, long out, long elapsed ) {
+						double pc = in / (double)ud.size() * 100;
+						System.out.print( (int)pc + "% " );
+						System.out.flush();
+						if( in == ud.size() ) {
+							System.out.println();
+							System.out.printf( "Unmanaged size: %12d\n",
+											   ud.size());
+							System.out.printf( "Managed   size: %12d\n", out );
+							System.out.println( "Elapsed: " + elapsed );
+						}
 					}
-				}
-			};
-		s.put( md, cb, 5 );
-
+				};
+			s.put( md, cb, 5 );
+		}
+		
 		Collection<ManagedDiskDescriptor> mdds2 = s.enumerate();
 		System.out.println( "Stored data: " + mdds2 );
 	}
 
 
 	boolean forceFlatDisk, forceStreamOptimizedDisk, dryrun;
+	boolean quiet;
 	File rawData;
 }
 
