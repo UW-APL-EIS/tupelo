@@ -20,6 +20,8 @@ import edu.uw.apl.tupelo.model.Session;
  * @see FileHashResponseTest
 */
 
+import org.apache.commons.codec.binary.Hex;
+
 public class FileHashResponse {
 
 	public FileHashResponse( String algorithm ) {
@@ -32,18 +34,30 @@ public class FileHashResponse {
 		hits.add( h );
 	}
 
+	public String paramString() {
+		return algorithm + " " + hits;
+	}
+	
 	/**
 	 * A hash search 'hit': We found 'hash' on ManagedDisk
 	 * mdd (diskID,session), with exact filesystem location 'path'
 	 */
 	   
 	static public class Hit {
+		
 		Hit( byte[] hash, ManagedDiskDescriptor mdd, String path ) {
 			this.hash = hash;
 			this.descriptor = mdd;
 			this.path = path;
 		}
 
+		@Override
+		public String toString() {
+			String hashHex = new String( Hex.encodeHex( hash ) );
+			return "Hash: "+ hashHex + ", descriptor" + descriptor +
+				", path: " + path;
+		}
+		
 		public final byte[] hash;
 		public final ManagedDiskDescriptor descriptor;
 		public final String path;

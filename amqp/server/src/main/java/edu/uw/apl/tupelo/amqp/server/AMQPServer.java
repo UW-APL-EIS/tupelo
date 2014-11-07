@@ -94,6 +94,7 @@ public class AMQPServer {
 		store = buildStore( storeLocation );
 
 		// Print some info about the store state..
+		System.out.println( "Store location : " + storeLocation );
 		UUID id = store.getUUID();
 		System.out.println( "Store id : " + id );
 		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
@@ -103,6 +104,9 @@ public class AMQPServer {
 		System.out.println( "Store managed disks: " );
 		for( ManagedDiskDescriptor mdd : sorted )
 			System.out.println( mdd );
+
+		// Print some info about the broker..
+		System.out.println( "AMQP broker : " + brokerUrl );
 
 		// And start the main service...
 		FileHashService fhs = new FileHashService( store, brokerUrl );

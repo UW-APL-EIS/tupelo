@@ -11,6 +11,7 @@ import org.apache.commons.cli.*;
 import org.apache.commons.codec.binary.Hex;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
+import org.apache.log4j.Logger;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -74,6 +75,7 @@ public class FileHashClient {
 							   new JSONSerializers.MessageDigestSerializer() );
 		gson = gb.create();
 		hashes = new ArrayList<String>();
+		log = Logger.getLogger( getClass() );
 	}
 
 	public void readArgs( String[] args ) throws IOException {
@@ -139,6 +141,7 @@ public class FileHashClient {
 		BasicProperties bp = new BasicProperties.Builder()
 			.replyTo( replyQueueName )
 			.contentType( "application/json" )
+			.correlationId( "" + System.currentTimeMillis()  )
 			.build();
 
 		// LOOK: populate the fhq via add( byte[] )
@@ -151,8 +154,7 @@ public class FileHashClient {
 		RPCObject<FileHashQuery> rpc1 = RPCObject.asRPCObject( fhq,
 															   "filehash" );
 		String json = gson.toJson( rpc1 );
-
-		System.out.println( json );
+		log.info( "Sending request '" + json + "'" );
 		
 		channel.basicPublish( EXCHANGE, "who-has", bp, json.getBytes() );
 
@@ -161,16 +163,18 @@ public class FileHashClient {
 
 		QueueingConsumer.Delivery delivery = consumer.nextDelivery();
 		String message = new String(delivery.getBody());
-		System.out.println(" [x] Received '" + message + "'");
-		System.out.println();
 		
 		// look: check contentType
 		json = message;
+		log.info( "Received reply '" + json + "'" );
+
 		Type fhrType = new TypeToken<RPCObject<FileHashResponse>>(){}.getType();
 		RPCObject<FileHashResponse> rpc2 = gson.fromJson( json, fhrType );
 		FileHashResponse fhr = rpc2.appdata;
+		
 		for( FileHashResponse.Hit h : fhr.hits ) {
-			System.out.println( h.path );
+			String hashHex = new String( Hex.encodeHex( h.hash ) );
+			log.info( "Hit: " + hashHex + " " + h.descriptor + " " + h.path );
 		}
 
 		channel.close();
@@ -185,8 +189,10 @@ public class FileHashClient {
 	}
 
 	private String brokerUrl;
-	static boolean debug, verbose;
 	private Gson gson;
+	private Logger log;
+	
+	static boolean debug, verbose;
 	
 	private List<String> hashes;
 	

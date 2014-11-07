@@ -17,6 +17,7 @@ import java.util.UUID;
 
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.binary.Base64;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
@@ -85,7 +86,8 @@ public class FileHashService {
 		
 		String queueName = channel.queueDeclare().getQueue();
 		channel.queueBind( queueName, EXCHANGE, BINDINGKEY );
-
+		log.info( "Binding to exchange '" + EXCHANGE + "' with key '"
+				  + BINDINGKEY + "'" );
         QueueingConsumer consumer = new QueueingConsumer(channel);
         channel.basicConsume(queueName, true, consumer);
 
@@ -99,7 +101,7 @@ public class FileHashService {
 			// LOOK: check mime type aka contentType
 			String json = message;
 			
-            log.info(" [x] Received '" + json + "'");
+            log.info( "Received request '" + json + "'");
 
 			Type fhqType =
 				new TypeToken<RPCObject<FileHashQuery>>(){}.getType();
@@ -113,6 +115,8 @@ public class FileHashService {
 			}
 			FileHashQuery fhq = rpc1.appdata;
 
+            log.info( "Searching for " + fhq.hashes.size() + " hashes..." );
+
 			FileHashResponse fhr = new FileHashResponse( fhq.algorithm );
 			/*
 			  LOOK: load all the Store's md5 hash data on every query ??
@@ -120,6 +124,8 @@ public class FileHashService {
 			*/
 			for( ManagedDiskDescriptor mdd : mdds ) {
 				List<String> ss = loadFileHashes( mdd );
+				
+				log.info( "Loaded " + ss.size() + " hashes from " + mdd );
 				/*
 				  Recall: The file content of MANY paths can hash to
 				  the SAME value, typically when the file is empty.
@@ -132,6 +138,9 @@ public class FileHashService {
 					List<String> paths = haystack.get( needle );
 					if( paths == null )
 						continue;
+					String hashHex = new String( Hex.encodeHex( hash ) );
+					log.info( "Matched " +  hashHex + ": " + mdd + " "
+							  + paths );
 					for( String path : paths )
 						fhr.add( hash, mdd, path );
 				}					
@@ -146,8 +155,7 @@ public class FileHashService {
 			json = gson.toJson( rpc2 );
 			channel.basicPublish( "", reqProps.getReplyTo(),
 								  resProps, json.getBytes() );
-            System.out.println(" [x] Sent '" + json + "'");
-			
+            log.info( "Sending reply '" + json + "'");
         }
 	}
 	/*
