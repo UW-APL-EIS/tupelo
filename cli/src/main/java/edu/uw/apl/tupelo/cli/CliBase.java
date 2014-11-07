@@ -1,6 +1,7 @@
 package edu.uw.apl.tupelo.cli;
 
 import org.apache.commons.cli.*;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 /**
@@ -38,6 +39,8 @@ public class CliBase {
 			System.exit(1);
 		}
 		debug = cl.hasOption( "d" );
+		if( debug )
+			log.setLevel( Level.DEBUG );
 		if( cl.hasOption( "s" ) ) {
 			storeLocation = cl.getOptionValue( "s" );
 		}

@@ -1,23 +1,7 @@
 #!/bin/sh
 
-ARTIFACT=tupelo-cli
-VERSION=0.0.1
-JAR=$ARTIFACT-$VERSION.jar
-PACKAGE=edu.uw.apl.tupelo.cli
+DIRNAME=`dirname $0`
 
-CLAZZ=HashData
-
-JAVA_OPTS="-Dlog4j.configuration=log4j.hashdata"
-#JAVA_OPTS="-Dlog4j.configuration=log4j.hashdata -Dlog4j.debug"
-#JAVA_OPTS="-Dlog4j.debug"
-
-#echo $JAVA_OPTS
-
-# Have to align the log4j file with the jars.  
-# Don't keep it in ./target (mvn clean!)
-[ -d target ] && cp log4j.hashdata target/
-
-# This codebase built using JDK 1.7 and requires a JRE 1.7 also...
-exec java $JAVA_OPTS -classpath target/$JAR $PACKAGE.$CLAZZ "$@"
+$DIRNAME/clibase HashData "$@"
 
 # eof

@@ -40,6 +40,9 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		this( ud, session, GRAINSIZE_DEFAULT );
 	}
 	
+	/*
+	  Called by users putting unmanaged data into a store...
+	*/
 	public StreamOptimizedDisk( UnmanagedDisk ud, Session session,
 								long grainSize ) {
 		super( ud, null );
@@ -61,19 +64,17 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		header.dataOffset = 0;
 		header.compressAlgorithm = Compressions.DEFLATE;
 	}
-	
 
-	// Called from ManagedDisk.readFrom()
+	/*
+	  Called from ManagedDisk.readFrom(), store side.  Note how we postone
+	  metadata read until needed (caller asks for inputstream)
+	*/
 	public StreamOptimizedDisk( File managedData, Header h )
 		throws IOException {
 		super( null, managedData );
 		header = h;
 		grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
 		grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
-		zeroGrain = header.grainSize == GRAINSIZE_DEFAULT ?	ZEROGRAIN_DEFAULT:
-			new byte[(int)grainSizeBytes];
-		zeroGrainTable = new byte[(int)grainTableCoverageBytes];
-		readMetaData();
 	}
 
 	// We require the grainSize to be power of 2 (for sparse disk arithmetic)
@@ -102,7 +103,18 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	}
 
 
-	private void readMetaData() throws IOException {
+	// Synchronized in case of concurrent access in a web-based store...
+	private synchronized void readMetaData() throws IOException {
+		if( zeroGrain != null ) {
+			return;
+		}
+	    if( header.grainSize == GRAINSIZE_DEFAULT ) {
+			zeroGrain =	ZEROGRAIN_DEFAULT;
+			zeroGrainTable = ZEROGRAINTABLE_DEFAULT;
+		} else {
+			zeroGrain = new byte[(int)grainSizeBytes];
+			zeroGrainTable = new byte[(int)grainTableCoverageBytes];
+		}
 		RandomAccessFile raf = new RandomAccessFile( managedData, "r" );
 		// the managed data ends with footer and eos marker, each 1 sector long
 		long footerOffset = raf.length() - (2 * Constants.SECTORLENGTH );
@@ -232,7 +244,8 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		log.info( "Whole Grain Tables " + wholeGrainTables  );
 		if( wholeGrainTables > 0 ) {
 			byte[] ba = new byte[(int)grainTableCoverageBytes];
-			BufferedInputStream bis = new BufferedInputStream( is, ba.length );
+			//			BufferedInputStream bis = new BufferedInputStream( is, ba.length );
+			InputStream bis = is;
 			for( int gt = 0; gt < wholeGrainTables; gt++ ) {
 				log.debug( "GDIndex " + gdIndex );
 				int nin = bis.read( ba );
@@ -523,11 +536,13 @@ public class StreamOptimizedDisk extends ManagedDisk {
 
 	@Override
 	public InputStream getInputStream() throws IOException {
+		readMetaData();
 		return new SODRandomAccessRead( size() );
 	}
 
 	@Override
 	public SeekableInputStream getSeekableInputStream() throws IOException {
+		readMetaData();
 		return new SODRandomAccessRead( size() );
 	}
 
@@ -785,6 +800,10 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	
 	static private final byte[] ZEROGRAIN_DEFAULT =
 		new byte[(int)(GRAINSIZE_DEFAULT * Constants.SECTORLENGTH)];
+
+	static private final byte[] ZEROGRAINTABLE_DEFAULT =
+		new byte[(int)(GRAINSIZE_DEFAULT * Constants.SECTORLENGTH *
+					   NUMGTESPERGT )];
 
 	static private long[] ZEROGDE = new long[0];
 	static private long[] PARENTGDE = new long[0];
