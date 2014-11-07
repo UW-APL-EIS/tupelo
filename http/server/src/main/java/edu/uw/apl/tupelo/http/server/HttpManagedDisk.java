@@ -22,7 +22,7 @@ import edu.uw.apl.tupelo.store.Store;
    operation.  A nice fallout of this way of 'uploading' a ManagedDisk
    over http is that there is no requirement that the client is Java.
 
-   This odd class is needed by the HttpStoreServlet since it has to
+   This odd class is needed by the {@link DataServlet} since it has to
    pass ManagedDisk objects to/from the Store.  The Store of course
    has no idea that http is involved at all.
 */
@@ -64,17 +64,26 @@ public class HttpManagedDisk extends ManagedDisk {
 
 	@Override
 	public void readFromWriteTo( InputStream is, OutputStream os ) {
-		throw new IllegalStateException( getClass() + ".readFromWriteTo" );
+		throw new UnsupportedOperationException( getClass() +
+												 ".readFromWriteTo" );
 	}
 
 	@Override
 	public InputStream getInputStream() throws IOException {
-		throw new IllegalStateException( getClass() + ".getInputStream!!" );
+		throw new UnsupportedOperationException( getClass() +
+												 ".getInputStream!!" );
+	}
+
+	@Override
+	public void verify() throws IOException {
+		throw new UnsupportedOperationException( getClass() +
+												 ".verify!!" );
 	}
 
 	@Override
 	public SeekableInputStream getSeekableInputStream() throws IOException {
-		throw new IllegalStateException( getClass() + ".getSeekableInputStream!!");
+		throw new UnsupportedOperationException( getClass() +
+												 ".getSeekableInputStream!!");
 	}
 
 	private final ManagedDiskDescriptor descriptor;

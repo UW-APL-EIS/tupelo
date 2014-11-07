@@ -27,7 +27,7 @@ public class CliBase {
 	}
 	
 	protected String commonUsage() {
-		return getClass().getName() + " [-d] [-s storeLocation] ";
+		return getClass().getName() + " [-d] [-h] [-s storeLocation]";
 	}
 	
 	protected void commonParse( Options os, CommandLine cl, String usage,

@@ -2,6 +2,7 @@ package edu.uw.apl.tupelo.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.Collection;
 
 import org.apache.commons.cli.*;
@@ -52,12 +53,13 @@ public class PutData extends CliBase {
 		os.addOption( "n", false,
 					  "Dryrun, use null store (like /dev/null)" );
 		os.addOption( "f", false,
-					  "Force flat managed disk, default decides based on unmanaged data size" );
+					  "Force flat managed disk, default based on unmanaged size" );
 		os.addOption( "o", false,
-					  "Force stream-optimized managed disk, default decides based on unmanaged data size" );
-		String usage = commonUsage() + "[-f] [-o] /path/to/unmanagedData";
+					  "Force stream-optimized managed disk, default based on unmanaged size" );
+		String usage = commonUsage() + " [-f] [-o] [-n] /path/to/unmanagedData";
 
-		final String HEADER = "";
+		final String HEADER =
+			"Transfer an unmanaged disk image to a Tupelo store.";
 		final String FOOTER = "";
 		CommandLineParser clp = new PosixParser();
 		CommandLine cl = null;
@@ -73,7 +75,7 @@ public class PutData extends CliBase {
 		forceFlatDisk = cl.hasOption( "f" );
 		forceStreamOptimizedDisk = cl.hasOption( "o" );
 		args = cl.getArgs();
-		if( args.length > 0 ) {
+		if( args.length == 1 ) {
 			rawData = new File( args[0] );
 			if( !rawData.exists() ) {
 				// like bash would do, write to stderr...
@@ -90,16 +92,20 @@ public class PutData extends CliBase {
 		Store s = null;
 		if( dryrun ) {
 			s = new NullStore();
-			log.info( getClass() + " " + storeLocation );
 		} else {
 			s = Utils.buildStore( storeLocation );
-			log.info( getClass() + " " + storeLocation );
+			log.info( s.getClass() + " " + storeLocation );
 		}
 		if( debug )
 			System.out.println( "Store: " + s );
 		
 
-		System.out.println( "Store.usableSpace: " + s.getUsableSpace() );
+		try {
+			System.out.println( "Store.usableSpace: " + s.getUsableSpace() );
+		} catch( ConnectException ce ) {
+			System.err.println( "Network Error. Remote Tupelo store up?" );
+			System.exit(0);
+		}
 		Collection<ManagedDiskDescriptor> mdds1 = s.enumerate();
 		System.out.println( "Stored data: " + mdds1 );
 
@@ -107,8 +113,8 @@ public class PutData extends CliBase {
 		final UnmanagedDisk ud = new DiskImage( rawData );
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
 															   session );
-		System.out.println( "Storing: " + mdd +
-							" (" + ud.size() + " bytes)" );
+		System.out.println( "Storing: " + rawData +
+							" (" + ud.size() + " bytes) to " + mdd );
 
 		ManagedDisk md = null;
 		if( forceFlatDisk ) {
@@ -128,8 +134,11 @@ public class PutData extends CliBase {
 					double pc = in / (double)ud.size() * 100;
 					System.out.print( (int)pc + "% " );
 					System.out.flush();
-					if( in == ud.size() )
+					if( in == ud.size() ) {
 						System.out.println();
+						System.out.printf( "Unmanaged size: %12d\n", ud.size());
+						System.out.printf( "Managed   size: %12d\n", out );
+					}
 				}
 			};
 		s.put( md, cb, 5 );

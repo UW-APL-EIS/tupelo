@@ -126,6 +126,11 @@ public class FilesystemStore implements Store {
 		return result;
 	}
 
+	/**
+	 * @throws IllegalStateException if the verify operation fails.
+	 * If so, the temporary file used to hold the manageddisk is discarded
+	 * and the store proper NOT updated
+	 */
 	@Override
 	public synchronized void put( ManagedDisk md ) throws IOException {
 
@@ -151,6 +156,15 @@ public class FilesystemStore implements Store {
 			md.writeTo( bos );
 			bos.close();
 			fos.close();
+			// Verify for that data written is complete...
+			try {
+				md.setManagedData( tempFile );
+				md.verify();
+			} catch( IllegalStateException ise ) {
+				log.warn( ise );
+				tempFile.delete();
+				throw ise;
+			}
 			log.debug( "Unlocked " + tempFile );
 		}
 

@@ -55,7 +55,7 @@ public class StoreInfo extends CliBase {
 		Store store = Utils.buildStore( storeLocation );
 		if( debug )
 			System.out.println( "Store: " + store );
-		log.info( getClass() + " " + storeLocation );
+		log.info( store.getClass() + " " + storeLocation );
 		
 		System.out.println( "Using store: " + storeLocation );
 		System.out.println( "Usable Space: " + store.getUsableSpace() );
