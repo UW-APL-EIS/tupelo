@@ -40,9 +40,13 @@ public class PutData extends CliBase {
 			if( debug )
 				e.printStackTrace();
 			System.exit(-1);
+		} finally {
+			/*
+			  Will call close() on all loggers which will
+			  shutdown any amqp stuff.
+			*/
+			  LogManager.shutdown();
 		}
-		// Will call close() on all loggers which will shutdown any amqp stuff.
-		LogManager.shutdown();
 	}
 
 	public PutData() {

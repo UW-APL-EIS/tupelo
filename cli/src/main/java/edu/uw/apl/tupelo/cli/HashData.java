@@ -19,6 +19,7 @@ import java.util.Map;
 
 import org.apache.commons.cli.*;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.log4j.LogManager;
 
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
@@ -67,7 +68,10 @@ public class HashData extends CliBase {
 			if( debug )
 				e.printStackTrace();
 			System.exit(-1);
+		} finally {
+			LogManager.shutdown();
 		}
+			  
 	}
 
 	public HashData() {

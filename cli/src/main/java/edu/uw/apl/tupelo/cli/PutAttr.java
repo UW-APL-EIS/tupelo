@@ -6,6 +6,7 @@ import java.util.Collection;
 
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
+import org.apache.log4j.LogManager;
 
 import edu.uw.apl.tupelo.model.FlatDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
@@ -29,6 +30,8 @@ public class PutAttr extends CliBase {
 		} catch( Exception e ) {
 			System.err.println( e );
 			System.exit(-1);
+		} finally {
+			LogManager.shutdown();
 		}
 	}
 
@@ -37,7 +40,9 @@ public class PutAttr extends CliBase {
 
 	public void readArgs( String[] args ) {
 		Options os = commonOptions();
-		String usage = commonUsage() + "diskID sessionID key valueFile";
+		os.addOption( "f", true, "valueFile" );
+		String usage = commonUsage() +
+			"diskID sessionID key [-f valueFile | valueString]";
 
 		final String HEADER = "";
 		final String FOOTER = "";
@@ -50,21 +55,25 @@ public class PutAttr extends CliBase {
 			System.exit(1);
 		}
 		commonParse( os, cl, usage, HEADER, FOOTER );
-
+		if( cl.hasOption( "f" ) ) {
+			String valueFileName = cl.getOptionValue( "f" );
+			valueFile = new File( valueFileName );
+			if( !( valueFile.isFile() && valueFile.canRead() ) ) {
+				System.err.println( valueFile + ": No such file" );
+				System.exit(-1);
+			}
+		}
 		args = cl.getArgs();
-		if( args.length < 4 ) {
+		int requiredArgs = valueFile == null ? 4 : 3;
+		if( args.length < requiredArgs ) {
 			printUsage( os, usage, HEADER, FOOTER );
 			System.exit(1);
 		}
 		diskID = args[0];
 		sessionID = args[1];
 		key = args[2];
-		valueFile = new File( args[3] );
-		if( !valueFile.exists() ) {
-			// like bash would do, write to stderr...
-			System.err.println( valueFile + ": No such file or directory" );
-			System.exit(-1);
-		}
+		if( valueFile == null )
+			valueString = args[3];
 	}
 	
 	public void start() throws IOException {
@@ -79,7 +88,12 @@ public class PutAttr extends CliBase {
 			System.err.println( "Not stored: " + diskID + "," + sessionID );
 			System.exit(1);
 		}
-		byte[] ba = FileUtils.readFileToByteArray( valueFile );
+		byte[] ba = null;
+		if( valueFile != null ) {
+			ba = FileUtils.readFileToByteArray( valueFile );
+		} else {
+			ba = valueString.getBytes();
+		}
 		System.out.println( "Storing attribute " + key +
 							" for managedDisk " + mdd );
 		store.setAttribute( mdd, key, ba );
@@ -91,7 +105,7 @@ public class PutAttr extends CliBase {
 	String diskID, sessionID;
 	String key;
 	File valueFile;
-
+	String valueString;
 }
 
 // eof
