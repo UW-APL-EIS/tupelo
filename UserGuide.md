@@ -78,17 +78,19 @@ to the module containing some command line tools:
 
 $ cd cli
 
-Next, create a disk image from scratch to use as unmanaged data.  On
-Linux (and MacOS?) at least
+Next, create a disk image from scratch to use as unmanaged data (or
+use any disk iamges you have handy).  On Linux (and MacOS?) at least
 
 $ dd if=/dev/sda of=DISKIMAGE bs=1M count=4096
 
 will copy the first 4GB of your actual hard drive into a local file
-./DISKIMAGE.  Of course this is NOT a valid filesystem, since we have
-cropped/truncated the disk at 4GB!  To create a disk image in which
-there is a valid file system, and then add some local file into that
-filesystem, we can create a 'filesystem in a file', like this (on
-Linux/MacOS??)
+./DISKIMAGE.  You may have sudo this if your user cannot read
+/dev/sda.  Of course this is NOT a valid filesystem, since we have
+cropped/truncated the disk at 4GB!  
+
+To create a disk image in which there is a valid file system, and then
+add some local file content into that filesystem, we can create a
+'filesystem in a file', like this (on Linux/MacOS??)
 
 $ dd if=/dev/zero of=FILESYSTEM bs=1M count=4096
 $ losetup -f
@@ -128,12 +130,11 @@ disk just submitted.
 
 $ ./storeinfo
 
-
 Tupelo has some smart compression logic to minimise the amount of disk
 space required to hold the submitted disk.  That's why the sizes of
 unmanaged and managed disks are likely different.  The putdata program
 decides to use a 'flat disk' if the unmanaged size is < 1GB, or a
-'stream optimized disk' otherwise.  A flat disk form of managed disk
+'stream optimized disk' otherwise.  The flat disk form of managed disk
 is simply the original unmanaged disk with a small (512 byte) header
 on the front.  So a flat disk is actually bigger than its unmanaged
 counterpart!  A stream-optimized disk is much smarter!  We can force
@@ -144,5 +145,54 @@ $ ./putdata -f FILESYSTEM
 
 $ ./putdata -o FILESYSTEM
 
-MORE COMING
+So, we can transfer unmanaged data to a Tupelo store using putdata.
+But the whole point of storing disk contents is to later answer
+questions like 'does/did this disk contain file F?'  To answer such
+questions we have to look inside the managed data and extract useful
+information.  Recall that the managed data is set in stone, it never
+changes, so any info learned is valid forever.
+
+If the disk you just put into the store was one with a valid
+filesystem (e.g. the FILESYSTEM file above), we want to 'walk' that
+filessytem.  Note that we are walking the managed data, not the
+unmanaged 'local' data.  In a real store setup, we would likely do the
+walk over the new managed data as a 'post-receive hook'.  The walk
+over the data produces a file containing md5 hashes and full path name
+of every file found.  First identify the 'descriptor' (WHAT,WHEN) for
+the data you want to hash, it will be something like WHAT=FILESYSTEM
+WHEN=10141107.0001.  Then supply those two strings as arguments to
+./hashdata, e.g.
+
+$ ./hashdata FILESYSTEM 20141107.0001
+
+which would produce a file
+
+FILESYSTEM-20141107.0001-0-0.md5
+
+This is just a text file, so can view:
+
+$ head FILESYSTEM-20141107.0001-0-0.md5
+
+Obviously we want to bind/associate this new data closely to the
+managed data it represents.  To do this, Tupelo stores support the
+notion of 'attributes', a bit like Redis.  A Tupelo attribute has a
+string-valued name (or key) and an arbitrary (byte-array) value.
+
+To see attribute setting in action, first just set a bogus/throwaway
+attribute first, using the putattr script:
+
+$ ./putattr FILESYSTEM 20141107.0001 foo bar
+
+which sets the attribute named 'foo' with value 'bar' for the managed
+disk described by the pair FILESYSTEM,20141107.0001.  You could do
+something more useful like 'user tagging' a managed disk:
+
+$ ./putattr FILESYSTEM 20141107.0001 user `echo $USER`
+
+Tupelo doesn't care what the values are, it just stores them.
+
+
+To associate the md5 hash file just produced with the managed data we
+stored earlier, we 'set an attribute' for that
+
 
