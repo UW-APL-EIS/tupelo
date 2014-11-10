@@ -50,11 +50,16 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		checkGrainSize( grainSize );
 		// We require the data to be managed to be a whole number of grains...
 		long len = unmanagedData.size();
-		checkSize( len, grainSize );
+
+		long len2 = alignUp( len, grainSize * Constants.SECTORLENGTH );
+		if( len2 != len ) {
+			log.info( "Extending " + len + " -> " + len2 );
+		}
+		checkSize( len2, grainSize );
 
 		String diskID = unmanagedData.getID();
 		UUID parent = Constants.NULLUUID;
-		long capacity = len / Constants.SECTORLENGTH;
+		long capacity = len2 / Constants.SECTORLENGTH;
 		header = new Header( diskID, session, DiskTypes.STREAMOPTIMIZED,
 							 parent, capacity, grainSize );
 

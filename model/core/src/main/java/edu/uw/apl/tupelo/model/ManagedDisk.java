@@ -129,7 +129,7 @@ abstract public class ManagedDisk {
 	/**
 	 * Example: alignUp( 700, 512 ) -> 1024
 	 */
-	static long alignUp( long b, int a ) {
+	static long alignUp( long b, long a ) {
 		return (long)(Math.ceil( (double)b / a ) * a);
 	}
 	

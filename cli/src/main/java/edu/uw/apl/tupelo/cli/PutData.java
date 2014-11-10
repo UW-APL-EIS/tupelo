@@ -16,6 +16,7 @@ import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.model.StreamOptimizedDisk;
 import edu.uw.apl.tupelo.model.UnmanagedDisk;
 import edu.uw.apl.tupelo.model.ProgressMonitor;
+import edu.uw.apl.tupelo.model.PhysicalDisk;
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.null_.NullStore;
 
@@ -117,7 +118,12 @@ public class PutData extends CliBase {
 		System.out.println( "Stored data: " + mdds1 );
 
 		Session session = s.newSession();
-		final UnmanagedDisk ud = new DiskImage( rawData );
+		UnmanagedDisk ud = null;
+		if( rawData.getPath().startsWith( "/dev/" ) ) {
+			ud = new PhysicalDisk( rawData );
+		} else {
+			ud = new DiskImage( rawData );
+		}
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
 															   session );
 		System.out.println( "Storing: " + rawData +
@@ -128,26 +134,29 @@ public class PutData extends CliBase {
 			md = new FlatDisk( ud, session );
 		} else if( forceStreamOptimizedDisk ) {
 			md = new StreamOptimizedDisk( ud, session );
+			md.setCompression( ManagedDisk.Compressions.SNAPPY );
 		} else {
 			if( ud.size() < 1024L * 1024 * 1024 ) {
 				md = new FlatDisk( ud, session );
 			} else {
 				md = new StreamOptimizedDisk( ud, session );
+				md.setCompression( ManagedDisk.Compressions.SNAPPY );
 			}
 		}
 		if( quiet ) {
 			s.put( md );
 		} else {
+			final long sz = ud.size();
 			ProgressMonitor.Callback cb = new ProgressMonitor.Callback() {
 					@Override
 					public void update( long in, long out, long elapsed ) {
-						double pc = in / (double)ud.size() * 100;
+						double pc = in / (double)sz * 100;
 						System.out.print( (int)pc + "% " );
 						System.out.flush();
-						if( in == ud.size() ) {
+						if( in == sz ) {
 							System.out.println();
 							System.out.printf( "Unmanaged size: %12d\n",
-											   ud.size());
+											   sz );
 							System.out.printf( "Managed   size: %12d\n", out );
 							System.out.println( "Elapsed: " + elapsed );
 						}
