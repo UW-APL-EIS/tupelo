@@ -29,6 +29,7 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.QueueingConsumer;
+import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.client.AMQP.BasicProperties;
 
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
@@ -72,7 +73,7 @@ public class FileHashService {
 		ConnectionFactory cf = new ConnectionFactory();
 		cf.setUri( brokerURL );
 		Connection connection = cf.newConnection();
-		Channel channel = connection.createChannel();
+		channel = connection.createChannel();
 
 		channel.exchangeDeclare( EXCHANGE, "direct" );
 		
@@ -81,11 +82,19 @@ public class FileHashService {
 		log.info( "Binding to exchange '" + EXCHANGE + "' with key '"
 				  + BINDINGKEY + "'" );
         QueueingConsumer consumer = new QueueingConsumer(channel);
-        channel.basicConsume(queueName, true, consumer);
+		boolean autoAck = false;
+        channel.basicConsume(queueName, autoAck, consumer);
 
         while (true) {
 			log.info( "Waiting..." );
-            QueueingConsumer.Delivery delivery = consumer.nextDelivery();
+            QueueingConsumer.Delivery delivery = null;
+
+			try {
+				delivery = consumer.nextDelivery();
+			} catch( ShutdownSignalException sse ) {
+				log.warn( sse );
+				break;
+			}
 
 			// LOOK: algorithm match
 			
@@ -110,6 +119,7 @@ public class FileHashService {
             log.info( "Searching for " + fhq.hashes.size() + " hashes..." );
 
 			FileHashResponse fhr = new FileHashResponse( fhq.algorithm );
+			
 			/*
 			  LOOK: load all the Store's md5 hash data on every query ??
 			  Better to load it once (but then what if stored updated?)
@@ -137,7 +147,8 @@ public class FileHashService {
 						fhr.add( hash, mdd, path );
 				}					
 			}
-			
+
+			channel.basicAck( delivery.getEnvelope().getDeliveryTag(), false );
 			BasicProperties reqProps = delivery.getProperties();
 			BasicProperties resProps = new BasicProperties.Builder()
 				.contentType( "application/json" )
@@ -150,6 +161,11 @@ public class FileHashService {
             log.info( "Sending reply '" + json + "'");
         }
 	}
+
+	public void stop() throws IOException {
+		channel.close();
+	}
+	
 	/*
 	  Load the 'md5' attribute data from the store for the given
 	  ManagedDiskDescriptor.  Just load the whole lines, do NOT parse
@@ -218,6 +234,7 @@ public class FileHashService {
 
 	private final Store store;
 	private final String brokerURL;
+	private Channel channel;
 	private Gson gson;
 	private Log log;
 	
