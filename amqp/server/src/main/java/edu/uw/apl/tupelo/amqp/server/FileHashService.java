@@ -39,6 +39,7 @@ import edu.uw.apl.tupelo.amqp.objects.FileHashQuery;
 import edu.uw.apl.tupelo.amqp.objects.FileHashResponse;
 import edu.uw.apl.tupelo.amqp.objects.JSONSerializers;
 import edu.uw.apl.tupelo.amqp.objects.RPCObject;
+import edu.uw.apl.tupelo.amqp.objects.Utils;
 
 /**
  * Connect to an AMQP broker (url supplied) and listen for messages on
@@ -61,16 +62,7 @@ public class FileHashService {
 	public FileHashService( Store s, String brokerURL ) {
 		store = s;
 		this.brokerURL = brokerURL;
-		GsonBuilder gb = new GsonBuilder();
-		gb.serializeNulls();
-		gb.disableHtmlEscaping();
-		// Special json encoding of Session objects
-		gb.registerTypeAdapter(Session.class,
-							   new JSONSerializers.SessionSerializer() );
-		// Special json encoding of hashes (byte arrays) into hex strings
-		gb.registerTypeAdapter(byte[].class,
-							   new JSONSerializers.MessageDigestSerializer() );
-		gson = gb.create();
+		gson = Utils.createGson( true );
 		log = LogFactory.getLog( getClass() );
 	}
 	

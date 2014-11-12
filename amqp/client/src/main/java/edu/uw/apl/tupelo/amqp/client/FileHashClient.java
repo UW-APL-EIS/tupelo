@@ -21,8 +21,8 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 
 import edu.uw.apl.tupelo.amqp.objects.FileHashQuery;
 import edu.uw.apl.tupelo.amqp.objects.FileHashResponse;
-import edu.uw.apl.tupelo.amqp.objects.JSONSerializers;
 import edu.uw.apl.tupelo.amqp.objects.RPCObject;
+import edu.uw.apl.tupelo.amqp.objects.Utils;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 
@@ -35,8 +35,12 @@ import edu.uw.apl.tupelo.model.Session;
  *
  * { "algorithm" : "md5", "hashes" : ["hash1hex", "hash2hex" ] }
  *
- * The file hashes (assumed to be md5 hashes, LOOK extend to handle e.g. sha1)
- * are read from
+ * The response object is a FileHashResponse. Both FileHashQuery and
+ * FileHashResponse are encoded as JSON, tied to a {@link RPCObject}
+ * which supplies debug/metadata.
+ *
+ * The file hashes (assumed to be md5 hashes, LOOK extend to handle
+ * e.g. sha1) are read from
  *
  * (a) cmd line arguments.  Use xargs to convert a text file of hashes
  * to cmd line args, e.g. cat FILE | xargs filehashclient
@@ -48,6 +52,8 @@ import edu.uw.apl.tupelo.model.Session;
  * $ echo HASH | filehashclient
  *
  * @see FileHashQuery
+ * @see FileHashResponse
+ * @see RPCObject
  */
 public class FileHashClient {
 
@@ -66,14 +72,8 @@ public class FileHashClient {
 
 	FileHashClient() {
 		brokerUrl = BROKERURLDEFAULT;
-		GsonBuilder gb = new GsonBuilder();
-		gb.serializeNulls();
-		gb.disableHtmlEscaping();
-		gb.registerTypeAdapter(Session.class,
-							   new JSONSerializers.SessionSerializer() );
-		gb.registerTypeAdapter(byte[].class,
-							   new JSONSerializers.MessageDigestSerializer() );
-		gson = gb.create();
+		boolean withPrettyPrinting = true;
+		gson = Utils.createGson( withPrettyPrinting );
 		hashes = new ArrayList<String>();
 		log = Logger.getLogger( getClass() );
 	}
