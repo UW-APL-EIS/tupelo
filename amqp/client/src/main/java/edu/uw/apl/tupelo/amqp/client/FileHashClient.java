@@ -171,10 +171,10 @@ public class FileHashClient {
 		Type fhrType = new TypeToken<RPCObject<FileHashResponse>>(){}.getType();
 		RPCObject<FileHashResponse> rpc2 = gson.fromJson( json, fhrType );
 		FileHashResponse fhr = rpc2.appdata;
-		
 		for( FileHashResponse.Hit h : fhr.hits ) {
 			String hashHex = new String( Hex.encodeHex( h.hash ) );
-			log.info( "Hit: " + hashHex + " " + h.descriptor + " " + h.path );
+			log.info( "Hit: " + hashHex + " " + h.descriptor + " " +
+					  h.path );
 		}
 
 		channel.close();
