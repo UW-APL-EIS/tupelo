@@ -13,6 +13,7 @@ import java.util.Properties;
 
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
+import edu.uw.apl.tupelo.amqp.server.FileHashService;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -31,6 +32,7 @@ public class ContextListener implements ServletContextListener {
 		try {
 			locateVersion( sc );
 			locateDataRoot( sc );
+			startAMQP( sc );
 		} catch( IOException ioe ) {
 			log.warn( ioe );
 		}
@@ -83,20 +85,58 @@ public class ContextListener implements ServletContextListener {
 		dataRoot.mkdirs();
 		log.info( "Store Root: " + dataRoot );
 		Store store = new FilesystemStore( dataRoot );
+		log.info( "Store UUID: " + store.getUUID() );
 		
 		sc.setAttribute( STOREKEY, store );
 	}
 
+	private void startAMQP( ServletContext sc ) throws IOException {
+		String brokerURL = sc.getInitParameter( AMQPBROKERKEY );
+		if( brokerURL == null ) {
+			log.warn( "Missing context param: " + AMQPBROKERKEY );
+			log.warn( "Unable to start AMQP Services" );
+			return;
+		}
+		Store s = (Store)sc.getAttribute( STOREKEY );
+		final FileHashService fhs = new FileHashService( s, brokerURL );
+		sc.setAttribute( AMQPSERVICEKEY, fhs );
+		Runnable r = new Runnable() {
+				@Override
+				public void run() {
+					try {
+						fhs.start();
+					} catch( Exception e ) {
+						log.warn( e );
+					}
+				}
+			};
+		new Thread( r ).start();
+	}
+
 	@Override
     public void contextDestroyed( ServletContextEvent sce ) {
+		ServletContext sc = sce.getServletContext();
+		FileHashService fhs = (FileHashService)sc.getAttribute
+			( AMQPSERVICEKEY );
+		if( fhs != null ) {
+			try {
+				fhs.stop();
+			} catch( IOException ioe ) {
+				log.warn( ioe );
+			}
+		}
 		log.info( "ContextDestroyed" );
 	}
 
 	private Log log;
 	
 	static public final String VERSIONKEY = "version";
+
 	static public final String DATAROOTKEY = "dataroot";
 	static public final String STOREKEY = "store";
+
+	static public final String AMQPBROKERKEY = "amqpbroker";
+	static public final String AMQPSERVICEKEY = "amqpservice";
 }
 
 

@@ -25,6 +25,12 @@
 
     <dependency>
       <groupId>${project.groupId}</groupId>
+      <artifactId>tupelo-amqp-server</artifactId>
+      <version>0.0.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>${project.groupId}</groupId>
       <artifactId>tupelo-logging</artifactId>
       <version>0.0.1</version>
     </dependency>
@@ -44,12 +50,6 @@
     </dependency>
 -->
 
-    <!--  Gson: Java to Json conversion -->
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>1.7.1</version>
-    </dependency>
   </dependencies>
 
   <build>

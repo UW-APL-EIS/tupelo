@@ -7,4 +7,12 @@
     <param-name>dataroot</param-name>
     <param-value>./test-store</param-value>
   </context-param>
+
+  <context-param>
+    <param-name>amqpbroker</param-name>
+    <param-value>
+      amqp://rpc_user:rpcm3pwd@rabbitmq.prisem.washington.edu
+    </param-value>
+  </context-param>
+
 </web-app>
