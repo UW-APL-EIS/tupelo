@@ -34,6 +34,48 @@ import org.xerial.snappy.Snappy;
  * @see https://www.vmware.com/support/developer/vddk/vmdk_50_technote.pdf
  */
 
+/**
+   LOOK: can assert that unmanaged data size be whole number of
+   SECTORS but that is all.  Store THAT number in header.capacity.
+   Grains needed is then alignUp( capacity, grainSize ) * grainSize,
+   so min grains = 1 Then grainTables needed is alignUp( grainsNeeded,
+   numgtespergt ) * numgtespergt, so min grainTables also 1.
+
+   size is always header.capacity * 512, and size v important since
+   used by inputstreams, seekableinputstream.
+
+   Now, in writing, we have to write a whole number of grains, even
+   though the lasrt grain may not be able to be 'filled' with
+   unmanaged data, since it may be at eof.
+
+   Do we need to store 512 grains to 'fill' a grain table, or can we
+   just store 1 - 511 grains and THEN the grain table, with some of
+   its entries zero/bogus??  should be a yes, since those gt entries
+   should never be accessed
+
+   So, on writing the SODisk:
+
+   compute grainCount, grainTableCount, grainDirectoryLength
+
+   write all 'full grain tables' as we have now, then
+
+   write all full grains, enter locations in last gt
+
+   write remaining sectors, padded to a grain, then compressed.  W/out
+   the padding, will not uncompress to a whole grain, giving us a
+   special case we would like to avoid. enter location in last gt
+
+   pad to 512 entries and write last gt.  write location of this gt into gd
+
+   write grain directory
+
+   On read, should be no special logic. Just must make sure we never
+   access a grain table with an 'undefined' offset.  Also, must make
+   sure not to read past eof in the last grain.
+*/
+
+
+   
 public class StreamOptimizedDisk extends ManagedDisk {
 
 	public StreamOptimizedDisk( UnmanagedDisk ud, Session session ) {
@@ -66,15 +108,22 @@ public class StreamOptimizedDisk extends ManagedDisk {
 
 		String diskID = unmanagedData.getID();
 		UUID parent = Constants.NULLUUID;
-		long capacity = len2 / Constants.SECTORLENGTH;
+		/*
+		  The capacity is the number of grains required to store ALL
+		  the unmanagedData, even if that unmanagedData is not a whole
+		  number of grains, so capacity is a ceiling.  To derive the
+		  actual data size in bytes, we subtract the padding from the
+		  capacity.
+		*/
+		long capacityGrains = lenAligned / Constants.SECTORLENGTH;
 		header = new Header( diskID, session, DiskTypes.STREAMOPTIMIZED,
-							 parent, capacity, grainSize );
+							 parent, capacityGrains, grainSize );
 
+		header.padding = padding;
+		header.dataOffset = Header.SIZEOF;
+		header.compressAlgorithm = Compressions.DEFLATE;
 		grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
 		grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
-		header.dataOffset = Header.SIZEOF;
-		header.padding = padding;
-		header.compressAlgorithm = Compressions.DEFLATE;
 	}
 
 	/**
@@ -93,6 +142,18 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
 	}
 
+	/**
+	 * Due to possible padding involved in the Manageddata compared to
+	 * its unmanaged counterpart, the size in bytes of a
+	 * StreamOptimizedDisk may not always be a whole number of grains.
+	 * We need an accurate size since it is used in identifying EOF in
+	 * InputStreams generated from this StreamOptimizedDisk
+	 */
+	@Override
+	public long size() {
+		return header.capacity * Constants.SECTORLENGTH - header.padding;
+	}
+	
 	// We require the grainSize to be power of 2 (for sparse disk arithmetic)
 	private void checkGrainSize( long grainSize ) {
 		boolean found = false;
@@ -108,7 +169,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	}
 			
 		
-	// We require the managed data to be a whole number of grains...
+	// checkSize now not really enforcing much since we allow padding...
 	private void checkSize( long advertisedSizeBytes, long grainSize ) {
 		long grainSizeBytes = grainSize * Constants.SECTORLENGTH;
 		if( advertisedSizeBytes % grainSizeBytes != 0 ) {
@@ -149,9 +210,13 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			MetadataMarker mdm = MetadataMarker.readFrom( raf );
 			log.debug( "Expected GD: actual " + mdm );
 		}
-		
+
+		/*
+		  Recall that the final grain may be combo of actual data and
+		  padding
+		*/
 		long grainCount = footer.capacity / footer.grainSize;
-		int grainTableCount = (int)alignUp(grainCount, footer.numGTEsPerGT) /
+		int grainTableCount = (int)alignUp( grainCount, footer.numGTEsPerGT ) /
 			footer.numGTEsPerGT;
 		long[] gdes = new long[grainTableCount];
 		raf.seek( footer.gdOffset * Constants.SECTORLENGTH );
@@ -232,6 +297,10 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		DataOutputStream dos = new DataOutputStream( os );
 		header.writeTo( (DataOutput)dos );
 		
+		/*
+		  Recall that the final grain may be combo of actual data and
+		  padding
+		*/
 		long grainCount = header.capacity / header.grainSize;
 		int grainTableCount = (int)alignUp(grainCount, header.numGTEsPerGT ) /
 			header.numGTEsPerGT;
@@ -260,7 +329,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		log.info( "Whole Grain Tables " + wholeGrainTables  );
 		if( wholeGrainTables > 0 ) {
 			byte[] ba = new byte[(int)grainTableCoverageBytes];
-			//			BufferedInputStream bis = new BufferedInputStream( is, ba.length );
+			//BufferedInputStream bis = new BufferedInputStream( is, ba.length );
 			InputStream bis = is;
 			for( int gt = 0; gt < wholeGrainTables; gt++ ) {
 				log.debug( "GDIndex " + gdIndex );
@@ -371,7 +440,12 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		if( trailingGrains > 0 ) {
 			log.info( "Trailing Grains " + trailingGrains  );
 			// to do
+			if( header.padding > 0 ) {
+				log.info( "Padding " + trailingGrains  );
+				// to do
+			}
 		}
+
 
 		// The grain directory (preceded by its marker) follows the last grain table...
 		long grainDirectorySizeSectors =
