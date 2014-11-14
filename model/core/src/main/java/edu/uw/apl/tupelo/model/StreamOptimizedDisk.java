@@ -48,14 +48,21 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		super( ud, null );
 
 		checkGrainSize( grainSize );
-		// We require the data to be managed to be a whole number of grains...
-		long len = unmanagedData.size();
 
-		long len2 = alignUp( len, grainSize * Constants.SECTORLENGTH );
-		if( len2 != len ) {
-			log.info( "Extending " + len + " -> " + len2 );
+		/*
+		  We require the data to be managed to be a whole number of grains.
+		  If the unmanaged data size does not satisfy that constraint too,
+		  we must pad the managed data
+		*/
+		long len = unmanagedData.size();
+		int padding = 0;
+		
+		long lenAligned = alignUp( len, grainSize * Constants.SECTORLENGTH );
+		if( lenAligned != len ) {
+			log.info( "Extending " + len + " -> " + lenAligned );
+			padding = (int)(lenAligned - len);
 		}
-		checkSize( len2, grainSize );
+		checkSize( lenAligned, grainSize );
 
 		String diskID = unmanagedData.getID();
 		UUID parent = Constants.NULLUUID;
@@ -65,14 +72,18 @@ public class StreamOptimizedDisk extends ManagedDisk {
 
 		grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
 		grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
-		// dataOffset essentially meaningless for this type of data layout...
-		header.dataOffset = 0;
+		header.dataOffset = Header.SIZEOF;
+		header.padding = padding;
 		header.compressAlgorithm = Compressions.DEFLATE;
 	}
 
-	/*
-	  Called from ManagedDisk.readFrom(), store side.  Note how we postone
-	  metadata read until needed (caller asks for inputstream)
+	/**
+	  Called from ManagedDisk.readFrom(), store side.  Note how we
+	  postpone metadata read until needed (caller asks for
+	  an InputStream)
+
+	  @see #readMetaData
+	  @see #getInputStream
 	*/
 	public StreamOptimizedDisk( File managedData, Header h )
 		throws IOException {

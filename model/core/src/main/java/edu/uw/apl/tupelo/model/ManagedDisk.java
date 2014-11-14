@@ -206,6 +206,7 @@ abstract public class ManagedDisk {
 			gdOffset = di.readLong();
 			rgdOffset = di.readLong();
 			dataOffset = di.readLong();
+			padding = di.readInt();
 			int compressAlgorithmInt = di.readInt();
 			compressAlgorithm = Compressions.values()[compressAlgorithmInt];
 		}
@@ -244,6 +245,7 @@ abstract public class ManagedDisk {
 			dop.writeLong( gdOffset );
 			dop.writeLong( rgdOffset );
 			dop.writeLong( dataOffset );
+			dop.writeInt( padding );
 			dop.writeInt( compressAlgorithm.ordinal() );
 
 			byte[] pad = new byte[SIZEOF - FIELDSIZETOTAL];
@@ -265,6 +267,7 @@ abstract public class ManagedDisk {
 		int numGTEsPerGT;
 		long gdOffset, rgdOffset;
 		long dataOffset;
+		int padding;
 		Compressions compressAlgorithm;
 		
 		// almost CODEINE, wot no N
@@ -280,6 +283,7 @@ abstract public class ManagedDisk {
 			16 + 16 +			// uuid x 2
 			8 + 8 +				// capacity, grainSize
 			4 + 8 + 8 + 8 +		// numGTEsPerGT, offset x 3
+			+ 4 +				// padding
 			4;					// compressAlgorithm
 
 		// The number of bytes allocated on disk for a Header
