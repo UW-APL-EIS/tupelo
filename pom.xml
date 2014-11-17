@@ -153,8 +153,20 @@
     </plugins>
   </build>
 
+  <distributionManagement>
+    <site>
+      <id>Dims Tupelo</id>
+      <url>file:///tmp</url>
+    </site>
+  </distributionManagement>
+
   <reporting>
     <plugins>
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-project-info-reports-plugin</artifactId>
+	<version>2.7</version>
+      </plugin>
     </plugins>
   </reporting>
 
