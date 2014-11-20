@@ -1,5 +1,7 @@
 #!/bin/sh
 
+DIRNAME=`dirname $0`
+
 CLAZZ=$1
 shift
 
@@ -12,9 +14,9 @@ PACKAGE=edu.uw.apl.tupelo.cli
 
 # Have to align the log4j.properties file with the jars.  
 # Don't keep it in ./target (mvn clean!)
-[ -d target ] && cp log4j.properties target/
+[ -d $DIRNAME/target ] && cp $DIRNAME/log4j.properties $DIRNAME/target/
 
 # This codebase built using JDK 1.7 and requires a JRE 1.7 also...
-exec java $JAVA_OPTS -cp target/$JAR $PACKAGE.$CLAZZ "$@"
+exec java $JAVA_OPTS -cp $DIRNAME/target/$JAR $PACKAGE.$CLAZZ "$@"
 
 # eof
