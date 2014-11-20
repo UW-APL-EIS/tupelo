@@ -48,10 +48,13 @@ import org.apache.commons.logging.LogFactory;
  *
  * We split the 'http store' into many servlets simply to avoid one big servlet.
  *
- * The expected url layout (i.e. path entered into web.xml) for this servlet is
+ * The expected url layout (i.e. path entered into web.xml) for this
+ * servlet is (where DID is 'disk id' and SID is 'session id', both
+ * strings:
  *
  * /disks/data/enumerate
  * /disks/data/put/DID/SID
+ * /disks/data/uuid/DID/SID
  * /disks/data/digest/DID/SID
  *
  *
@@ -88,6 +91,9 @@ public class DataServlet extends HttpServlet {
 		} else if( pi.startsWith( "/digest/" ) ) {
 			String details = pi.substring( "/digest/".length() );
 			digest( req, res, details );
+		} else if( pi.startsWith( "/uuid/" ) ) {
+			String details = pi.substring( "/uuid/".length() );
+			uuid( req, res, details );
 		} else {
 			res.sendError( HttpServletResponse.SC_NOT_FOUND,
 						   "Unknown command '" + pi + "'" );
@@ -185,6 +191,47 @@ public class DataServlet extends HttpServlet {
 		ManagedDisk md = new HttpManagedDisk( mdd, is );
 		store.put( md );
 		is.close();
+	}
+
+	private void uuid( HttpServletRequest req, HttpServletResponse res,
+					   String details )
+		throws IOException, ServletException {
+		
+		log.debug( "uuid.details: '" + details  + "'" );
+
+		ManagedDiskDescriptor mdd = null;
+		try {
+			mdd = fromPathInfo( details );
+		} catch( ParseException pe ) {
+			log.debug( "uuid send error" );
+			res.sendError( HttpServletResponse.SC_NOT_FOUND,
+						   "Malformed managed disk descriptor: " + details );
+			return;
+		}
+
+		// LOOK: check the content type...
+		String hdr = req.getHeader( "Content-Encoding" );
+
+		UUID uuid = store.uuid( mdd );
+		
+		
+		if( false ) {
+		} else if( Utils.acceptsJavaObjects( req ) ) {
+			res.setContentType( "application/x-java-serialized-object" );
+			OutputStream os = res.getOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream( os );
+			oos.writeObject( uuid );
+		} else if( Utils.acceptsJson( req ) ) {
+			res.setContentType( "application/json" );
+			String json = gson.toJson( uuid );
+			PrintWriter pw = res.getWriter();
+			pw.print( json );
+		} else {
+			res.setContentType( "text/plain" );
+			PrintWriter pw = res.getWriter();
+			pw.println( "" + uuid );
+		}
+
 	}
 
 	private void digest( HttpServletRequest req, HttpServletResponse res,
