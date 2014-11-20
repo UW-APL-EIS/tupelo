@@ -53,6 +53,11 @@ public class NullStore implements Store {
 	}
 
 	@Override
+	public UUID uuid( ManagedDiskDescriptor mdd ) {
+		return null;
+	}
+	
+	@Override
 	public void put( ManagedDisk md ) throws IOException {
 		/*
 		  We do NOT just want to be an empty implementation, since
