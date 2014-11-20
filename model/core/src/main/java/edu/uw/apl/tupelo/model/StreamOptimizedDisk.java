@@ -229,8 +229,9 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		int grainTableCount = (int)(Utils.alignUp(grainCount,
 												  header.numGTEsPerGT ) /
 									header.numGTEsPerGT);
-		log.info( "grainCount: " + grainCount );
-		log.info( "grainTableCount: " + grainTableCount );
+		log.info( "GrainSize: " + header.grainSize );
+		log.info( "GrainCount: " + grainCount );
+		log.info( "GrainTableCount: " + grainTableCount );
 		
 		long[] grainDirectory = new long[grainTableCount];
 		long[] grainTable = new long[header.numGTEsPerGT];
@@ -271,9 +272,9 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		  compressed grain marker represent offsets (in sectors) in
 		  the _unmanaged_ (i.e. real) data
 		*/
-		log.info( "Grain Tables " + grainTableCount );
+		//		log.info( "Grain Tables " + grainTableCount );
 		int wholeGrainTables = (int)(grainCount / header.numGTEsPerGT );
-		log.info( "Whole Grain Tables " + wholeGrainTables  );
+		//log.info( "Whole Grain Tables " + wholeGrainTables  );
 		InputStream bis = is;
 		if( wholeGrainTables > 0 ) {
 			readBuffer = new byte[(int)grainTableCoverageBytes];
@@ -844,7 +845,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	public InputStream getInputStream() throws IOException {
 		readMetaData();
 		InputStream pis = parent == null ? null : parent.getInputStream();
-		log.info( "getInputStream: " + pis );
+		log.debug( "getInputStream: " + getDescriptor() );
 		return new SODRandomAccessRead( (SeekableInputStream)pis );
 	}
 
@@ -853,7 +854,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		readMetaData();
 		SeekableInputStream pis = parent == null ?
 			null : parent.getSeekableInputStream();
-		log.info( "getSeekableInputStream: " + pis );
+		log.debug( "getSeekableInputStream: " + pis );
 		return new SODRandomAccessRead( pis );
 	}
 
