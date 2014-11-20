@@ -3,6 +3,7 @@ package edu.uw.apl.tupelo.http.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -46,6 +47,14 @@ public class HttpManagedDisk extends ManagedDisk {
 		return descriptor;
 	}
 
+	@Override
+	public void reportMetaData() {
+	}
+
+	@Override
+	public void setParentDigest( List<byte[]> hashes ) {
+	}
+	
 	@Override
 	public void setParent( ManagedDisk md ) {
 		throw new IllegalStateException( getClass() + ".setParent!!" );
