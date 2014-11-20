@@ -14,6 +14,11 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.UUID;
 import java.util.zip.Deflater;;
 import java.util.zip.DataFormatException;
@@ -79,18 +84,32 @@ import org.xerial.snappy.Snappy;
 public class StreamOptimizedDisk extends ManagedDisk {
 
 	public StreamOptimizedDisk( UnmanagedDisk ud, Session session ) {
-		this( ud, session, GRAINSIZE_DEFAULT );
+		this( ud, session, Constants.NULLUUID, GRAINSIZE_DEFAULT );
+	}
+	
+	public StreamOptimizedDisk( UnmanagedDisk ud, Session session,
+								UUID parentUUID ) {
+		this( ud, session, parentUUID, GRAINSIZE_DEFAULT );
 	}
 	
 	/*
 	  Called by users putting unmanaged data into a store...
 	*/
 	public StreamOptimizedDisk( UnmanagedDisk ud, Session session,
-								long grainSize ) {
+								UUID parentUUID, long grainSize ) {
+
 		super( ud, null );
 
-		checkGrainSize( grainSize );
+		/*
+		  We require the data to be managed to be a whole number of sectors.
+		*/
+		checkSize( ud.size() );
 
+		/*
+		  We require that the grain size by a power of 2
+		*/
+		checkGrainSize( grainSize );
+		
 		/*
 		  We require the data to be managed to be a whole number of grains.
 		  If the unmanaged data size does not satisfy that constraint too,
@@ -99,15 +118,14 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		long len = unmanagedData.size();
 		int padding = 0;
 		
-		long lenAligned = alignUp( len, grainSize * Constants.SECTORLENGTH );
+		long lenAligned = Utils.alignUp( len,
+										 grainSize * Constants.SECTORLENGTH );
 		if( lenAligned != len ) {
 			log.info( "Extending " + len + " -> " + lenAligned );
 			padding = (int)(lenAligned - len);
 		}
-		checkSize( lenAligned, grainSize );
 
 		String diskID = unmanagedData.getID();
-		UUID parent = Constants.NULLUUID;
 		/*
 		  The capacity is the number of grains required to store ALL
 		  the unmanagedData, even if that unmanagedData is not a whole
@@ -117,13 +135,11 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		*/
 		long capacityGrains = lenAligned / Constants.SECTORLENGTH;
 		header = new Header( diskID, session, DiskTypes.STREAMOPTIMIZED,
-							 parent, capacityGrains, grainSize );
+							 parentUUID, capacityGrains, grainSize );
 
 		header.padding = padding;
 		header.dataOffset = Header.SIZEOF;
 		header.compressAlgorithm = Compressions.DEFLATE;
-		grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
-		grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
 	}
 
 	/**
@@ -138,8 +154,8 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		throws IOException {
 		super( null, managedData );
 		header = h;
-		grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
-		grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
+		//		grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
+		//grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
 	}
 
 	/**
@@ -168,100 +184,6 @@ public class StreamOptimizedDisk extends ManagedDisk {
 												grainSize );
 	}
 			
-		
-	// checkSize now not really enforcing much since we allow padding...
-	private void checkSize( long advertisedSizeBytes, long grainSize ) {
-		long grainSizeBytes = grainSize * Constants.SECTORLENGTH;
-		if( advertisedSizeBytes % grainSizeBytes != 0 ) {
-			throw new IllegalArgumentException
-				( "Data length (" + advertisedSizeBytes +
-				  ") must be a multiple of " + grainSizeBytes );
-		}
-	}
-
-
-	// Synchronized in case of concurrent access in a web-based store...
-	private synchronized void readMetaData() throws IOException {
-		if( zeroGrain != null ) {
-			return;
-		}
-	    if( header.grainSize == GRAINSIZE_DEFAULT ) {
-			zeroGrain =	ZEROGRAIN_DEFAULT;
-			zeroGrainTable = ZEROGRAINTABLE_DEFAULT;
-		} else {
-			zeroGrain = new byte[(int)grainSizeBytes];
-			zeroGrainTable = new byte[(int)grainTableCoverageBytes];
-		}
-		RandomAccessFile raf = new RandomAccessFile( managedData, "r" );
-		// the managed data ends with footer and eos marker, each 1 sector long
-		long footerOffset = raf.length() - (2 * Constants.SECTORLENGTH );
-		raf.seek( footerOffset );
-		byte[] ba = new byte[Constants.SECTORLENGTH];
-		raf.readFully( ba );
-		ByteArrayInputStream bais = new ByteArrayInputStream( ba );
-		Header footer = new Header( bais );
-		log.info( "Footer.gdOffset: " + footer.gdOffset );
-		bais.close();
-
-		// sanity check, locate the GD marker, precedes the GD
-		if( true ) {
-			raf.seek( footer.gdOffset * Constants.SECTORLENGTH -
-					  Constants.SECTORLENGTH );
-			MetadataMarker mdm = MetadataMarker.readFrom( raf );
-			log.debug( "Expected GD: actual " + mdm );
-		}
-
-		/*
-		  Recall that the final grain may be combo of actual data and
-		  padding
-		*/
-		long grainCount = footer.capacity / footer.grainSize;
-		int grainTableCount = (int)alignUp( grainCount, footer.numGTEsPerGT ) /
-			footer.numGTEsPerGT;
-		long[] gdes = new long[grainTableCount];
-		raf.seek( footer.gdOffset * Constants.SECTORLENGTH );
-		for( int i = 0; i < gdes.length; i++ ) {
-			long gde = raf.readInt() & 0xffffffffL;
-			log.debug( i + " " + gde );
-			gdes[i] = gde;
-		}
-		grainDirectory = new long[grainTableCount][];
-		for( int i = 0; i < gdes.length; i++ ) {
-			long gde = gdes[i];
-			
-			if( gde == 0 ) {
-				grainDirectory[i] = ZEROGDE;
-				continue;
-			}
-			if( gde == -1 ) {
-				grainDirectory[i] = PARENTGDE;
-				continue;
-			}
-			
-			// sanity check, locate the GT marker, precedes the GT
-			if( true ) {
-				raf.seek( gde * Constants.SECTORLENGTH -
-						  Constants.SECTORLENGTH );
-				MetadataMarker mdm = MetadataMarker.readFrom( raf );
-				log.debug( "Expected GT: actual " + mdm );
-			}
-			
-			raf.seek( gde * Constants.SECTORLENGTH );
-			long[] grainTable = new long[footer.numGTEsPerGT];
-			for( int gt = 0; gt < grainTable.length; gt++ ) {
-				long gte = raf.readInt() & 0xffffffffL;
-				grainTable[gt] = gte;
-			}
-			grainDirectory[i] = grainTable;
-		}
-		raf.close();
-	}
-	
-	@Override
-	public void setParent( ManagedDisk md ) {
-		parent = md;
-	}
-
 	/*
 	  The constructor has already verified that the unmanaged/input
 	  data length is a whole number of grains.  We further check (and
@@ -297,20 +219,45 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		DataOutputStream dos = new DataOutputStream( os );
 		header.writeTo( (DataOutput)dos );
 		
+		grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
+		grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
 		/*
 		  Recall that the final grain may be combo of actual data and
 		  padding
 		*/
 		long grainCount = header.capacity / header.grainSize;
-		int grainTableCount = (int)alignUp(grainCount, header.numGTEsPerGT ) /
-			header.numGTEsPerGT;
+		int grainTableCount = (int)(Utils.alignUp(grainCount,
+												  header.numGTEsPerGT ) /
+									header.numGTEsPerGT);
+		log.info( "grainCount: " + grainCount );
+		log.info( "grainTableCount: " + grainTableCount );
+		
 		long[] grainDirectory = new long[grainTableCount];
 		long[] grainTable = new long[header.numGTEsPerGT];
 		int gdIndex = 0;
 		int gtIndex = 0;
 		long lba = 0;
 
-		// In pathological cases, the compression expands input!
+		long zeroGDEs = 0;
+		long zeroGTEs = 0;
+		long parentGTEs = 0;
+		int digestIndex = 0;
+		
+		MessageDigest sha1 = null;
+		try {
+			sha1 = MessageDigest.getInstance( "sha1" );
+		} catch( NoSuchAlgorithmException never ) {
+		}
+
+		/*
+		  We maintain written count in long space. DataOutputStream.size()
+		  maintains only in int space, pah!  The header is already written,
+		  above.
+		*/
+		long written = Header.SIZEOF;
+		byte[] readBuffer = null;
+		
+		// In pathological cases, the compression expands the input!
 		byte[] compressedGrainBuffer = new byte[(int)(2*grainSizeBytes)];
 
 		/*
@@ -327,32 +274,34 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		log.info( "Grain Tables " + grainTableCount );
 		int wholeGrainTables = (int)(grainCount / header.numGTEsPerGT );
 		log.info( "Whole Grain Tables " + wholeGrainTables  );
+		InputStream bis = is;
 		if( wholeGrainTables > 0 ) {
-			byte[] ba = new byte[(int)grainTableCoverageBytes];
-			//BufferedInputStream bis = new BufferedInputStream( is, ba.length );
-			InputStream bis = is;
+			readBuffer = new byte[(int)grainTableCoverageBytes];
+			//bis = new BufferedInputStream( is, readBuffer.length );
 			for( int gt = 0; gt < wholeGrainTables; gt++ ) {
 				log.debug( "GDIndex " + gdIndex );
-				int nin = bis.read( ba );
-				if( nin != ba.length )
+				int nin = bis.read( readBuffer );
+				if( nin != readBuffer.length )
 					throw new IllegalStateException( "Partial read!" );
 				gtIndex = 0;
 
 				if( true ) {
 					// The whole grain table could be zeros...
 					boolean allZeros = true;
-					for( int b = 0; b < ba.length; b++ ) {
-						if( ba[b] != 0 ) {
+					for( int b = 0; b < readBuffer.length; b++ ) {
+						if( readBuffer[b] != 0 ) {
 							//		log.debug( "!Zero GD at " + b );
 							allZeros = false;
 							break;
 						}
 					}
 					if( allZeros ) {
+						zeroGDEs++;
 						log.debug( "Zero GDE at " + gdIndex );
 						grainDirectory[gdIndex] = 0;
 						gdIndex++;
 						lba += header.grainSize * header.numGTEsPerGT;
+						digestIndex += header.numGTEsPerGT;
 						continue;
 					}
 				}
@@ -363,13 +312,15 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					log.debug( "GT Offset " + offset );
 					boolean allZeros = true;
 					for( int b = 0; b < grainSizeBytes; b++ ) {
-						if( ba[offset+b] != 0 ) {
+						if( readBuffer[offset+b] != 0 ) {
 							//log.debug( "!Zero GT at " + b );
 							allZeros = false;
 							break;
 						}
 					}
 					if( allZeros ) {
+						zeroGTEs++;
+						digestIndex++;
 						log.debug( "Zero GT at " + gdIndex + " " + gtIndex );
 						grainTable[gtIndex] = 0;
 						gtIndex++;
@@ -377,9 +328,29 @@ public class StreamOptimizedDisk extends ManagedDisk {
 						continue;
 					}
 
-					// This grain is not zeros, compress
+					/*
+					  This grain is not zeros. If digest available,
+					  compare.  If compare satisfied, record such and
+					  move on
+					*/
+					if( parentDigest != null ) {
+						sha1.reset();
+						sha1.update( readBuffer, offset, (int)grainSizeBytes );
+						byte[] hash = sha1.digest();
+						byte[] parent = parentDigest.get( digestIndex );
+						digestIndex++;
+						if( MessageDigest.isEqual( hash, parent ) ) {
+							parentGTEs++;
+							grainTable[gtIndex] = -1;
+							gtIndex++;
+							lba += header.grainSize;
+							continue;
+						}
+					}
+
+					// Grain content do not match parent grain. Compress,store
 					int compressedLength =
-						compressGrain( ba, offset, (int)grainSizeBytes,
+						compressGrain( readBuffer, offset, (int)grainSizeBytes,
 									   compressedGrainBuffer );
 					log.debug( "Deflating " + gt + " "+ g +
 								  " = " + compressedLength );
@@ -389,18 +360,24 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					  Record in the grain table where in the managed
 					  data this compressed grain sits
 					*/
-					grainTable[gtIndex] = dos.size() / Constants.SECTORLENGTH;
+					grainTable[gtIndex] = written / Constants.SECTORLENGTH;
 					GrainMarker gm = new GrainMarker( lba, compressedLength );
 					gm.writeTo( dos );
 					dos.write( compressedGrainBuffer, 0, compressedLength );
-					long written = GrainMarker.SIZEOF + compressedLength;
-					// to do: pad to next sector of os
-					int padLen = (int)
-						(alignUp( written, Constants.SECTORLENGTH ) - written);
+					long grainWrite = GrainMarker.SIZEOF + compressedLength;
+					int padLen = (int)(Utils.alignUp
+									   ( grainWrite, Constants.SECTORLENGTH )
+									   - grainWrite );
 					dos.write( padding, 0, padLen );
 					log.debug( "Padding: " + padLen );
 					gtIndex++;
 					lba += header.grainSize;
+					written += (grainWrite + padLen);
+
+					if( written % Constants.SECTORLENGTH != 0 )
+						throw new IllegalStateException( "" + written );
+					
+					// LOOK: check written % sectorlen == 0
 				}
 				/*
 				  A table's worth of grains just written, next comes
@@ -413,17 +390,23 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					( fullGrainTableSizeSectors, MetadataMarker.TYPE_GT );
 				mdm.writeTo( dos );
 				dos.flush();
+				written += MetadataMarker.SIZEOF;
 
-
+				if( written % Constants.SECTORLENGTH != 0 )
+					throw new IllegalStateException( "" + written );
 				/*
 				  We mark where the grain table itself is, NOT its marker,
 				  and record this offset in the grain directory
 				*/
-				long gtOffset = dos.size() / Constants.SECTORLENGTH;
+				long gtOffset = written / Constants.SECTORLENGTH;
 				for( int gte = 0; gte < grainTable.length; gte++ ) {
 					// LOOK: Using 4byte GTE index values restricts us to 2TB
 					dos.writeInt( (int)grainTable[gte] );
 				}
+				written += 4 * grainTable.length;
+				if( written % Constants.SECTORLENGTH != 0 )
+					throw new IllegalStateException( "" + written );
+
 				grainDirectory[gdIndex] = gtOffset;
 				gdIndex++;
 				/*
@@ -434,30 +417,134 @@ public class StreamOptimizedDisk extends ManagedDisk {
 				*/
 			}
 		}
+
+		int unmanagedRemaining =
+			(int)(unmanagedData.size() -
+				  (wholeGrainTables * grainTableCoverageBytes));
+		if( unmanagedRemaining > 0 ) {
+			for( int i = 0; i < grainTable.length; i++ )
+				grainTable[i] = -2;
+			gtIndex = 0;
 			
-		int trailingGrains = (int)(grainCount -
-								   (wholeGrainTables * header.numGTEsPerGT));
-		if( trailingGrains > 0 ) {
-			log.info( "Trailing Grains " + trailingGrains  );
-			// to do
-			if( header.padding > 0 ) {
-				log.info( "Padding " + trailingGrains  );
-				// to do
+			log.info( "UnmanagedRemaining " + unmanagedRemaining  );
+			int grainSized = (int)Utils.alignUp( unmanagedRemaining,
+												 grainSizeBytes );
+			/*
+			  By allocating a buffer a whole number of grains,
+			  the trailing padding for the last grain will be zeros
+			  which is what we want
+			*/
+			readBuffer = new byte[grainSized];
+			int nin = bis.read( readBuffer );
+			if( nin != unmanagedRemaining ) {
+				throw new IllegalStateException
+					( "Partial read (remaining)!" );
 			}
+			int grainsLeft = (int)(grainSized / grainSizeBytes);
+			int wholeGrains = (int)(unmanagedRemaining / grainSizeBytes);
+			log.info( "Whole Grains " + wholeGrains );
+			log.info( "Padded Grains " + (grainsLeft - wholeGrains) );
+			for( int g = 0; g < grainsLeft; g++ ) {
+				int offset = (int)(grainSizeBytes * g);
+
+				boolean allZeros = true;
+				for( int b = 0; b < grainSizeBytes; b++ ) {
+					if( readBuffer[offset+b] != 0 ) {
+						//log.debug( "!Zero GT at " + b );
+						allZeros = false;
+						break;
+					}
+				}
+				if( allZeros ) {
+					log.debug( "Zero GT at " + gdIndex + " " + gtIndex );
+					grainTable[gtIndex] = 0;
+					gtIndex++;
+					lba += header.grainSize;
+					continue;
+				}
+				
+				// This grain is not zeros, compress
+				int compressedLength =
+					compressGrain( readBuffer, offset, (int)grainSizeBytes,
+								   compressedGrainBuffer );
+				log.debug( "Deflating " + "remaining" + " " + g +
+						   " = " + compressedLength );
+				
+				/*
+				  Record in the final grain table where in the managed
+				  data this compressed grain sits
+				*/
+				grainTable[gtIndex] = written / Constants.SECTORLENGTH;
+				GrainMarker gm = new GrainMarker( lba, compressedLength );
+				gm.writeTo( dos );
+				dos.write( compressedGrainBuffer, 0, compressedLength );
+				long grainWrite = GrainMarker.SIZEOF + compressedLength;
+				// to do: pad to next sector of os
+				int padLen = (int)(Utils.alignUp( grainWrite,
+												  Constants.SECTORLENGTH)
+								   - grainWrite );
+				dos.write( padding, 0, padLen );
+				log.debug( "Padding: " + padLen );
+				gtIndex++;
+				lba += header.grainSize;
+				written += (grainWrite + padLen);
+				if( written % Constants.SECTORLENGTH != 0 )
+					throw new IllegalStateException( "" + written );
+			}
+
+			/*
+			  The final grains just written, next comes
+			  the grain table describing them (their locations in
+			  the managed data).  This table is not 'full', but we
+			  write it all anyway.
+			*/
+			int fullGrainTableSizeSectors = 4 * header.numGTEsPerGT
+				/ Constants.SECTORLENGTH;
+			MetadataMarker mdm = new MetadataMarker
+				( fullGrainTableSizeSectors, MetadataMarker.TYPE_GT );
+			mdm.writeTo( dos );
+			dos.flush();
+			written += MetadataMarker.SIZEOF;
+			if( written % Constants.SECTORLENGTH != 0 )
+				throw new IllegalStateException( "" + written );
+
+			/*
+			  We mark where the grain table itself is, NOT its marker,
+			  and record this offset in the grain directory
+			*/
+			long gtOffset = written / Constants.SECTORLENGTH;
+
+			// Writing the grain table
+			for( int gte = 0; gte < grainTable.length; gte++ ) {
+				// LOOK: Using 4byte GTE index values restricts us to 2TB
+				dos.writeInt( (int)grainTable[gte] );
+			}
+			written += (4 * grainTable.length);
+			if( written % Constants.SECTORLENGTH != 0 )
+				throw new IllegalStateException( "" + written );
+			grainDirectory[gdIndex] = gtOffset;
+			gdIndex++;
 		}
+		
 
 
-		// The grain directory (preceded by its marker) follows the last grain table...
+		/*
+		  The grain directory (preceded by its marker) follows
+		  the last grain table...
+		*/
 		long grainDirectorySizeSectors =
-			alignUp( 4 * grainDirectory.length,
-					 Constants.SECTORLENGTH ) /	Constants.SECTORLENGTH;
-		log.info( "Graindirectorysizesectors: " + grainDirectorySizeSectors );
+			Utils.alignUp( 4 * grainDirectory.length,
+						   Constants.SECTORLENGTH ) /	Constants.SECTORLENGTH;
+		log.info( "GrainDirectorySizeSectors: " + grainDirectorySizeSectors );
 		MetadataMarker mdm = new MetadataMarker
 			( grainDirectorySizeSectors, MetadataMarker.TYPE_GD );
 		mdm.writeTo( dos );
+		written += MetadataMarker.SIZEOF;
+		if( written % Constants.SECTORLENGTH != 0 )
+			throw new IllegalStateException( "" + written );
 		
 		// Record the gd offset so we can place it in the footer...
-		long gdOffset = dos.size() / Constants.SECTORLENGTH;
+		long gdOffset = written / Constants.SECTORLENGTH;
 		log.info( "Footer gdOffset: " + gdOffset );
 
 		// This is the grain directory write...
@@ -465,9 +552,16 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			log.debug( "GD: " + gde + " "+ grainDirectory[gde] );
 			dos.writeInt( (int)grainDirectory[gde] );
 		}
-		int written = 4 * grainDirectory.length;
-		int padLen = (int)alignUp( written, Constants.SECTORLENGTH ) - written;
+		written += (4 * grainDirectory.length);
+		
+		int gdWrite = 4 * grainDirectory.length;
+		int padLen = (int)Utils.alignUp( gdWrite, Constants.SECTORLENGTH ) -
+			gdWrite;
 		dos.write( padding, 0, padLen );
+		written += padLen;
+
+		if( written % Constants.SECTORLENGTH != 0 )
+			throw new IllegalStateException( "" + written );
 		
 		/*
 		  The footer (a copy of the header) follows the grain
@@ -479,6 +573,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		
 		mdm = new MetadataMarker( 1, MetadataMarker.TYPE_FOOTER );
 		mdm.writeTo( dos );
+		written += MetadataMarker.SIZEOF;
 		
 		ByteArrayOutputStream hdr = new ByteArrayOutputStream();
 		header.writeTo( hdr );
@@ -486,15 +581,138 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		Header footer = new Header( ftr );
 		footer.gdOffset = gdOffset;
 		footer.writeTo( (DataOutput)dos );
+		written += Header.SIZEOF;
 		
 		// Finally, the end-of-stream marker
 		mdm = new MetadataMarker( 0, MetadataMarker.TYPE_EOS );
 		mdm.writeTo( dos );
+		written += MetadataMarker.SIZEOF;
 					 
-		log.info( "Written " + dos.size() );
+		log.info( "Written " + written );
 		dos.flush();
+		bis.close();
 		//dos.close();
 		//is.close();
+
+		log.info( "ZeroGDEs: " + zeroGDEs );
+		log.info( "ZeroGTEs: " + zeroGTEs );
+		log.info( "ParentGTEs: " + parentGTEs );
+	}
+
+
+
+	// Synchronized in case of concurrent access in a web-based store...
+	private synchronized void readMetaData() throws IOException {
+		if( zeroGrain != null ) {
+			return;
+		}
+		grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
+		grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
+	    if( header.grainSize == GRAINSIZE_DEFAULT ) {
+			zeroGrain =	ZEROGRAIN_DEFAULT;
+			zeroGrainTable = ZEROGRAINTABLE_DEFAULT;
+		} else {
+			zeroGrain = new byte[(int)grainSizeBytes];
+			zeroGrainTable = new byte[(int)grainTableCoverageBytes];
+		}
+		RandomAccessFile raf = new RandomAccessFile( managedData, "r" );
+		// the managed data ends with footer and eos marker, each 1 sector long
+		long footerOffset = raf.length() - (2 * Constants.SECTORLENGTH );
+		raf.seek( footerOffset );
+		byte[] ba = new byte[Constants.SECTORLENGTH];
+		raf.readFully( ba );
+		ByteArrayInputStream bais = new ByteArrayInputStream( ba );
+		Header footer = new Header( bais );
+		log.info( "Footer.gdOffset: " + footer.gdOffset );
+		bais.close();
+
+		// sanity check, locate the GD marker, precedes the GD
+		if( true ) {
+			raf.seek( footer.gdOffset * Constants.SECTORLENGTH -
+					  Constants.SECTORLENGTH );
+			MetadataMarker mdm = MetadataMarker.readFrom( raf );
+			log.debug( "Expected GD: actual " + mdm );
+		}
+
+		/*
+		  Recall that the final grain may be combo of actual data and
+		  padding
+		*/
+		long grainCount = footer.capacity / footer.grainSize;
+		int grainTableCount = (int)Utils.alignUp( grainCount,
+												  footer.numGTEsPerGT ) /
+			footer.numGTEsPerGT;
+		long[] gdes = new long[grainTableCount];
+		raf.seek( footer.gdOffset * Constants.SECTORLENGTH );
+		for( int i = 0; i < gdes.length; i++ ) {
+			long gde = raf.readInt() & 0xffffffffL;
+			log.debug( i + " " + gde );
+			gdes[i] = gde;
+		}
+		grainDirectory = new long[grainTableCount][];
+		for( int i = 0; i < gdes.length; i++ ) {
+			long gde = gdes[i];
+			
+			if( gde == 0 ) {
+				grainDirectory[i] = ZEROGDE;
+				continue;
+			}
+			if( gde == -1 ) {
+				grainDirectory[i] = PARENTGDE;
+				continue;
+			}
+			
+			// sanity check, locate the GT marker, precedes the GT
+			if( true ) {
+				raf.seek( gde * Constants.SECTORLENGTH -
+						  Constants.SECTORLENGTH );
+				MetadataMarker mdm = MetadataMarker.readFrom( raf );
+				log.debug( "Expected GT: actual " + mdm ); 
+			}
+			
+			raf.seek( gde * Constants.SECTORLENGTH );
+			long[] grainTable = new long[footer.numGTEsPerGT];
+			for( int gt = 0; gt < grainTable.length; gt++ ) {
+				// stored as unsigned int OR -1, meaning 'use parent'
+				long gtel;
+				int gte = raf.readInt();
+				if( gte == -1 )
+					gtel = -1L;
+				else
+					gtel = gte & 0xffffffffL;
+				grainTable[gt] = gtel;
+			}
+			grainDirectory[i] = grainTable;
+		}
+		raf.close();
+	}
+
+	public void reportMetaData() throws IOException {
+		readMetaData();
+		for( int i = 0; i < grainDirectory.length; i++ ) {
+			long[] gde = grainDirectory[i];
+			log.info( "GT " + i + " " + gde.length );
+			if( gde.length == 0 )
+				continue;
+			StringWriter sw = new StringWriter();
+			PrintWriter pw = new PrintWriter( sw );
+			for( int j = 0; j < gde.length; j++ ) {
+				pw.print( gde[j] + " " );
+			}
+			pw.flush();
+			log.info( sw.toString() );
+		}
+	}
+	
+			
+	@Override
+	public void setParentDigest( List<byte[]> grainHashes ) {
+		parentDigest = grainHashes;
+	}
+	
+	@Override
+	public void setParent( ManagedDisk md ) {
+		parent = md;
 	}
 
 	/**
@@ -625,23 +843,30 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	@Override
 	public InputStream getInputStream() throws IOException {
 		readMetaData();
-		return new SODRandomAccessRead( size() );
+		InputStream pis = parent == null ? null : parent.getInputStream();
+		log.info( "getInputStream: " + pis );
+		return new SODRandomAccessRead( (SeekableInputStream)pis );
 	}
 
 	@Override
 	public SeekableInputStream getSeekableInputStream() throws IOException {
 		readMetaData();
-		return new SODRandomAccessRead( size() );
+		SeekableInputStream pis = parent == null ?
+			null : parent.getSeekableInputStream();
+		log.info( "getSeekableInputStream: " + pis );
+		return new SODRandomAccessRead( pis );
 	}
 
 	class SODRandomAccessRead extends SeekableInputStream {
-		SODRandomAccessRead( long size ) throws IOException {
-			super( size );
+		SODRandomAccessRead( SeekableInputStream parentStream )
+			throws IOException {
+			super( size() );
+			this.parentStream = parentStream;
 			raf = new RandomAccessFile( managedData, "r" );
 			log2GrainSize = log2( grainSizeBytes );
 			log2GrainTableCoverage = log2( grainTableCoverageBytes );
 			//			log.info( grainSizeBytes + " " + grainTableSizeBytes );
-			log.info( "log2 " + log2GrainSize + " " + log2GrainTableCoverage );
+			//log.info( "log2 " + log2GrainSize + " " + log2GrainTableCoverage );
 			/*
 			  Twice a grain since in pathological cases, compression
 			  actually EXPANDS the grain!
@@ -653,18 +878,27 @@ public class StreamOptimizedDisk extends ManagedDisk {
 
 		@Override
 		public void close() throws IOException {
+			if( parentStream != null )
+				parentStream.close();
 			raf.close();
 		}
 		   
 		@Override
 		public void seek( long s ) throws IOException {
-			// according to java.io.RandomAccessFile, no restriction on seek
+			/*
+			  According to java.io.RandomAccessFile, no restriction on
+			  seek.  That is, seek posn can be -ve or past eof
+			*/
+			if( parentStream != null )
+				parentStream.seek( s );
 			posn = s;
 			dPos();
 		}
 
 		@Override
 		public long skip( long n ) throws IOException {
+			if( parentStream != null )
+				parentStream.skip( n );
 			long result = super.skip( n );
 			dPos();
 			return result;
@@ -678,7 +912,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			// do min in long space, since size - posn may overflow int...
 			long actualL = Math.min( size - posn, len );
 
-			// Cannot blindly coerce a long to int, could be -ve
+			// Cannot blindly coerce a long to int, result could be -ve
 			int actual = actualL > Integer.MAX_VALUE ? Integer.MAX_VALUE :
 				(int)actualL;
 
@@ -711,10 +945,24 @@ public class StreamOptimizedDisk extends ManagedDisk {
 							   inGrain +
 							   " " + fromGrain );
 					long grainMarker = gde[gtIndex];
-					if( grainMarker == 0 ) {
+					if( false ) {
+					} else if( grainMarker == 0 ) {
 						log.debug( "Zero GT : "+ gdIndex + " " + gtIndex );
 						System.arraycopy( zeroGrain, 0,
 										  ba, off+total, fromGrain );
+						total += fromGrain;
+						posn += fromGrain;
+						if( parentStream != null )
+							parentStream.skip( fromGrain );
+					} else if( grainMarker == -1 ) {
+						if( parentStream == null )
+							throw new IllegalStateException
+								( "No parent: " + gdIndex + " " + gtIndex );
+						// LOOK: fromParent should ALWAYS == fromGrain
+						int fromParent = parentStream.readImpl( ba, off+total,
+																fromGrain );
+						total += fromParent;
+						posn += fromParent;
 					} else {
 						// LOOK: same as last grain accessed ???
 						raf.seek( grainMarker * Constants.SECTORLENGTH );
@@ -734,13 +982,15 @@ public class StreamOptimizedDisk extends ManagedDisk {
 									( "Bad inflate len: " + actualLength );
 							System.arraycopy( grainBuffer, (int)gOffset,
 											  ba, off+total, fromGrain );
+							total += fromGrain;
+							posn += fromGrain;
+							if( parentStream != null )
+								parentStream.skip( fromGrain );
 						} catch( DataFormatException dfe ) {
 							// now what ???
 							log.warn( dfe );
 						}
 					}
-					total += fromGrain;
-					posn += fromGrain;
 				}
 				log.debug( total + " " + posn );
 				dPos();
@@ -750,9 +1000,9 @@ public class StreamOptimizedDisk extends ManagedDisk {
 
 
 		/**
-		   Called whenever the local posn changes value.
-		   Do NOT make calls to the parent.dPos here,
-		   but only from the reads...
+		   Called whenever the local posn changes value.  Do NOT make
+		   calls to the parent.dPos here.  Only update parent posn via
+		   possible skips() from readImpl above...
 		*/
 		private void dPos() {
 			/*
@@ -770,10 +1020,19 @@ public class StreamOptimizedDisk extends ManagedDisk {
 				return;
 
 			// Note: All arithmetic using shifts/masks not multiply/divide !!
-			
+
+			// Logically same as posn / grainTableCoverage
 			gdIndex = (int)(posn >>> log2GrainTableCoverage);
+
+			/*
+			  Logically same as
+			  
+			  (posn - (gdIndex * grainTableCoverage)) / grainSize
+			*/
 			long inTable = posn - ((long)gdIndex << log2GrainTableCoverage);
 			gtIndex = (int)(inTable >>> log2GrainSize);
+
+			// Logically same as inTable % grainSizeBytes
 			gOffset = inTable & (grainSizeBytes - 1);
 
 			if( log.isDebugEnabled() )
@@ -783,6 +1042,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		}
 	
 		private final RandomAccessFile raf;
+		private final SeekableInputStream parentStream;
 		private int log2GrainSize, log2GrainTableCoverage;
 		private byte[] compressedGrainBuffer;
 		private byte[] grainBuffer;
@@ -859,9 +1119,10 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			   
 		final long numSectors;
 		final int type;
+		static final int SIZE = 0;
 
-		// Three fields on disk (the 'size' field is implicit and set to 0)
-		static final int SIZEOF = 8 + 4 + 4;
+		// Three fields on disk (the 'int size' field is implicit and set to 0)
+		static final int FIELDSSIZEOF = 8 + 4 + 4;
 
 		/*
 		  When written out to the managed data file, all markers are
@@ -869,15 +1130,17 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		  describe (grain table, grain directory, etc) starts on its
 		  own sector boundary
 		*/
+		static final int SIZEOF = Constants.SECTORLENGTH;
 
-		static final int SIZE = 0;
-		static final byte[] PADDING = new byte[Constants.SECTORLENGTH-SIZEOF];
+		static final byte[] PADDING = new byte[SIZEOF-FIELDSSIZEOF];
 		
 		static final int TYPE_EOS = 0;
 		static final int TYPE_GT = 1;
 		static final int TYPE_GD = 2;
 		static final int TYPE_FOOTER = 3;
 	}
+
+	private List<byte[]> parentDigest;
 	
 	private ManagedDisk parent;
 	private long grainSizeBytes, grainTableCoverageBytes;

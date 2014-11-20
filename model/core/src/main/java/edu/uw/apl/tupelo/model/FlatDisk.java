@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.io.IOUtils;
@@ -54,12 +55,12 @@ public class FlatDisk extends ManagedDisk {
 		header = h;
 	}
 
-	private void checkSize( long advertisedSizeBytes ) {
-		if( advertisedSizeBytes % Constants.SECTORLENGTH != 0 ) {
-			throw new IllegalArgumentException
-				( "Data length (" + advertisedSizeBytes +
-				  ") must be a multiple of " + Constants.SECTORLENGTH );
-		}
+	@Override
+	public void setParentDigest( List<byte[]> grainHashes ) {
+	}
+
+	@Override
+	public void reportMetaData() throws IOException {
 	}
 
 	@Override

@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.io.FilenameFilter;
 import java.io.FileInputStream;
 import java.text.ParseException;
+import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.logging.Log;
@@ -29,6 +30,16 @@ abstract public class ManagedDisk {
 		log = LogFactory.getLog( getClass() );
 	}
 
+		
+	// checkSize now not really enforcing much since we allow padding...
+	protected void checkSize( long advertisedSizeBytes ) {
+		if( advertisedSizeBytes % Constants.SECTORLENGTH != 0 ) {
+			throw new IllegalArgumentException
+				( "Data length (" + advertisedSizeBytes +
+				  ") must be a multiple of " + Constants.SECTORLENGTH );
+		}
+	}
+	
 	/**
 	 * Solely for the benefit of ProgressMonitor operations, who
 	 * need a handle on the InputStream of the unmanagedData associated
@@ -56,9 +67,14 @@ abstract public class ManagedDisk {
 		header.compressAlgorithm = c;
 	}
 
+	abstract public void setParentDigest( List<byte[]> grainHashes );
+
 	abstract public void setParent( ManagedDisk md );
 
+	abstract public void reportMetaData() throws IOException;
+
 	abstract public void writeTo( OutputStream os ) throws IOException;
+
 
 	abstract public void readFromWriteTo( InputStream is, OutputStream os )
 		throws IOException;
@@ -124,13 +140,6 @@ abstract public class ManagedDisk {
 	public ManagedDiskDescriptor getDescriptor() {
 		// LOOK: create once ?
 		return new ManagedDiskDescriptor( header.diskID, header.session );
-	}
-	
-	/**
-	 * Example: alignUp( 700, 512 ) -> 1024
-	 */
-	static long alignUp( long b, long a ) {
-		return (long)(Math.ceil( (double)b / a ) * a);
 	}
 	
 

@@ -45,6 +45,13 @@ public class Utils {
 			}
 	}
 
+	/**
+	 * Example: alignUp( 700, 512 ) -> 1024
+	 */
+	static public long alignUp( long b, long a ) {
+		return (long)(Math.ceil( (double)b / a ) * a);
+	}
+
 }
 
 // eof

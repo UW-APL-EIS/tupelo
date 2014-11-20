@@ -11,16 +11,16 @@ public class CompressionAlgorithmsTest extends junit.framework.TestCase {
 	public void testNull() {
 	}
 
-	public void _testWriteNuga2() throws IOException {
+	public void testWriteNuga2() throws IOException {
 		File f = new File( "data/nuga2.dd" );
 		if( !f.exists() )
 			return;
 		UnmanagedDisk ud = new DiskImage( f );
 		ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
 
-		//testWrite( md, ManagedDisk.Compressions.DEFLATE );
+		testWrite( md, ManagedDisk.Compressions.DEFLATE );
 		testWrite( md, ManagedDisk.Compressions.GZIP );
-		//testWrite( md, ManagedDisk.Compressions.SNAPPY );
+		testWrite( md, ManagedDisk.Compressions.SNAPPY );
 	}
 
 	private void testWrite( ManagedDisk md, ManagedDisk.Compressions c )

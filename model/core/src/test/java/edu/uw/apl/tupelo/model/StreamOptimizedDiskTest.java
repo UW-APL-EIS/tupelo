@@ -24,7 +24,7 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		}
 	}
 	
-	// A sized file which should FAIL the 'whole number of grains' test
+	// A sized file which should FAIL the 'whole number of sectors' test
 	public void testSize1000() throws IOException {
 		File f = new File( "src/test/resources/1000" );
 		if( !f.exists() )
@@ -38,7 +38,7 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		}
 	}
 
-	// A sized file which should FAIL the 'whole number of grains' test
+
 	public void testSize1k() throws IOException {
 		File f = new File( "src/test/resources/1k" );
 		if( !f.exists() )
@@ -46,7 +46,22 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		UnmanagedDisk ud = new DiskImage( f );
 		try {
 			ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
-			fail();
+		} catch( IllegalArgumentException iae ) {
+			System.out.println( "Expected: " + iae );
+		}
+	}
+
+	public void testManage1k() throws IOException {
+		File f = new File( "src/test/resources/1k" );
+		if( !f.exists() )
+			return;
+		UnmanagedDisk ud = new DiskImage( f );
+		try {
+			ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
+			File out = new File( "/dev/null" );
+			FileOutputStream fos = new FileOutputStream( out );
+			md.writeTo( fos );
+			fos.close();
 		} catch( IllegalArgumentException iae ) {
 			System.out.println( "Expected: " + iae );
 		}
@@ -65,7 +80,7 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 
 	}
 
-	public void testNuga2() throws IOException {
+	public void _testNuga2() throws IOException {
 		File f = new File( "data/nuga2.dd" );
 		if( !f.exists() )
 			return;
@@ -78,7 +93,7 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 
 	}
 
-	public void testManagedNuga2() throws IOException {
+	public void _testManagedNuga2() throws IOException {
 		File f = new File( "nuga2.dd" + ManagedDisk.FILESUFFIX );
 		if( !f.exists() )
 			return;
@@ -94,7 +109,7 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		}
 	}
 
-	public void test1g() throws IOException {
+	public void _test1g() throws IOException {
 		File f = new File( "data/sda.1g" );
 		if( !f.exists() )
 			return;
@@ -109,7 +124,7 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		fos.close();
 	}
 
-	public void testManaged1g() throws IOException {
+	public void _testManaged1g() throws IOException {
 		File f = new File( "sda.1g" + ManagedDisk.FILESUFFIX );
 		if( !f.exists() )
 			return;
@@ -193,6 +208,51 @@ public class StreamOptimizedDiskTest extends junit.framework.TestCase {
 		}
 	}
 
+	public void _testRoundTrip1k() throws Exception {
+		File f = new File( "src/test/resources/1k" );
+		testRoundTrip( f );
+	}
+
+	public void _testRoundTrip96k() throws Exception {
+		File f = new File( "sda.96k" );
+		testRoundTrip( f );
+	}
+
+	public void _testRoundTrip32mZero() throws Exception {
+		File f = new File( "src/test/resources/32m.zero" );
+		testRoundTrip( f );
+	}
+
+	public void testRoundTripNuga21g() throws Exception {
+		File f = new File( "nuga2.1g" );
+		testRoundTrip( f );
+	}
+	
+	void testRoundTrip( File unmanagedData ) throws Exception {
+		if( !unmanagedData.exists() )
+			return;
+		System.out.println( "testRoundTrip: " + unmanagedData );
+		
+		UnmanagedDisk ud = new DiskImage( unmanagedData );
+		InputStream is1 = ud.getInputStream();
+		String md51 = Utils.md5sum( is1 );
+		is1.close();
+
+		ManagedDisk md = new StreamOptimizedDisk( ud, Session.CANNED );
+		File out = new File( unmanagedData.getName() + ManagedDisk.FILESUFFIX );
+		FileOutputStream fos = new FileOutputStream( out );
+		md.writeTo( fos );
+		fos.close();
+
+		md = ManagedDisk.readFrom( out );
+		InputStream is2 = md.getInputStream();
+		String md52 = Utils.md5sum( is2 );
+		is2.close();
+
+		assertEquals( md51, md52 );
+
+	}
+	
 }
 
 // eof
