@@ -23,6 +23,8 @@ public interface Store {
 	public void put( ManagedDisk md, ProgressMonitor.Callback cb,
 					 int progressUpdateIntervalSecs ) throws IOException;
 
+	public UUID uuid( ManagedDiskDescriptor mdd ) throws IOException;
+
 	public List<byte[]> digest( ManagedDiskDescriptor mdd )
 		throws IOException;
 	

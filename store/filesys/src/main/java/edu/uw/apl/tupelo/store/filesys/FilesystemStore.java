@@ -1,6 +1,7 @@
 package edu.uw.apl.tupelo.store.filesys;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -9,6 +10,8 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.DigestInputStream;
@@ -30,6 +33,7 @@ import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.model.ProgressMonitor;
+import edu.uw.apl.tupelo.model.Utils;
 import edu.uw.apl.tupelo.store.Store;
 
 /**
@@ -138,7 +142,7 @@ public class FilesystemStore implements Store {
 		if( descriptorMap.containsKey( mdd ) )
 			throw new IllegalArgumentException( "Already stored: " + mdd );
 		
-		String fileName = asFileName( mdd );
+		String fileName = dataFileName( mdd );
 		File tempFile = new File( tempDir, fileName );
 		log.info( "Writing to " + tempFile );
 		/*
@@ -183,7 +187,7 @@ public class FilesystemStore implements Store {
 			// Since only ever supposed to be a single file in the dir, protect the dir
 			outDir.setWritable( writable );
 			
-			// LOOK: link to parent ??
+			link( md );
 			descriptorMap.put( mdd, md );
 			String path = asPathName( mdd );
 			pathMap.put( path, md );
@@ -201,7 +205,7 @@ public class FilesystemStore implements Store {
 		if( descriptorMap.containsKey( mdd ) )
 			throw new IllegalArgumentException( "Already stored: " + mdd );
 		
-		String fileName = asFileName( mdd );
+		String fileName = dataFileName( mdd );
 		File tempFile = new File( tempDir, fileName );
 		log.info( "Writing to " + tempFile );
 		/*
@@ -239,15 +243,25 @@ public class FilesystemStore implements Store {
 			// Since only ever supposed to be a single file in the dir, protect the dir
 			outDir.setWritable( writable );
 			
-			// LOOK: link to parent ??
+			link( md );
 			descriptorMap.put( mdd, md );
 			String path = asPathName( mdd );
 			pathMap.put( path, md );
 		}
 	}
-	
 
-		/**
+	@Override
+	public UUID uuid( ManagedDiskDescriptor mdd ) throws IOException {
+		File f = managedDataFile( root, mdd );
+		if( !f.isFile() )
+			// LOOK: throw exception ??
+			return null;
+		
+		ManagedDisk md = ManagedDisk.readFrom( f );
+		return md.getUUIDCreate();
+	}
+	
+	/**
 	 * Produce a sha1 hash of each grain in the managed disk
 	 * identified by the supplied descriptor.
 	 
@@ -265,43 +279,84 @@ public class FilesystemStore implements Store {
 	public List<byte[]> digest( ManagedDiskDescriptor mdd )
 		throws IOException {
 
-		File f = managedDataFile( root, mdd );
-		if( !f.isFile() )
-			return Collections.emptyList();
+		if( !descriptorMap.containsKey( mdd ) ) {
+			// LOOK: warning ?
+			return null;
+		}
 
-		List<byte[]> result = new ArrayList<byte[]>();
-		ManagedDisk md = ManagedDisk.readFrom( f );
+		File f = managedDataDigest( root, mdd );
+		if( !f.isFile() ) {
+			log.warn( "Digest missing: " + mdd );
+			computeDigest( mdd );
+		}
+		FileInputStream fis = new FileInputStream( f );
+		ObjectInputStream ois = new ObjectInputStream( fis );
+		List<byte[]> result = null;
+		try {
+			result = (List<byte[]>)ois.readObject();
+		} catch( ClassNotFoundException neverForList ) {
+		}
+		ois.close();
+		fis.close();
+		return result;
+	}
+
+	/**
+	 * Scan the managed data identified by the supplied ManagedDiskDescriptor
+	 * and sha1 hash each grain.  Save the hashes list to a file alongside
+	 * the managed data file itself.
+	 */
+	public void computeDigest( ManagedDiskDescriptor mdd )
+		throws IOException {
+
+		ManagedDisk md = descriptorMap.get( mdd );
+		if( md == null ) {
+			// LOOK: warning ?
+			return;
+		}
+		
+		List<byte[]> digest = new ArrayList<byte[]>();
+		//md.reportMetaData();
+		
 		MessageDigest sha1 = null;
 		try {
 			sha1 = MessageDigest.getInstance( "sha1" );
 		} catch( NoSuchAlgorithmException never ) {
 		}
 
+		int grainCount = (int)(Utils.alignUp( md.size(), md.grainSizeBytes() ) /
+							   md.grainSizeBytes());
+		log.info( "Grains: " + grainCount );
 		byte[] grain = new byte[(int)md.grainSizeBytes()];
 		InputStream is = md.getInputStream();
 		DigestInputStream dis = new DigestInputStream( is, sha1 );
-		while( true ) {
+		for( int g = 1; g <= grainCount; g++ ) {
 			int nin = dis.read( grain );
-			if( nin == -1 )
-				break;
-			if( nin != grain.length ) {
-				throw new IllegalStateException( "Partial read. Fix!" );
+			/*
+			  Only the last read could/should return a partial grain,
+			  and that would be if the data size not a multiple of
+			  grainSize, which is OK.
+			*/
+			if( nin != grain.length && g < grainCount ) {
+				throw new IllegalStateException( "Partial read (" +
+												 g + "/" +
+												 grainCount + "). Fix!" );
 			}
 			byte[] hash = sha1.digest();
-			result.add( hash );
+			digest.add( hash );
 			sha1.reset();
+			log.debug( g );
 		}
 		dis.close();
 		is.close();
 
-		// Sanity check ??  SHOULD THROW ERROR ???
-		if( result.size() != md.size() / md.grainSizeBytes() ) {
-			log.warn( "Unexpected digest length: " + result.size() +
-					  "/" + (md.size() / md.grainSizeBytes()) );
-			throw new IllegalStateException( "Bad digest compute: " + mdd );
-		}
-		
-		return result;
+
+		File f = managedDataDigest( root, mdd );
+		FileOutputStream fos = new FileOutputStream( f );
+		ObjectOutputStream oos = new ObjectOutputStream( fos );
+		oos.writeObject( digest );
+		oos.close();
+		fos.close();
 	}
 	
 	// for the benefit of the fuse-based ManagedDiskFileSystem
@@ -421,9 +476,18 @@ public class FilesystemStore implements Store {
 		}
 	}
 
+	private void link( ManagedDisk md ) {
+		if( !md.hasParent() )
+			return;
+		Collection<ManagedDisk> allDisks = pathMap.values();
+		UUID linkage = md.getUUIDParent();
+		ManagedDisk parent = locate( linkage, allDisks );
+		md.setParent( parent );
+	}
+		
 	/**
-	 * @param linkedDisks - the accumlating result, often needed for
-	 * base case testing when using a recursive process
+	 * @param linkedDisks - the accumulating result, often needed for
+	 * base case testing when using a recursive process.
 	 */
 	private void link( ManagedDisk md, Collection<ManagedDisk> allDisks,
 					   List<ManagedDisk> linkedDisks ) {
@@ -434,6 +498,8 @@ public class FilesystemStore implements Store {
 		UUID linkage = md.getUUIDParent();
 		ManagedDisk parent = locate( linkage, allDisks );
 		md.setParent( parent );
+		log.info( "SetParent: " + md.getDescriptor() + " -> " +
+				  parent.getDescriptor() );
 		linkedDisks.add( md );
 		link( parent, allDisks, linkedDisks );
 	}
@@ -473,7 +539,14 @@ public class FilesystemStore implements Store {
 	static private File managedDataFile( File root,
 										 ManagedDiskDescriptor mdd ) {
 		File dir = diskDataDir( root, mdd );
-		File result = new File( dir, asFileName( mdd ) );
+		File result = new File( dir, dataFileName( mdd ) );
+		return result;
+	}
+
+	static private File managedDataDigest( File root,
+										   ManagedDiskDescriptor mdd ) {
+		File dir = diskDataDir( root, mdd );
+		File result = new File( dir, digestFileName( mdd ) );
 		return result;
 	}
 
@@ -488,9 +561,16 @@ public class FilesystemStore implements Store {
 			mdd.getSession().toString();
 	}
 
-	static String asFileName( ManagedDiskDescriptor mdd ) {
-		return mdd.getDiskID() + "-" +
-			mdd.getSession().toString() + ManagedDisk.FILESUFFIX;
+	static String dataFileName( ManagedDiskDescriptor mdd ) {
+		return asFileBase( mdd ) + ManagedDisk.FILESUFFIX;
+	}
+
+	static String digestFileName( ManagedDiskDescriptor mdd ) {
+		return asFileBase( mdd ) + ".sha1";
+	}
+
+	static String asFileBase( ManagedDiskDescriptor mdd ) {
+		return mdd.getDiskID() + "-" + mdd.getSession().toString();
 	}
 
 	private boolean writable;
