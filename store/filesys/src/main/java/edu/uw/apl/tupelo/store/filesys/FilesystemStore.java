@@ -252,12 +252,12 @@ public class FilesystemStore implements Store {
 
 	@Override
 	public UUID uuid( ManagedDiskDescriptor mdd ) throws IOException {
-		File f = managedDataFile( root, mdd );
-		if( !f.isFile() )
-			// LOOK: throw exception ??
+
+		ManagedDisk md = descriptorMap.get( mdd );
+		if( md == null ) {
+			// LOOK: warning ?
 			return null;
-		
-		ManagedDisk md = ManagedDisk.readFrom( f );
+		}
 		return md.getUUIDCreate();
 	}
 	
