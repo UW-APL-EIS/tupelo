@@ -3,7 +3,11 @@ package edu.uw.apl.tupelo.cli;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 import org.apache.commons.cli.*;
 import org.apache.log4j.LogManager;
@@ -18,7 +22,6 @@ import edu.uw.apl.tupelo.model.UnmanagedDisk;
 import edu.uw.apl.tupelo.model.ProgressMonitor;
 import edu.uw.apl.tupelo.model.PhysicalDisk;
 import edu.uw.apl.tupelo.store.Store;
-import edu.uw.apl.tupelo.store.null_.NullStore;
 
 /**
  * Simple Tupelo Utility: add some arbitrary disk image file to a
@@ -97,54 +100,86 @@ public class PutData extends CliBase {
 	}
 	
 	public void start() throws IOException {
-		Store s = null;
-		if( dryrun ) {
-			s = new NullStore();
-		} else {
-			s = Utils.buildStore( storeLocation );
-			log.info( s.getClass() + " " + storeLocation );
-		}
+		Store store = Utils.buildStore( storeLocation );
+		log.info( store.getClass() + " " + storeLocation );
 		if( debug )
-			System.out.println( "Store: " + s );
+			System.out.println( "Store: " + store );
 		
-
 		try {
-			System.out.println( "Store.usableSpace: " + s.getUsableSpace() );
+			System.out.println( "Store.usableSpace: " + store.getUsableSpace() );
 		} catch( ConnectException ce ) {
 			System.err.println( "Network Error. Remote Tupelo store up?" );
 			System.exit(0);
 		}
-		Collection<ManagedDiskDescriptor> mdds1 = s.enumerate();
-		System.out.println( "Stored data: " + mdds1 );
 
-		Session session = s.newSession();
 		UnmanagedDisk ud = null;
 		if( rawData.getPath().startsWith( "/dev/" ) ) {
 			ud = new PhysicalDisk( rawData );
 		} else {
 			ud = new DiskImage( rawData );
 		}
+
+		Collection<ManagedDiskDescriptor> existing = store.enumerate();
+		System.out.println( "Stored data: " + existing );
+
+		List<ManagedDiskDescriptor> matching =
+			new ArrayList<ManagedDiskDescriptor>();
+		for( ManagedDiskDescriptor mdd : existing ) {
+			if( mdd.getDiskID().equals( ud.getID() ) ) {
+				matching.add( mdd );
+			}
+		}
+		Collections.sort( matching, ManagedDiskDescriptor.DEFAULTCOMPARATOR );
+		System.out.println( "Matching data: " + matching );
+		
+		List<byte[]> digest = null;
+		UUID uuid = null;
+		if( !matching.isEmpty() ) {
+			ManagedDiskDescriptor recent = matching.get( matching.size()-1 );
+			log.info( "Retrieving uuid for: "+ recent );
+			uuid = store.uuid( recent );
+			System.out.println( "UUID: " + uuid );
+			log.info( "Retrieving digest for: "+ recent );
+			digest = store.digest( recent );
+			System.out.println( "Digest: " + digest.size() );
+			
+		}
+
+		if( dryrun )
+			return;
+		
+		Session session = store.newSession();
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
 															   session );
 		System.out.println( "Storing: " + rawData +
 							" (" + ud.size() + " bytes) to " + mdd );
 
 		ManagedDisk md = null;
+
+		boolean useFlatDisk = false;
 		if( forceFlatDisk ) {
-			md = new FlatDisk( ud, session );
+			useFlatDisk = true;
 		} else if( forceStreamOptimizedDisk ) {
-			md = new StreamOptimizedDisk( ud, session );
-			md.setCompression( ManagedDisk.Compressions.SNAPPY );
+			useFlatDisk = false;
 		} else {
-			if( ud.size() < 1024L * 1024 * 1024 ) {
-				md = new FlatDisk( ud, session );
-			} else {
-				md = new StreamOptimizedDisk( ud, session );
-				md.setCompression( ManagedDisk.Compressions.SNAPPY );
-			}
+			useFlatDisk = ud.size() < 1024L * 1024 * 1024;
 		}
+
+		if( useFlatDisk ) {
+			md = new FlatDisk( ud, session );
+		} else {
+			if( uuid != null )
+				md = new StreamOptimizedDisk( ud, session, uuid );
+			else
+				md = new StreamOptimizedDisk( ud, session );
+			md.setCompression( ManagedDisk.Compressions.SNAPPY );
+		}
+
+		if( digest != null )
+			md.setParentDigest( digest );
+		
 		if( quiet ) {
-			s.put( md );
+			store.put( md );
 		} else {
 			final long sz = ud.size();
 			ProgressMonitor.Callback cb = new ProgressMonitor.Callback() {
@@ -162,10 +197,10 @@ public class PutData extends CliBase {
 						}
 					}
 				};
-			s.put( md, cb, 5 );
+			store.put( md, cb, 5 );
 		}
 		
-		Collection<ManagedDiskDescriptor> mdds2 = s.enumerate();
+		Collection<ManagedDiskDescriptor> mdds2 = store.enumerate();
 		System.out.println( "Stored data: " + mdds2 );
 	}
 

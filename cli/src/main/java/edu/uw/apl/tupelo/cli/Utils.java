@@ -9,6 +9,7 @@ import org.apache.commons.cli.Options;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
+import edu.uw.apl.tupelo.store.null_.NullStore;
 import edu.uw.apl.tupelo.http.client.HttpStoreProxy;
 
 /**
@@ -44,7 +45,10 @@ public class Utils {
 
 	static public Store buildStore( String storeLocation ) {
 		Store s = null;
-		if( storeLocation.startsWith( "http" ) ) {
+		if( false ) {
+		} else if( storeLocation.equals( "/dev/null" ) ) {
+			s = new NullStore();
+		} else if( storeLocation.startsWith( "http" ) ) {
 			s = new HttpStoreProxy( storeLocation );
 		} else {
 			File dir = new File( storeLocation );
