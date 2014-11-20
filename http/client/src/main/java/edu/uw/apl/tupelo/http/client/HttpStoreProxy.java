@@ -129,6 +129,12 @@ public class HttpStoreProxy implements Store {
 		}
 	}
 
+	@Override
+	public UUID uuid( ManagedDiskDescriptor mdd ) {
+		// LOOK TODO
+		return null;
+	}
+	
 	/**
 	   Slightly awkward implementation, making use of a Pipe.  We have
 	   a ManagedDisk as the source of our data, which supports just
