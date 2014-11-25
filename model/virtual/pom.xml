@@ -16,4 +16,30 @@
   <name>Tupelo Disk Management - Model (Virtual Disks)</name>
   <url>http://maven.apache.org</url>
 
+  <repositories>
+    <repository>
+      <id>tupelo.local</id>
+      <name>tupelo</name>
+      <url>file:${project.basedir}/../../.repository</url>
+      <releases>
+	<updatePolicy>always</updatePolicy>
+      </releases>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>tupelo-model-core</artifactId>
+      <version>0.0.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>vmvols-model</artifactId>
+      <version>2.0.0</version>
+    </dependency>
+  </dependencies>
+
+
 </project>

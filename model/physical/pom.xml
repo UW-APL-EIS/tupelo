@@ -21,6 +21,9 @@
       <id>tupelo.local</id>
       <name>tupelo</name>
       <url>file:${project.basedir}/../../.repository</url>
+      <releases>
+	<updatePolicy>always</updatePolicy>
+      </releases>
     </repository>
   </repositories>
 

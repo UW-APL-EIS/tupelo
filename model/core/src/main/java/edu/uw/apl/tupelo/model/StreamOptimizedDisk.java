@@ -921,12 +921,12 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			int total = 0;
 			while( total < actual ) {
 				int left = actual - total;
-				long[] gde = grainDirectory[gdIndex];
+				long[] gt = grainDirectory[gdIndex];
 				if( false ) {
-				} else if( gde == ZEROGDE ) {
-					log.debug( "Zero GD : "+ gdIndex );
+				} else if( gt == ZEROGDE ) {
+					log.debug( "Zero GD : " + gdIndex );
 					int grainTableOffset = (int)
-						(gtIndex * grainSizeBytes + gOffset);
+						(gtIndex << log2GrainSize + gOffset);
 					int inGrainTable = (int)
 						(grainTableCoverageBytes - grainTableOffset);
 					int fromGrainTable = Math.min( left, inGrainTable );
@@ -937,7 +937,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 							   fromGrainTable );
 					total += fromGrainTable;
 					posn += fromGrainTable;
-				} else if( gde == PARENTGDE ) {
+				} else if( gt == PARENTGDE ) {
 					throw new IllegalStateException( "PARENTGDE!" );
 				} else {
 					int inGrain = (int)(grainSizeBytes - gOffset );
@@ -945,9 +945,9 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					log.debug( len + " " + actual + " " + left + " " +
 							   inGrain +
 							   " " + fromGrain );
-					long grainMarker = gde[gtIndex];
+					long gte = gt[gtIndex];
 					if( false ) {
-					} else if( grainMarker == 0 ) {
+					} else if( gte == 0 ) {
 						log.debug( "Zero GT : "+ gdIndex + " " + gtIndex );
 						System.arraycopy( zeroGrain, 0,
 										  ba, off+total, fromGrain );
@@ -955,7 +955,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 						posn += fromGrain;
 						if( parentStream != null )
 							parentStream.skip( fromGrain );
-					} else if( grainMarker == -1 ) {
+					} else if( gte == -1 ) {
 						if( parentStream == null )
 							throw new IllegalStateException
 								( "No parent: " + gdIndex + " " + gtIndex );
@@ -965,35 +965,42 @@ public class StreamOptimizedDisk extends ManagedDisk {
 						total += fromParent;
 						posn += fromParent;
 					} else {
-						// LOOK: same as last grain accessed ???
-						raf.seek( grainMarker * Constants.SECTORLENGTH );
-						GrainMarker gm = GrainMarker.readFrom( raf );
-						int nin = raf.read( compressedGrainBuffer,
-											0, gm.size );
-						if( nin != gm.size )
-							throw new IllegalStateException
-								( "Partial read: "+ nin + " " + gm.size);
-						log.debug( "Inflating " + gdIndex + " "+ gtIndex +
-								  " = " + nin + " " + gm.lba );
-						try {
-							int actualLength = uncompressGrain
-								( compressedGrainBuffer, 0, nin, grainBuffer );
-							if( actualLength != grainSizeBytes )
+						if( gte != gtePrev ) {
+							raf.seek( gte * Constants.SECTORLENGTH );
+							GrainMarker gm = GrainMarker.readFrom( raf );
+							int nin = raf.read( compressedGrainBuffer,
+												0, gm.size );
+							if( nin != gm.size )
 								throw new IllegalStateException
-									( "Bad inflate len: " + actualLength );
-							System.arraycopy( grainBuffer, (int)gOffset,
-											  ba, off+total, fromGrain );
-							total += fromGrain;
-							posn += fromGrain;
-							if( parentStream != null )
-								parentStream.skip( fromGrain );
-						} catch( DataFormatException dfe ) {
-							// now what ???
-							log.warn( dfe );
+									( "Partial read: "+ nin + " " + gm.size);
+							if( log.isDebugEnabled() ) {
+								log.debug( "Inflating " + gdIndex + " "+
+										   gtIndex +
+										   " = " + nin + " " + gm.lba );
+							}
+							try {
+								int actualLength = uncompressGrain
+									( compressedGrainBuffer, 0, nin,
+									  grainBuffer );
+								if( actualLength != grainSizeBytes )
+									throw new IllegalStateException
+										( "Bad inflate len: " + actualLength );
+							} catch( DataFormatException dfe ) {
+								// what now??
+								log.warn( dfe );
+							}
+							gtePrev = gte;
 						}
+						System.arraycopy( grainBuffer, (int)gOffset,
+										  ba, off+total, fromGrain );
+						total += fromGrain;
+						posn += fromGrain;
+						if( parentStream != null )
+							parentStream.skip( fromGrain );
 					}
 				}
-				log.debug( total + " " + posn );
+				if( log.isDebugEnabled() )
+					log.debug( total + " " + posn );
 				dPos();
 			}
 			return total;
@@ -1049,6 +1056,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		private byte[] grainBuffer;
 		private int gdIndex, gtIndex;
 		private long gOffset;
+		private long gtePrev;
 	}
 	
 	static int log2( long i ) {
