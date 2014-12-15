@@ -6,9 +6,11 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.util.List;
 
+import edu.uw.apl.vmvols.model.VirtualMachine;
 import edu.uw.apl.vmvols.model.virtualbox.VBoxVM;
 import edu.uw.apl.vmvols.model.virtualbox.VDIDisk;
 import edu.uw.apl.vmvols.model.vmware.VMDKDisk;
+import edu.uw.apl.vmvols.model.vmware.VMwareVM;
 
 /**
  * A simple bridge class, bridging from Tupelo model objects
@@ -28,53 +30,24 @@ public class VirtualDisk implements UnmanagedDisk {
 			return true;
 		if( VBoxVM.isVBox( f ) )
 			return true;
+		if( VMwareVM.isVMware( f ) )
+			return true;
 		return false;
 	}
 	
 	public VirtualDisk( File f ) throws IOException {
-		if( f.isDirectory() ) {
-			if( VBoxVM.isVBox( f ) ) {
-				VBoxVM vm = new VBoxVM( f );
-				List<edu.uw.apl.vmvols.model.VirtualDisk> disks =
-					vm.getActiveDisks();
-				if( disks.size() == 1 ) {
-					delegate = disks.get(0);
-					source = f;
-				} else {
-					throw new IllegalArgumentException
-						( "VBox VM in " + f + " has " + disks.size() +
+		VirtualMachine vm = VirtualMachine.create( f );
+		if( vm == null )
+			throw new IllegalArgumentException( "Unknown vd file: " + f );
+		List<edu.uw.apl.vmvols.model.VirtualDisk> disks =
+			vm.getActiveDisks();
+		if( disks.size() > 1 ) {
+			throw new IllegalArgumentException
+				( "VM created from " + f + " has " + disks.size() +
 						  " disks, specify one." );
-				}
-			} else {
-				throw new IllegalStateException
-					( "Unable to locate a disk image: " + f );
-			}
-		} else {
-			if( false ) {
-			} else if( f.getName().endsWith( VMDKDisk.FILESUFFIX ) ) {
-				VMDKDisk vmdk = VMDKDisk.readFrom( f );
-				delegate = vmdk;
-				source = f;
-			} else if( f.getName().endsWith( VDIDisk.FILESUFFIX ) ) {
-				File dir = f.getParentFile();
-				if( VBoxVM.isVBox( dir ) ) {
-					VBoxVM vm = new VBoxVM( dir );
-					List<edu.uw.apl.vmvols.model.VirtualDisk> disks =
-						vm.getActiveDisks();
-					if( disks.size() == 1 ) {
-						delegate = disks.get(0);
-						source = f;
-					} else {
-						throw new IllegalArgumentException
-							( "VBox VM in " + f + " has " + disks.size() +
-							  " disks, specify one." );
-					}
-				}
-			} else {
-				throw new IllegalStateException
-					( "Unable to locate a disk image: " + f );
-			}
 		}
+		delegate = disks.get(0);
+		source = f;
 	}
 
 	@Override
