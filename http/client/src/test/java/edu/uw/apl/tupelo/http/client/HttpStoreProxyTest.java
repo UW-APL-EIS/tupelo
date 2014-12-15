@@ -2,10 +2,21 @@ package edu.uw.apl.tupelo.http.client;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+
+import static org.junit.Assert.*;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.BeforeClass;
+import org.junit.Before;
+
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.webapp.WebAppContext;
 
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.model.Constants;
@@ -26,29 +37,59 @@ import edu.uw.apl.tupelo.model.Session;
  * container) on port 8888/tcp.
  */
 
-public class HttpStoreProxyTest extends junit.framework.TestCase {
+public class HttpStoreProxyTest {//extends junit.framework.TestCase {
 
-	Store store;
+	static Server server;
+
+	static String serverHome =
+		"/home/stuart/apl/projects/infosec/dims/tupelo/http/server";
 	
-	protected void setUp() {
+	Store store;
+
+	@BeforeClass
+	public static void setServer() throws Exception {
+		if( true )
+			return;
+		server = new Server( 8888 );
+		server.setStopAtShutdown( true );
+		WebAppContext wac = new WebAppContext();
+		wac.setContextPath( "/tupelo" );
+		wac.setWar( serverHome + "/target/tupelo-http-server-0.0.1.war" );
+		/*
+		  wac.setResourceBase( serverHome + "/src/main/webapp" );
+		URL servlets = new URL( "file://" + serverHome + "/target/classes/" );
+		URLClassLoader ucl = new URLClassLoader( new URL[] { servlets } );
+		*/
+		//wac.setClassLoader( ucl );
+		server.setHandler( wac );
+		server.start();
+	}
+
+	@Before
+	public void buildStore() {
 		store = new HttpStoreProxy( "http://localhost:8888/tupelo" );
 		System.out.println( store );
 	}
-	
+
+	@Test
 	public void testNull() {
 	}
 
+	@Test
 	public void testUUID() throws IOException {
 		UUID u = store.getUUID();
 		System.out.println( "UUID: " + u );
 		assertNotNull( u );
 	}
 
+	@Test
 	public void testUsableSpace() throws IOException {
 		long us = store.getUsableSpace();
 		System.out.println( "Usablespace: " + us );
 	}
 
+	//	@Test
+	@Ignore
 	public void testNewSession() throws IOException {
 		Session s1 = store.newSession();
 		System.out.println( "Session1: " + s1 );
@@ -63,6 +104,7 @@ public class HttpStoreProxyTest extends junit.framework.TestCase {
 			fail();
 	}
 
+	@Ignore
 	public void testPutData() throws IOException {
 		File f = new File( "32m" );
 		if( !f.exists() )
@@ -74,6 +116,7 @@ public class HttpStoreProxyTest extends junit.framework.TestCase {
 		store.put( fd );
 	}
 
+	@Ignore
 	public void testDigest() throws IOException {
 		File f = new File( "64m" );
 		if( !f.exists() )
@@ -89,13 +132,26 @@ public class HttpStoreProxyTest extends junit.framework.TestCase {
 			Constants.SECTORLENGTH;
 		assertEquals( digest.size(), f.length() / grainSizeBytes );
 	}
-	
+
+	@Test
 	public void testEnumerate() throws IOException {
 		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
 		assertNotNull( mdds );
 		System.out.println( "Enumerate: " + mdds );
 	}
 
+	@Test
+	public void testSizeRequest() throws IOException {
+		System.out.println( "testSizeRequest" );
+		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
+		assertNotNull( mdds );
+		for( ManagedDiskDescriptor mdd : mdds ) {
+			long size = store.size( mdd );
+			System.out.println( "Size: " + mdd + " = " + size );
+		}
+	}
+
+	@Test
 	public void testAttributeList() throws IOException {
 		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
 		assertNotNull( mdds );
@@ -108,6 +164,7 @@ public class HttpStoreProxyTest extends junit.framework.TestCase {
 		System.out.println( ss );
 	}
 
+	@Test
 	public void testRoundTripAttribute() throws IOException {
 		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
 		assertNotNull( mdds );

@@ -130,6 +130,28 @@ public class HttpStoreProxy implements Store {
 	}
 
 	@Override
+	public long size( ManagedDiskDescriptor mdd ) throws IOException {
+		HttpGet g = new HttpGet( server + "disks/data/size/" + mdd.getDiskID() +
+								 "/" + mdd.getSession() );
+		log.debug( g.getRequestLine() );
+		g.addHeader( "Accept", "application/x-java-serialized-object" );
+		log.debug( g.getRequestLine() );
+		HttpClient req = new DefaultHttpClient( );
+		HttpResponse res = req.execute( g );
+		HttpEntity he = res.getEntity();
+		InputStream is = he.getContent();
+		ObjectInputStream ois = new ObjectInputStream( is );
+		try {
+			long result = (Long)ois.readObject();
+			return result;
+		} catch( ClassNotFoundException cnfe ) {
+			throw new IOException( cnfe );
+		} finally {
+			ois.close();
+		}
+	}
+
+	@Override
 	public UUID uuid( ManagedDiskDescriptor mdd ) throws IOException {
 		HttpGet g = new HttpGet( server + "disks/data/uuid/" + mdd.getDiskID() +
 								   "/" + mdd.getSession() );

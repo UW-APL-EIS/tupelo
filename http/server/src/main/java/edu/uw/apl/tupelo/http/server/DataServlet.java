@@ -54,6 +54,7 @@ import org.apache.commons.logging.LogFactory;
  *
  * /disks/data/enumerate
  * /disks/data/put/DID/SID
+ * /disks/data/size/DID/SID
  * /disks/data/uuid/DID/SID
  * /disks/data/digest/DID/SID
  *
@@ -91,6 +92,9 @@ public class DataServlet extends HttpServlet {
 		} else if( pi.startsWith( "/digest/" ) ) {
 			String details = pi.substring( "/digest/".length() );
 			digest( req, res, details );
+		} else if( pi.startsWith( "/size/" ) ) {
+			String details = pi.substring( "/size/".length() );
+			size( req, res, details );
 		} else if( pi.startsWith( "/uuid/" ) ) {
 			String details = pi.substring( "/uuid/".length() );
 			uuid( req, res, details );
@@ -191,6 +195,50 @@ public class DataServlet extends HttpServlet {
 		ManagedDisk md = new HttpManagedDisk( mdd, is );
 		store.put( md );
 		is.close();
+	}
+
+	private void size( HttpServletRequest req, HttpServletResponse res,
+					   String details )
+		throws IOException, ServletException {
+		
+		log.debug( "size.details: '" + details  + "'" );
+		
+		ManagedDiskDescriptor mdd = null;
+		try {
+			mdd = fromPathInfo( details );
+		} catch( ParseException pe ) {
+			log.debug( "size send error" );
+			res.sendError( HttpServletResponse.SC_NOT_FOUND,
+						   "Malformed managed disk descriptor: " + details );
+			return;
+		}
+
+		// LOOK: check the content type...
+		String hdr = req.getHeader( "Content-Encoding" );
+
+		long size = store.size( mdd );
+		log.debug( "size.result: " + size );
+		
+		
+		if( false ) {
+		} else if( Utils.acceptsJavaObjects( req ) ) {
+			res.setContentType( "application/x-java-serialized-object" );
+			OutputStream os = res.getOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream( os );
+			oos.writeObject( size );
+			oos.flush();
+		} else if( Utils.acceptsJson( req ) ) {
+			res.setContentType( "application/json" );
+			String json = gson.toJson( size );
+			PrintWriter pw = res.getWriter();
+			pw.print( json );
+			pw.flush();
+		} else {
+			res.setContentType( "text/plain" );
+			PrintWriter pw = res.getWriter();
+			pw.println( "" + size );
+		}
+
 	}
 
 	private void uuid( HttpServletRequest req, HttpServletResponse res,
