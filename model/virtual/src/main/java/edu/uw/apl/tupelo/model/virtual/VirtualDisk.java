@@ -39,6 +39,7 @@ public class VirtualDisk implements UnmanagedDisk {
 					vm.getActiveDisks();
 				if( disks.size() == 1 ) {
 					delegate = disks.get(0);
+					source = f;
 				} else {
 					throw new IllegalArgumentException
 						( "VBox VM in " + f + " has " + disks.size() +
@@ -53,6 +54,7 @@ public class VirtualDisk implements UnmanagedDisk {
 			} else if( f.getName().endsWith( VMDKDisk.FILESUFFIX ) ) {
 				VMDKDisk vmdk = VMDKDisk.readFrom( f );
 				delegate = vmdk;
+				source = f;
 			} else if( f.getName().endsWith( VDIDisk.FILESUFFIX ) ) {
 				File dir = f.getParentFile();
 				if( VBoxVM.isVBox( dir ) ) {
@@ -61,6 +63,7 @@ public class VirtualDisk implements UnmanagedDisk {
 						vm.getActiveDisks();
 					if( disks.size() == 1 ) {
 						delegate = disks.get(0);
+						source = f;
 					} else {
 						throw new IllegalArgumentException
 							( "VBox VM in " + f + " has " + disks.size() +
@@ -89,7 +92,13 @@ public class VirtualDisk implements UnmanagedDisk {
 		return delegate.getInputStream();
 	}
 
+	@Override
+	public File getSource() {
+		return source;
+	}
+	
 	private /*final*/ edu.uw.apl.vmvols.model.VirtualDisk delegate;
+	private File source;
 }
 
 // eof
