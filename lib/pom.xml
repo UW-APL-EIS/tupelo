@@ -46,8 +46,14 @@
   <dependencies>
     <dependency>
       <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>tsk4j-digests</artifactId>
+      <version>413.1.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
       <artifactId>tsk4j-core</artifactId>
-      <version>413.0.2</version>
+      <version>413.1.0</version>
     </dependency>
 
     <dependency>
@@ -66,6 +72,12 @@
       <groupId>com.plant42</groupId>
       <artifactId>rabbitmq-log4j-appender</artifactId>
       <version>1.0.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>vmvols-model</artifactId>
+      <version>2.0.0</version>
     </dependency>
   </dependencies>
   
