@@ -1,0 +1,240 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+			     http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  
+  <properties>
+    <!-- override this by activating the 'tester' profile -->
+    <skipTests>true</skipTests>
+  </properties>
+  
+  <!--
+      We have native libraries (jni/C) bundles into our artifact but, due
+      to the composition of our Makefiles (see e.g.
+      src/main/native/Linux/Makefile) and the 'native-lib-loader' artifact
+      we use to load native stuff, we appear to be pure Java.  Cool or
+      what!
+  -->
+
+  <parent>
+    <groupId>edu.uw.apl.commons</groupId>
+    <artifactId>tsk4j-parent</artifactId>
+    <version>413.0.0</version>
+  </parent>
+  
+  <groupId>edu.uw.apl.commons</groupId>
+  <artifactId>tsk4j-core</artifactId>
+  <version>413.1.0</version>
+  <packaging>jar</packaging>
+  <name>
+    TSK4J: Core - JNI Bindings to Sleuthkit C library
+  </name>
+
+  <repositories>
+    <repository>
+      <id>tsk4j.local</id>
+      <name>tsk4j</name>
+      <url>file:${project.basedir}/../.repository</url>
+      <releases>
+	<updatePolicy>always</updatePolicy>
+      </releases>
+    </repository>
+  </repositories>
+
+
+  <dependencies>
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>native-lib-loader</artifactId>
+      <version>2.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.5</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>tester</id>
+      <properties>
+	<skipTests>false</skipTests>
+      </properties>
+    </profile>
+    <profile>
+      <id>windows-make</id>
+      <activation>
+	<os>
+	  <family>Windows</family>
+	</os>
+      </activation>
+      <properties>
+	<make>nmake</make>
+      </properties>
+    </profile>
+    <profile>
+      <id>unix-make</id>
+      <activation>
+	<os>
+	  <family>Linux</family>
+	</os>
+      </activation>
+      <properties>
+	<make>make</make>
+      </properties>
+    </profile>
+    
+    <!--
+	We only try to build/package the native (jni) code if we are a
+	'power' user: mvn -Pnative.  Once done, we then 'git add' the
+	resultant .so/.dll sitting under src/main/resources.  Then
+	'regular' users see this lib as just a resource to bundle into
+	the runtime jar.
+    -->
+      <profile>
+	<id>native</id>
+	<build>
+	  <plugins>
+	    <plugin>
+	      <groupId>org.codehaus.mojo</groupId>
+	      <artifactId>native-maven-plugin</artifactId>
+	      <executions>
+		<execution>
+		  <id>javah</id>
+		  <phase>compile</phase>
+		  <configuration>
+		    <javahClassNames>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.base.HeapBuffer
+		      </javahClassName>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.base.Version
+		      </javahClassName>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.image.Image
+		      </javahClassName>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.volsys.VolumeSystem
+		      </javahClassName>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.volsys.Partition
+		      </javahClassName>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.filesys.FileSystem
+		      </javahClassName>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.filesys.Block
+		      </javahClassName>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.filesys.Meta
+		      </javahClassName>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.filesys.Name
+		      </javahClassName>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.filesys.File
+		      </javahClassName>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.filesys.Directory
+		      </javahClassName>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.filesys.Attribute
+		      </javahClassName>
+		      <javahClassName>
+			edu.uw.apl.commons.sleuthkit.filesys.Run
+		      </javahClassName>
+		    </javahClassNames>
+		  </configuration>
+		  <goals>
+		    <goal>javah</goal>
+		  </goals>
+		</execution>
+	      </executions>
+	    </plugin>
+	    <plugin>
+	      <groupId>org.codehaus.mojo</groupId>
+	      <artifactId>exec-maven-plugin</artifactId>
+	      <version>1.1</version>
+	      <executions>
+		<execution>
+		  <id>build.native</id>
+		  <phase>compile</phase>
+		  <goals>
+		    <goal>exec</goal>
+		  </goals>
+		  <configuration>
+		    <workingDirectory>
+		      src/main/native/${os.name}/${os.arch}
+		    </workingDirectory>
+		    <executable>${make}</executable>
+		    <commandlineArgs>install</commandlineArgs>
+		    <environmentVariables>
+		      <PACKAGE>edu.uw.apl.commons.sleuthkit.base</PACKAGE>
+		      <ARTIFACT>${project.artifactId}</ARTIFACT>
+		    </environmentVariables>
+		  </configuration>
+		</execution>
+		
+		<execution>
+		  <id>clean.native</id>
+		  <phase>clean</phase>
+		  <goals>
+		    <goal>exec</goal>
+		  </goals>
+		  <configuration>
+		    <workingDirectory>
+		      src/main/native/${os.name}/${os.arch}
+		    </workingDirectory>
+		    <executable>${make}</executable>
+		    <commandlineArgs>clean</commandlineArgs>
+		    <environmentVariables>
+		      <PACKAGE>edu.uw.apl.commons.sleuthkit.base</PACKAGE>
+		      <ARTIFACT>${project.artifactId}</ARTIFACT>
+		    </environmentVariables>
+		  </configuration>
+		</execution>
+	      </executions>
+	    </plugin>
+	  </plugins>
+	</build>
+      </profile>
+    </profiles>
+
+    <build>
+      <defaultGoal>compile</defaultGoal>
+      <plugins>
+
+	<plugin>
+	  <artifactId>maven-surefire-plugin</artifactId>
+	  <configuration>
+	    <skipTests>${skipTests}</skipTests>
+	  </configuration>
+	</plugin>
+
+	<plugin>
+	  <artifactId>maven-jar-plugin</artifactId>
+	  <configuration>
+	    <archive>
+	      <manifest>
+		<addDefaultImplementationEntries>
+		  true
+		</addDefaultImplementationEntries>
+		<addDefaultSpecificationEntries>
+		  true
+		</addDefaultSpecificationEntries>
+	      </manifest>
+	    </archive>
+	  </configuration>
+	</plugin>
+      </plugins>
+    </build>
+
+</project>
