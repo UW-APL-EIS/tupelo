@@ -10,7 +10,6 @@ import java.io.IOException;
  
 public class DiskImage implements UnmanagedDisk {
 
-
 	public DiskImage( File f ) {
 		this( f, f.getName() );
 	}
@@ -34,6 +33,11 @@ public class DiskImage implements UnmanagedDisk {
 	public InputStream getInputStream() throws IOException {
 		FileInputStream fis = new FileInputStream( data );
 		return fis;
+	}
+
+	@Override
+	public File getSource() {
+		return data;
 	}
 
 	private final File data;

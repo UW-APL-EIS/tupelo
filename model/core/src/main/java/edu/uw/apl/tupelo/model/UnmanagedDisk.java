@@ -1,5 +1,6 @@
 package edu.uw.apl.tupelo.model;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
 
@@ -27,7 +28,9 @@ public interface UnmanagedDisk {
 	public long size();
 
 	public InputStream getInputStream() throws IOException;
-	
+
+	// for debug, let use see the source file
+	public File getSource();
 }
 
 // eof

@@ -908,7 +908,8 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		@Override
 		public int readImpl( byte[] ba, int off, int len ) throws IOException {
 
-			log.debug( "Posn " + posn + " len  " + len );
+			if( log.isDebugEnabled() )
+				log.debug( "Posn " + posn + " len  " + len );
 
 			// do min in long space, since size - posn may overflow int...
 			long actualL = Math.min( size - posn, len );
@@ -924,7 +925,8 @@ public class StreamOptimizedDisk extends ManagedDisk {
 				long[] gt = grainDirectory[gdIndex];
 				if( false ) {
 				} else if( gt == ZEROGDE ) {
-					log.debug( "Zero GD : " + gdIndex );
+					if( log.isDebugEnabled() )
+						log.debug( "Zero GD : " + gdIndex );
 					int grainTableOffset = (int)
 						(gtIndex << log2GrainSize + gOffset);
 					int inGrainTable = (int)
@@ -932,9 +934,10 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					int fromGrainTable = Math.min( left, inGrainTable );
 					System.arraycopy( zeroGrainTable, grainTableOffset,
 									  ba, off+total, fromGrainTable );
-					log.debug( len + " " + actual + " " +
-							   left + " " + inGrainTable + " " +
-							   fromGrainTable );
+					if( log.isDebugEnabled() )
+						log.debug( len + " " + actual + " " +
+								   left + " " + inGrainTable + " " +
+								   fromGrainTable );
 					total += fromGrainTable;
 					posn += fromGrainTable;
 				} else if( gt == PARENTGDE ) {
@@ -942,13 +945,15 @@ public class StreamOptimizedDisk extends ManagedDisk {
 				} else {
 					int inGrain = (int)(grainSizeBytes - gOffset );
 					int fromGrain = Math.min( left, inGrain );
-					log.debug( len + " " + actual + " " + left + " " +
-							   inGrain +
-							   " " + fromGrain );
+					if( log.isDebugEnabled() )
+						log.debug( len + " " + actual + " " + left + " " +
+								   inGrain +
+								   " " + fromGrain );
 					long gte = gt[gtIndex];
 					if( false ) {
 					} else if( gte == 0 ) {
-						log.debug( "Zero GT : "+ gdIndex + " " + gtIndex );
+						if( log.isDebugEnabled() )
+							log.debug( "Zero GT : "+ gdIndex + " " + gtIndex );
 						System.arraycopy( zeroGrain, 0,
 										  ba, off+total, fromGrain );
 						total += fromGrain;

@@ -21,6 +21,7 @@ import edu.uw.apl.tupelo.model.StreamOptimizedDisk;
 import edu.uw.apl.tupelo.model.UnmanagedDisk;
 import edu.uw.apl.tupelo.model.ProgressMonitor;
 import edu.uw.apl.tupelo.model.PhysicalDisk;
+import edu.uw.apl.tupelo.model.VirtualDisk;
 import edu.uw.apl.tupelo.store.Store;
 
 /**
@@ -113,14 +114,18 @@ public class PutData extends CliBase {
 		}
 
 		UnmanagedDisk ud = null;
-		if( rawData.getPath().startsWith( "/dev/" ) ) {
+		if( false ) {
+		} else if( rawData.getPath().startsWith( "/dev/" ) ) {
 			ud = new PhysicalDisk( rawData );
+		} else if( VirtualDisk.likelyVirtualDisk( rawData ) ) {
+			ud = new VirtualDisk( rawData );
 		} else {
 			ud = new DiskImage( rawData );
 		}
 
 		Collection<ManagedDiskDescriptor> existing = store.enumerate();
-		System.out.println( "Stored data: " + existing );
+		if( verbose )
+			System.out.println( "Stored data: " + existing );
 
 		List<ManagedDiskDescriptor> matching =
 			new ArrayList<ManagedDiskDescriptor>();
@@ -199,14 +204,22 @@ public class PutData extends CliBase {
 				};
 			store.put( md, cb, 5 );
 		}
+
+		/*
+		  Add at least an attribute that identifies the file path, accepting
+		  that that may not be universally identying, but helps in testing
+		*/
+		store.setAttribute( mdd, "path", rawData.getPath().getBytes() );
 		
-		Collection<ManagedDiskDescriptor> mdds2 = store.enumerate();
-		System.out.println( "Stored data: " + mdds2 );
+		if( verbose ) {
+			Collection<ManagedDiskDescriptor> mdds2 = store.enumerate();
+			System.out.println( "Stored data: " + mdds2 );
+		}
 	}
 
 
 	boolean forceFlatDisk, forceStreamOptimizedDisk, dryrun;
-	boolean quiet;
+	boolean quiet, verbose;
 	File rawData;
 }
 

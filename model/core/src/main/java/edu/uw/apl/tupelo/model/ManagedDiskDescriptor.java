@@ -37,6 +37,7 @@ public class ManagedDiskDescriptor implements java.io.Serializable {
 		this.session = s;
 	}
 
+	@Override
 	public boolean equals( Object o ) {
 		if( this == o )
 			return true;
@@ -47,7 +48,8 @@ public class ManagedDiskDescriptor implements java.io.Serializable {
 			this.session.equals( that.session );
 	}
 	
-	// maintain the general contract for equal Objects, though Map usage unlikely
+	// Must maintain the general contract for equal Objects
+	@Override
 	public int hashCode() {
 		return diskID.hashCode() + session.hashCode();
 	}

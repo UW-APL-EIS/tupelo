@@ -1,5 +1,6 @@
 package edu.uw.apl.tupelo.cli;
 
+import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Collection;
 
@@ -59,6 +60,7 @@ public class StoreInfo extends CliBase {
 		
 		System.out.println( "Using store: " + storeLocation );
 		System.out.println( "Usable Space: " + store.getUsableSpace() );
+		System.out.println( "UUID: " + store.getUUID() );
 
 		Collection<ManagedDiskDescriptor> stored = null;
 		try {
@@ -68,15 +70,19 @@ public class StoreInfo extends CliBase {
 			System.exit(0);
 		}
 		
-		System.out.println( "ManagedDisks: " + stored );
-
+		System.out.println( "ManagedDisks:" );
 		for( ManagedDiskDescriptor mdd : stored ) {
-			Collection<String> attrNames = store.listAttributes( mdd );
-			System.out.println( "Attributes for " + mdd + ": " + attrNames );
-		}			
+			report( mdd, store );
+		}
 	}
-	
-	
+
+	private void report( ManagedDiskDescriptor mdd, Store store )
+		throws IOException {
+		System.out.println( mdd.getDiskID() + " , " + mdd.getSession() );
+		System.out.println( " Size: " + store.size( mdd ) );
+		Collection<String> attrNames = store.listAttributes( mdd );
+		System.out.println( " Attributes: " + attrNames );
+	}
 }
 
 // eof

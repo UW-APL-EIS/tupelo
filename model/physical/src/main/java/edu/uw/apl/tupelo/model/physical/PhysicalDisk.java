@@ -33,10 +33,12 @@ public class PhysicalDisk implements UnmanagedDisk {
 		disk = f;
 	}
 
+	@Override
 	public long size() {
 		return size( disk.getPath() );
 	}
 
+	@Override
 	public String getID() {
 		String v = vendorID( disk.getPath() );
 		if( v != null )
@@ -61,6 +63,22 @@ public class PhysicalDisk implements UnmanagedDisk {
 			return bis;
 		}
 			   
+	}
+
+	@Override
+	public File getSource() {
+		return disk;
+	}
+
+	// for debug purposes
+	String vendorID() {
+		return vendorID( disk.getPath() );
+	}
+	String productID() {
+		return productID( disk.getPath() );
+	}
+	String serialNumber() {
+		return serialNumber( disk.getPath() );
 	}
 
 	private native long size( String path );
