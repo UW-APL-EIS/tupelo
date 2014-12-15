@@ -3,5 +3,6 @@ target
 paste
 *~
 *.tmd
+maven-metadata-local.xml
 
 # eof
