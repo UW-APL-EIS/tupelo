@@ -53,6 +53,11 @@ public class NullStore implements Store {
 	}
 
 	@Override
+	public long size( ManagedDiskDescriptor mdd ) {
+		return -1;
+	}
+
+	@Override
 	public UUID uuid( ManagedDiskDescriptor mdd ) {
 		return null;
 	}

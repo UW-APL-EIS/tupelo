@@ -251,11 +251,24 @@ public class FilesystemStore implements Store {
 	}
 
 	@Override
-	public UUID uuid( ManagedDiskDescriptor mdd ) throws IOException {
+	public synchronized long size( ManagedDiskDescriptor mdd )
+		throws IOException {
 
 		ManagedDisk md = descriptorMap.get( mdd );
 		if( md == null ) {
-			// LOOK: warning ?
+			log.warn( "size. No such descriptor: " + mdd );
+			return -1;
+		}
+		return md.size();
+	}
+
+	@Override
+	public synchronized UUID uuid( ManagedDiskDescriptor mdd )
+		throws IOException {
+
+		ManagedDisk md = descriptorMap.get( mdd );
+		if( md == null ) {
+			log.warn( "uuid. No such descriptor: " + mdd );
 			return null;
 		}
 		return md.getUUIDCreate();
@@ -458,7 +471,12 @@ public class FilesystemStore implements Store {
 			try {
 				ManagedDisk md = ManagedDisk.readFrom( f );
 				ManagedDiskDescriptor mdd = md.getDescriptor();
-				descriptorMap.put( mdd, md );
+				log.debug( "Adding: " + mdd );
+				ManagedDisk prev = descriptorMap.put( mdd, md );
+				if( prev != null ) {
+					log.warn( "Previous value: " + prev + " for descriptor " +
+							  mdd );
+				}
 				String path = asPathName( mdd );
 				pathMap.put( path, md );
 				log.debug( "Located managed disk: " + f );

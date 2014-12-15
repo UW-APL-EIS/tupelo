@@ -23,6 +23,13 @@ public interface Store {
 	public void put( ManagedDisk md, ProgressMonitor.Callback cb,
 					 int progressUpdateIntervalSecs ) throws IOException;
 
+	/**
+	 * @return size, in bytes, of the managed disk described by the
+	 * supplied descriptor. Return -1 if the descriptor does not
+	 * identify a managed disk held in this store.
+	 */
+	public long size( ManagedDiskDescriptor mdd ) throws IOException;
+
 	public UUID uuid( ManagedDiskDescriptor mdd ) throws IOException;
 
 	public List<byte[]> digest( ManagedDiskDescriptor mdd )
