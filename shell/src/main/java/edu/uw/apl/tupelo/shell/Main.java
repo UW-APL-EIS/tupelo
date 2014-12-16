@@ -160,7 +160,7 @@ public class Main extends Shell {
 											needle );
 						return;
 					}
-					hashvs( ud );
+					hashVolumeSystem( ud );
 				}
 			} );
 		commandHelp( "hashvs", "unmanagedDisk",
@@ -422,18 +422,19 @@ public class Main extends Shell {
 		
 	}
 
-	private void hashvs( UnmanagedDisk ud ) throws IOException {
+	private void hashVolumeSystem( UnmanagedDisk ud ) throws IOException {
 		if( session == null )
 			session = store.newSession();
 		if( ud instanceof VirtualDisk ) {
-			hashvsVirtual( (VirtualDisk)ud );
+			hashVolumeSystemVirtual( (VirtualDisk)ud );
 			return;
 		} else {
-			hashvsNonVirtual( ud );
+			hashVolumeSystemNonVirtual( ud );
 		}
 	}
 
-	private void hashvsVirtual( VirtualDisk ud ) throws IOException {
+		
+	private void checkVMFS() throws IOException {
 		if( vmfs == null ) {
 			vmfs = new VirtualMachineFileSystem();
 			final VirtualMachineFileSystem vmfsF = vmfs;
@@ -446,21 +447,58 @@ public class Main extends Shell {
 					}
 				}
 				} );
+			final File mountPoint = new File( "vmfs" );
+			mountPoint.mkdirs();
+			mountPoint.deleteOnExit();
+			try {
+				vmfs.mount( mountPoint, true );
+			} catch( Exception e ) {
+				throw new IOException( e );
+			}
 		}
-		VirtualMachine vm = VirtualMachine.create( ud.getSource() );
-		vmfs.add( vm );
 	}
 	
-	private void hashvsNonVirtual( UnmanagedDisk ud ) throws IOException {
+	private void hashVolumeSystemVirtual( VirtualDisk ud ) throws IOException {
+		checkVMFS();
+		VirtualMachine vm = ud.getVM();
+		vmfs.add( vm );
+		try {
+			Thread.sleep( 1000 * 20 );
+		} catch( Exception e ) {
+		}
+		edu.uw.apl.vmvols.model.VirtualDisk vmDisk = ud.getDelegate();
+		File f = vmfs.pathTo( vmDisk );
+		Image i = new Image( f );
+		try {
+			hashVolumeSystemImpl( i, ud );
+		} finally {
+			// MUST release i else leaves vmfs non-unmountable
+			i.close();
+		}
+
+	}
+	
+	private void hashVolumeSystemNonVirtual( UnmanagedDisk ud )
+		throws IOException {
 		Image i = new Image( ud.getSource() );
 		try {
-			VolumeSystem vs = null;
-			try {
-				vs = new VolumeSystem( i );
-			} catch( IllegalStateException noVolSys ) {
-				log.warn( noVolSys );
-				return;
-			}
+			hashVolumeSystemImpl( i, ud );
+		} finally {
+			i.close();
+		}
+	}
+
+
+	private void hashVolumeSystemImpl( Image i, UnmanagedDisk ud )
+		throws IOException {
+		VolumeSystem vs = null;
+		try {
+			vs = new VolumeSystem( i );
+		} catch( IllegalStateException noVolSys ) {
+			log.warn( noVolSys );
+			return;
+		}
+		try {
 			VolumeSystemHash vsh = VolumeSystemHash.create( vs );
 			StringWriter sw = new StringWriter();
 			VolumeSystemHashCodec.writeTo( vsh, sw );
@@ -471,10 +509,11 @@ public class Main extends Shell {
 			byte[] value = s.getBytes();
 			store.setAttribute( mdd, key, value );
 		} finally {
-			i.close();
+			// MUST release vs else leaves vmfs non-unmountable
+			vs.close();
 		}
 	}
-
+	
 	private void hashfs( UnmanagedDisk ud ) throws IOException {
 		if( session == null )
 			session = store.newSession();

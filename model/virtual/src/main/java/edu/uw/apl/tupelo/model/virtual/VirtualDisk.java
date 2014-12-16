@@ -36,7 +36,7 @@ public class VirtualDisk implements UnmanagedDisk {
 	}
 	
 	public VirtualDisk( File f ) throws IOException {
-		VirtualMachine vm = VirtualMachine.create( f );
+		vm = VirtualMachine.create( f );
 		if( vm == null )
 			throw new IllegalArgumentException( "Unknown vd file: " + f );
 		List<edu.uw.apl.vmvols.model.VirtualDisk> disks =
@@ -69,7 +69,21 @@ public class VirtualDisk implements UnmanagedDisk {
 	public File getSource() {
 		return source;
 	}
+
+	public VirtualMachine getVM() {
+		return vm;
+	}
 	
+	/*
+	  Pah, tried to avoid the delegate leaking out, but a caller
+	  using a VirtualMachineFileSystem needs the delegate to look
+	  up its pth in the vmfs
+	*/
+	public edu.uw.apl.vmvols.model.VirtualDisk getDelegate() {
+		return delegate;
+	}
+
+	private VirtualMachine vm;
 	private /*final*/ edu.uw.apl.vmvols.model.VirtualDisk delegate;
 	private File source;
 }
