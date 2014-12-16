@@ -334,9 +334,9 @@ public class FilesystemStore implements Store {
 		
 		//md.reportMetaData();
 		
-		MessageDigest sha1 = null;
+		MessageDigest mdg = null;
 		try {
-			sha1 = MessageDigest.getInstance( "sha1" );
+			mdg = MessageDigest.getInstance( ManagedDisk.DIGESTALGORITHM );
 		} catch( NoSuchAlgorithmException never ) {
 		}
 
@@ -360,9 +360,9 @@ public class FilesystemStore implements Store {
 												 g + "/" +
 												 grainCount + "). Fix!" );
 			}
-			byte[] hash = sha1.digest( grain );
+			byte[] hash = mdg.digest( grain );
 			digest.add( hash );
-			sha1.reset();
+			mdg.reset();
 			if( log.isDebugEnabled() )
 				log.debug( g );
 		}

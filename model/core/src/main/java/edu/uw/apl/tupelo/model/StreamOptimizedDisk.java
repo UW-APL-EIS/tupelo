@@ -244,9 +244,9 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		long parentGTEs = 0;
 		int digestIndex = 0;
 		
-		MessageDigest sha1 = null;
+		MessageDigest md = null;
 		try {
-			sha1 = MessageDigest.getInstance( "sha1" );
+			md = MessageDigest.getInstance( DIGESTALGORITHM );
 		} catch( NoSuchAlgorithmException never ) {
 		}
 
@@ -335,9 +335,9 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					  move on
 					*/
 					if( parentDigest != null ) {
-						sha1.reset();
-						sha1.update( readBuffer, offset, (int)grainSizeBytes );
-						byte[] hash = sha1.digest();
+						md.reset();
+						md.update( readBuffer, offset, (int)grainSizeBytes );
+						byte[] hash = md.digest();
 						byte[] parent = parentDigest.get( digestIndex );
 						digestIndex++;
 						if( MessageDigest.isEqual( hash, parent ) ) {
