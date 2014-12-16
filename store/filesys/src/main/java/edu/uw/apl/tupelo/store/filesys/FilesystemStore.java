@@ -283,8 +283,8 @@ public class FilesystemStore implements Store {
 	 * that cannot change.
 
 	 * LOOK: We may need to stream this out instead of holding it all.
-	 * A 2TB disk using 16 million grains and a hash of 20bytes per grain
-	 * means 320MB of memory!
+	 * A 2TB disk using 16 million grains (64K per grain) and a hash
+	 * of 20bytes (sha1) per grain means 320MB of memory!
 	 *
 	 * LOOK: We may/should have this already held as an attribute!
 	 */
@@ -300,7 +300,7 @@ public class FilesystemStore implements Store {
 		File f = managedDataDigest( root, mdd );
 		if( !f.isFile() ) {
 			log.warn( "Digest missing: " + mdd );
-			computeDigest( mdd );
+			return null;
 		}
 		FileInputStream fis = new FileInputStream( f );
 		ObjectInputStream ois = new ObjectInputStream( fis );
@@ -322,13 +322,16 @@ public class FilesystemStore implements Store {
 	public void computeDigest( ManagedDiskDescriptor mdd )
 		throws IOException {
 
+		File digestFile = managedDataDigest( root, mdd );
+		if( digestFile.exists() )
+			return;
+		
 		ManagedDisk md = descriptorMap.get( mdd );
 		if( md == null ) {
 			// LOOK: warning ?
 			return;
 		}
 		
-		List<byte[]> digest = new ArrayList<byte[]>();
 		//md.reportMetaData();
 		
 		MessageDigest sha1 = null;
@@ -342,9 +345,11 @@ public class FilesystemStore implements Store {
 		log.info( "Grains: " + grainCount );
 		byte[] grain = new byte[(int)md.grainSizeBytes()];
 		InputStream is = md.getInputStream();
-		DigestInputStream dis = new DigestInputStream( is, sha1 );
+		//		DigestInputStream dis = new DigestInputStream( is, sha1 );
+		List<byte[]> digest = new ArrayList<byte[]>( grainCount );
 		for( int g = 1; g <= grainCount; g++ ) {
-			int nin = dis.read( grain );
+			//	int nin = dis.read( grain );
+			int nin = is.read( grain );
 			/*
 			  Only the last read could/should return a partial grain,
 			  and that would be if the data size not a multiple of
@@ -355,17 +360,18 @@ public class FilesystemStore implements Store {
 												 g + "/" +
 												 grainCount + "). Fix!" );
 			}
-			byte[] hash = sha1.digest();
+			byte[] hash = sha1.digest( grain );
 			digest.add( hash );
 			sha1.reset();
-			log.debug( g );
+			if( log.isDebugEnabled() )
+				log.debug( g );
 		}
-		dis.close();
+		//		dis.close();
 		is.close();
 
+		System.out.println( "Done hash" );
 
-		File f = managedDataDigest( root, mdd );
-		FileOutputStream fos = new FileOutputStream( f );
+		FileOutputStream fos = new FileOutputStream( digestFile );
 		ObjectOutputStream oos = new ObjectOutputStream( fos );
 		oos.writeObject( digest );
 		oos.close();

@@ -59,10 +59,14 @@ import edu.uw.apl.vmvols.fuse.VirtualMachineFileSystem;
 
 
 import edu.uw.apl.tupelo.model.Session;
+import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.DiskImage;
+import edu.uw.apl.tupelo.model.FlatDisk;
 import edu.uw.apl.tupelo.model.PhysicalDisk;
 import edu.uw.apl.tupelo.model.VirtualDisk;
+import edu.uw.apl.tupelo.model.ProgressMonitor;
+import edu.uw.apl.tupelo.model.StreamOptimizedDisk;
 import edu.uw.apl.tupelo.model.UnmanagedDisk;
 import edu.uw.apl.tupelo.http.client.HttpStoreProxy;
 import edu.uw.apl.tupelo.store.Store;
@@ -96,6 +100,7 @@ public class Main extends Shell {
 		physicalDisks = new ArrayList<PhysicalDisk>();
 		virtualDisks = new ArrayList<VirtualDisk>();
 		diskImages = new ArrayList<DiskImage>();
+		vmNames = new HashSet<String>();
 		
 		String tmpDirS = System.getProperty( "java.io.tmpdir" );
 		tmpDir = new File( tmpDirS );
@@ -186,13 +191,13 @@ public class Main extends Shell {
 											needle );
 						return;
 					}
-					hashfs( ud );
+					hashFileSystems( ud );
 				}
 			} );
 		commandHelp( "hashfs", "unmanagedDisk",
 					 "Hash each filesystem of the identified unmanaged disk.  The resulting bodyfile is stored as a managed disk attribute" );
 		
-		// putData, xfer an unmanaged disk to the store
+		// putdisk, xfer an unmanaged disk to the store
 		addCommand( "putdisk", "(.+)", new Lambda() {
 				public void apply( String[] args ) throws Exception {
 					String needle = args[1];
@@ -415,19 +420,90 @@ public class Main extends Shell {
 		}
 	}
 
-	private void putDisk( UnmanagedDisk ud ) throws IOException {
-		if( session == null )
+	private void checkSession() throws IOException {
+		if( session == null ) {
 			session = store.newSession();
+			report( "Session: " + session );
+		}
+	}
+	
+	private void putDisk( UnmanagedDisk ud ) throws IOException {
+		checkSession();
+		Collection<ManagedDiskDescriptor> existing = store.enumerate();
+		if( verbose )
+			System.out.println( "Stored data: " + existing );
+
+		List<ManagedDiskDescriptor> matching =
+			new ArrayList<ManagedDiskDescriptor>();
+		for( ManagedDiskDescriptor mdd : existing ) {
+			if( mdd.getDiskID().equals( ud.getID() ) ) {
+				matching.add( mdd );
+			}
+		}
+		Collections.sort( matching, ManagedDiskDescriptor.DEFAULTCOMPARATOR );
+		System.out.println( "Matching data: " + matching );
+
+		List<byte[]> digest = null;
+		UUID uuid = null;
+		if( !matching.isEmpty() ) {
+			ManagedDiskDescriptor recent = matching.get( matching.size()-1 );
+			log.info( "Retrieving uuid for: "+ recent );
+			uuid = store.uuid( recent );
+			System.out.println( "UUID: " + uuid );
+			log.info( "Retrieving digest for: "+ recent );
+			digest = store.digest( recent );
+			if( digest != null )
+				System.out.println( "Digest: " + digest.size() );
+			
+		}
+		checkSession();
+		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
+															   session );
+		System.out.println( "Storing: " + ud.getSource() +
+							" (" + ud.size() + " bytes) to " + mdd );
+		ManagedDisk md = null;
 		boolean useFlatDisk = ud.size() < 1024L * 1024 * 1024;
+		if( useFlatDisk ) {
+			md = new FlatDisk( ud, session );
+		} else {
+			if( uuid != null )
+				md = new StreamOptimizedDisk( ud, session, uuid );
+			else
+				md = new StreamOptimizedDisk( ud, session );
+			md.setCompression( ManagedDisk.Compressions.SNAPPY );
+		}
+
+		if( digest != null )
+			md.setParentDigest( digest );
 		
+		if( !isInteractive() ) {
+			store.put( md );
+		} else {
+			final long sz = ud.size();
+			ProgressMonitor.Callback cb = new ProgressMonitor.Callback() {
+					@Override
+					public void update( long in, long out, long elapsed ) {
+						double pc = in / (double)sz * 100;
+						System.out.print( (int)pc + "% " );
+						System.out.flush();
+						if( in == sz ) {
+							System.out.println();
+							System.out.printf( "Unmanaged size: %12d\n",
+											   sz );
+							System.out.printf( "Managed   size: %12d\n", out );
+							System.out.println( "Elapsed: " + elapsed );
+						}
+					}
+				};
+			store.put( md, cb, 5 );
+		}
+		store.setAttribute( mdd, "path", ud.getSource().getPath().getBytes() );
 	}
 
 	private void hashVolumeSystem( UnmanagedDisk ud ) throws IOException {
-		if( session == null )
-			session = store.newSession();
+		checkSession();
 		if( ud instanceof VirtualDisk ) {
 			hashVolumeSystemVirtual( (VirtualDisk)ud );
-			return;
 		} else {
 			hashVolumeSystemNonVirtual( ud );
 		}
@@ -462,10 +538,6 @@ public class Main extends Shell {
 		checkVMFS();
 		VirtualMachine vm = ud.getVM();
 		vmfs.add( vm );
-		try {
-			Thread.sleep( 1000 * 20 );
-		} catch( Exception e ) {
-		}
 		edu.uw.apl.vmvols.model.VirtualDisk vmDisk = ud.getDelegate();
 		File f = vmfs.pathTo( vmDisk );
 		Image i = new Image( f );
@@ -514,44 +586,83 @@ public class Main extends Shell {
 		}
 	}
 	
-	private void hashfs( UnmanagedDisk ud ) throws IOException {
-		if( session == null )
-			session = store.newSession();
+	private void hashFileSystems( UnmanagedDisk ud ) throws IOException {
+		checkSession();
 		if( ud instanceof VirtualDisk ) {
-			System.err.println( "TODO. hashfs(VD)" );
-			return;
+			hashFileSystemsVirtual( (VirtualDisk)ud );
 		} else {
-			hashfsNonVirtual( ud );
+			hashFileSystemsNonVirtual( ud );
 		}
 	}
 
-	private void hashfsNonVirtual( UnmanagedDisk ud ) throws IOException {
+	private void hashFileSystemsVirtual( VirtualDisk ud ) throws IOException {
+		checkVMFS();
+		VirtualMachine vm = ud.getVM();
+		if( !vmNames.contains( vm.getName() ) ) {
+			vmfs.add( vm );
+			vmNames.add( vm.getName() );
+		}
+		edu.uw.apl.vmvols.model.VirtualDisk vmDisk = ud.getDelegate();
+		File f = vmfs.pathTo( vmDisk );
+		Image i = new Image( f );
+		try {
+			hashFileSystemsImpl( i, ud );
+		} finally {
+			// MUST release i else leaves vmfs non-unmountable
+			i.close();
+		}
+	}
+
+	private void hashFileSystemsNonVirtual( UnmanagedDisk ud ) throws IOException {
 		Image i = new Image( ud.getSource() );
 		try {
-			VolumeSystem vs = null;
-			try {
-				vs = new VolumeSystem( i );
-			} catch( IllegalStateException noVolSys ) {
-				log.warn( noVolSys );
-				return;
-			}
+			hashFileSystemsImpl( i, ud );
+		} finally {
+			// MUST release i else leaves vmfs non-unmountable
+			i.close();
+		}
+	}
+	
+	private void hashFileSystemsImpl( Image i, UnmanagedDisk ud )
+		throws IOException {
+		VolumeSystem vs = null;
+		try {
+			vs = new VolumeSystem( i );
+		} catch( IllegalStateException noVolSys ) {
+			log.warn( noVolSys );
+			return;
+		}
+		try {
 			ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
 																   session );
 			List<Partition> ps = vs.getPartitions();
 			for( Partition p : ps ) {
+				log.debug( p.start() + " " + p.length() + " " +
+						   p.description() );
 				if( !p.isAllocated() )
 					continue;
-				FileSystem fs = new FileSystem( i, p.start() );
-				BodyFile bf = BodyFileBuilder.create( fs );
-				fs.close();
+				FileSystem fs = null;
+				try {
+					fs = new FileSystem( i, p.start() );
+				} catch( IllegalStateException lvmPerhaps ) {
+					log.warn( lvmPerhaps );
+					continue;
+				}
+				BodyFile bf = null;
+				try {
+					bf = BodyFileBuilder.create( fs );
+				} finally {
+					fs.close();
+				}
 				StringWriter sw = new StringWriter();
+				BodyFileCodec.format( bf, sw );
 				String s = sw.toString();
 				String key = "hashfs-" + p.start() + "-" + p.length();
 				byte[] value = s.getBytes();
 				store.setAttribute( mdd, key, value );
 			}
 		} finally {
-			i.close();
+			vs.close();
 		}
 	}
 	
@@ -564,6 +675,7 @@ public class Main extends Shell {
 	static boolean verbose, debug;
 	Session session;
 	VirtualMachineFileSystem vmfs;
+	Set<String> vmNames;
 	
 	static public final String[] PHYSICALDISKNAMES = {
 		// Linux/Unix...

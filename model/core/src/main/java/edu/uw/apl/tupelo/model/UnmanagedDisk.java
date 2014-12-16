@@ -29,7 +29,7 @@ public interface UnmanagedDisk {
 
 	public InputStream getInputStream() throws IOException;
 
-	// for debug, let use see the source file
+	// for debug, let user see the source file
 	public File getSource();
 }
 

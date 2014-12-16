@@ -79,9 +79,11 @@ public class Digest extends Base {
 
 	public void readArgs( String[] args ) {
 		Options os = commonOptions();
+		os.addOption( "a", false,
+					  "Digest all managed disks (those done not re-computed)" );
 		os.addOption( "v", false, "Verbose" );
 
-		String usage = commonUsage() + " [-v] diskID sessionID";
+		String usage = commonUsage() + " [-a] [-f] [-v] (diskID sessionID)?";
 		final String HEADER = "";
 		final String FOOTER = "";
 		CommandLineParser clp = new PosixParser();
@@ -94,7 +96,10 @@ public class Digest extends Base {
 		}
 		commonParse( os, cl, usage, HEADER, FOOTER );
 
+		all = cl.hasOption( "a" );
 		verbose = cl.hasOption( "v" );
+		if( all )
+			return;
 		args = cl.getArgs();
 		if( args.length < 2 ) {
 			printUsage( os, usage, HEADER, FOOTER );
@@ -114,16 +119,27 @@ public class Digest extends Base {
 		if( debug )
 			System.out.println( "Store type: " + store );
 
-		ManagedDiskDescriptor mdd = locateDescriptor( store, diskID, sessionID );
-		if( mdd == null ) {
-			System.err.println( "Not stored: " + diskID + "," + sessionID );
-			System.exit(1);
+		if( all ) {
+			Collection<ManagedDiskDescriptor> mdds = store.enumerate();
+			for( ManagedDiskDescriptor mdd : mdds ) {
+				long sz = store.size( mdd );
+				System.out.println( "Digesting: " + mdd +
+									" (" + sz + ") bytes" );
+				store.computeDigest( mdd );
+			}
+		} else {
+			ManagedDiskDescriptor mdd = locateDescriptor( store,
+														  diskID, sessionID );
+			if( mdd == null ) {
+				System.err.println( "Not stored: " + diskID + "," + sessionID );
+				System.exit(1);
+			}
+			store.computeDigest( mdd );
 		}
-
-		store.computeDigest( mdd );
 	}
 
-	
+
+	boolean all;
 	String diskID, sessionID;
 	static boolean verbose;
 }
