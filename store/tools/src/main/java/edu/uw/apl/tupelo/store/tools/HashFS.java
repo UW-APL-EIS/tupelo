@@ -3,7 +3,7 @@ package edu.uw.apl.tupelo.store.tools;
 import java.io.File;
 import java.io.BufferedWriter;
 import java.io.PrintWriter;
-import java.io.FileWriter;
+import java.io.StringWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.DigestInputStream;
@@ -79,6 +79,8 @@ public class HashFS extends Base {
 
 	public void readArgs( String[] args ) {
 		Options os = commonOptions();
+		os.addOption( "a", false,
+					  "Hash all managed disks (those done not re-computed)" );
 		os.addOption( "v", false, "Verbose" );
 
 		String usage = commonUsage() + " [-v] diskID sessionID";
@@ -94,7 +96,10 @@ public class HashFS extends Base {
 		}
 		commonParse( os, cl, usage, HEADER, FOOTER );
 
+		all = cl.hasOption( "a" );
 		verbose = cl.hasOption( "v" );
+		if( all )
+			return;
 		args = cl.getArgs();
 		if( args.length < 2 ) {
 			printUsage( os, usage, HEADER, FOOTER );
@@ -111,20 +116,10 @@ public class HashFS extends Base {
 			throw new IllegalStateException
 				( "Not a directory: " + storeLocation );
 		}
-		FilesystemStore store = new FilesystemStore( dir );
+		store = new FilesystemStore( dir );
 		if( debug )
 			System.out.println( "Store type: " + store );
 
-		Collection<ManagedDiskDescriptor> stored = store.enumerate();
-		System.out.println( "Stored: " + stored );
-
-		ManagedDiskDescriptor mdd = locateDescriptor( store, diskID,
-													  sessionID );
-		if( mdd == null ) {
-			System.err.println( "Not stored: " + diskID + "," + sessionID );
-			System.exit(1);
-		}
-			
 		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( store );
 		
 		final File mountPoint = new File( "test-mount" );
@@ -148,30 +143,48 @@ public class HashFS extends Base {
 		// LOOK: wait for the fuse mount to finish.  Grr hate arbitrary sleeps!
 		Thread.sleep( 1000 * 2 );
 
-		File f = mdfs.pathTo( mdd );
-		System.out.println( "Located Managed Data: " + f );
-		Image i = new Image( f );
-
-		System.out.println( "Trying volume system on " + f );
-		try {
-			boolean b = walkVolumeSystem( i );
-			if( !b ) {
-				System.out.println( "Trying file system on " + f );
-				walkFileSystem( i );
+		if( all ) {
+			Collection<ManagedDiskDescriptor> mdds = store.enumerate();
+			for( ManagedDiskDescriptor mdd : mdds ) {
+				File f = mdfs.pathTo( mdd );
+				hashFileSystems( f, mdd );
 			}
-		} finally {
-			// MUST release i else leaves mdfs non-unmountable
-			i.close();
+		} else {
+			ManagedDiskDescriptor mdd = locateDescriptor( store,
+														  diskID, sessionID );
+			if( mdd == null ) {
+				System.err.println( "Not stored: " + diskID + "," + sessionID );
+				System.exit(1);
+			}
+			File f = mdfs.pathTo( mdd );
+			hashFileSystems( f, mdd );
 		}
 	}
 	
+	private void hashFileSystems( File f, ManagedDiskDescriptor mdd )
+		throws Exception {
+
+		System.out.println( "Hashing " + mdd );
+		Image i = new Image( f );
+		try {
+			System.out.println( "Trying volume system on " + f );
+			boolean b = walkVolumeSystem( i, mdd );
+			if( !b ) {
+				System.out.println( "Trying file system on " + f );
+				walkFileSystem( i, mdd );
+			}
+		} finally {
+			i.close();
+		}
+	}
 
 	/**
 	 * @return true if a volume system found (and thus traversed), false
 	 * otherwise.  False result lets us try the image as a standalone
 	 * filesystem
 	 */
-	private boolean walkVolumeSystem( Image i ) throws Exception {
+	private boolean walkVolumeSystem( Image i, ManagedDiskDescriptor mdd )
+		throws Exception {
 
 		VolumeSystem vs = null;
 		try {
@@ -188,11 +201,16 @@ public class HashFS extends Base {
 				System.out.println( "At sector " + p.start() +
 									", located " + p.description() );
 				Map<String,byte[]> fileHashes = new HashMap<String,byte[]>();
-				FileSystem fs = new FileSystem( i, p.start() );
-				walk( fs, fileHashes );
-				fs.close();
-				System.out.println( " FileHashes : " + fileHashes.size() );
-				record( fileHashes, p.start(), p.length() );
+				FileSystem fs = null;
+				try {
+					fs = new FileSystem( i, p.start() );
+					walk( fs, fileHashes );
+					fs.close();
+					System.out.println( " FileHashes : " + fileHashes.size() );
+					record( fileHashes, p.start(), p.length(), mdd );
+				} catch( IllegalStateException noFilesystem ) {
+					continue;
+				}
 			}
 		} finally {
 			// MUST release vs else leaves mdfs non-unmountable
@@ -201,14 +219,16 @@ public class HashFS extends Base {
 		return true;
 	}
 
-	private void walkFileSystem( Image i ) throws Exception {
+	private void walkFileSystem( Image i, ManagedDiskDescriptor mdd )
+		throws Exception {
+
 		Map<String,byte[]> fileHashes = new HashMap<String,byte[]>();
 		FileSystem fs = new FileSystem( i );
 		try {
 			walk( fs, fileHashes );
 			System.out.println( "FileHashes: " + fileHashes.size() );
 			// signify a standalone file system via a 0,0 sector interval
-			record( fileHashes, 0, 0 );
+			record( fileHashes, 0, 0, mdd );
 		} finally {
 			fs.close();
 		}
@@ -279,27 +299,29 @@ public class HashFS extends Base {
 	}
 	
 	private void record( Map<String,byte[]> fileHashes,
-						 long start, long length )
+						 long start, long length, ManagedDiskDescriptor mdd )
 		throws Exception {
 
 		List<String> sorted = new ArrayList<String>( fileHashes.keySet() );
 		Collections.sort( sorted );
-		String outName = diskID + "-" + sessionID + "-" +
-			start + "-" + length + ".md5";
-		System.out.println( "Writing: " + outName );
+
+		String key = "filehashes-" + start + "-" + length + ".txt";
 		
-		FileWriter fw = new FileWriter( outName );
-		BufferedWriter bw = new BufferedWriter( fw, 1024 * 1024 );
-		PrintWriter pw = new PrintWriter( bw );
+		StringWriter sw = new StringWriter();
+		PrintWriter pw = new PrintWriter( sw );
 		for( String fName : sorted ) {
 			byte[] hash = fileHashes.get( fName );
 			String s = new String( Hex.encodeHex( hash ) );
 			pw.println( s + " " + fName );
 		}
 		pw.close();
+		String value = sw.toString();
+		store.setAttribute( mdd, key, value.getBytes() );
 	}
 	
 
+	FilesystemStore store;
+	boolean all;
 	String diskID, sessionID;
 	static boolean verbose;
 

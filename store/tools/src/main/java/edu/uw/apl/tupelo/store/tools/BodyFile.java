@@ -32,8 +32,8 @@ import edu.uw.apl.commons.sleuthkit.image.Image;
 import edu.uw.apl.commons.sleuthkit.filesys.FileSystem;
 import edu.uw.apl.commons.sleuthkit.volsys.Partition;
 import edu.uw.apl.commons.sleuthkit.volsys.VolumeSystem;
-import edu.uw.apl.commons.sleuthkit.bodyfiles.BodyFileBuilder;
-import edu.uw.apl.commons.sleuthkit.bodyfiles.BodyFileCodec;
+import edu.uw.apl.commons.sleuthkit.digests.BodyFileBuilder;
+import edu.uw.apl.commons.sleuthkit.digests.BodyFileCodec;
 
 /**
  * Note: This program makes use of fuse4j/fuse and so has an impact on
@@ -73,7 +73,7 @@ public class BodyFile extends Base {
 	public void readArgs( String[] args ) {
 		Options os = commonOptions();
 		os.addOption( "a", false,
-					  "Store bodyfile result as managedDisk attribute" );
+					  "Hash all managed disks (those done not re-computed)" );
 		os.addOption( "v", false, "Verbose" );
 
 		String usage = commonUsage() + " [-v] diskID sessionID";
@@ -88,8 +88,10 @@ public class BodyFile extends Base {
 			System.exit(1);
 		}
 		commonParse( os, cl, usage, HEADER, FOOTER );
-		addAttribute = cl.hasOption( "a" );
+		all = cl.hasOption( "a" );
 		verbose = cl.hasOption( "v" );
+		if( all )
+			return;
 		args = cl.getArgs();
 		if( args.length < 2 ) {
 			printUsage( os, usage, HEADER, FOOTER );
@@ -105,16 +107,9 @@ public class BodyFile extends Base {
 			throw new IllegalStateException
 				( "Not a directory: " + storeLocation );
 		}
-		FilesystemStore store = new FilesystemStore( dir );
+		store = new FilesystemStore( dir );
 		if( debug )
 			System.out.println( "Store type: " + store );
-
-		ManagedDiskDescriptor mdd = locateDescriptor( store,
-													  diskID, sessionID );
-		if( mdd == null ) {
-			System.err.println( "Not stored: " + diskID + "," + sessionID );
-			System.exit(1);
-		}
 
 		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( store );
 		
@@ -141,11 +136,36 @@ public class BodyFile extends Base {
 		// LOOK: wait for the fuse mount to finish.  Grr hate arbitrary sleeps!
 		Thread.sleep( 1000 * 2 );
 		
-		File f = mdfs.pathTo( mdd );
-		System.out.println( "Located Managed Data: " + f );
+		if( all ) {
+			Collection<ManagedDiskDescriptor> mdds = store.enumerate();
+			for( ManagedDiskDescriptor mdd : mdds ) {
+				File f = mdfs.pathTo( mdd );
+				bodyFiles( f, mdd );
+			}
+		} else {
+			ManagedDiskDescriptor mdd = locateDescriptor( store,
+														  diskID, sessionID );
+			if( mdd == null ) {
+				System.err.println( "Not stored: " + diskID + "," +
+									sessionID );
+				System.exit(1);
+			}
+			File f = mdfs.pathTo( mdd );
+			bodyFiles( f, mdd );
+		}
+	}
+
+	private void bodyFiles( File f, ManagedDiskDescriptor mdd )
+		throws Exception {
 		Image i = new Image( f );
 		try {
-			VolumeSystem vs = new VolumeSystem( i );
+			VolumeSystem vs = null;
+			try {
+				vs = new VolumeSystem( i );
+			} catch( IllegalStateException noVolSys ) {
+				log.warn( noVolSys );
+				return;
+			}
 			try {
 				List<Partition> ps = vs.getPartitions();
 				for( Partition p : ps ) {
@@ -158,17 +178,15 @@ public class BodyFile extends Base {
 								  p.length() + " " +
 								  p.description() );
 						fs = new FileSystem( i, p.start() );
-						edu.uw.apl.commons.sleuthkit.bodyfiles.BodyFile bf =
+						edu.uw.apl.commons.sleuthkit.digests.BodyFile bf =
 							BodyFileBuilder.create( fs );
-						if( addAttribute ) {
-							StringWriter sw = new StringWriter();
-							BodyFileCodec.format( bf, sw );
-							String value = sw.toString();
-							String key = "bodyfile-" +
-								p.start() + "-" + p.length();
-							store.setAttribute( mdd, key, value.getBytes() );
-						}
-						BodyFileCodec.format( bf, System.out );
+						StringWriter sw = new StringWriter();
+						BodyFileCodec.format( bf, sw );
+						String value = sw.toString();
+						String key = "bodyfile-" +
+							p.start() + "-" + p.length();
+						store.setAttribute( mdd, key, value.getBytes() );
+						//						BodyFileCodec.format( bf, System.out );
 						fs.close();
 					} catch( IllegalStateException noFileSystem ) {
 						continue;
@@ -182,13 +200,14 @@ public class BodyFile extends Base {
 			// MUST release i else leaves mdfs non-unmountable
 			i.close();
 		}
-
+		
 	}
 
 	
 	String diskID, sessionID;
 	static boolean verbose;
-	boolean addAttribute;
+	FilesystemStore store;
+	boolean all;
 }
 
 // eof
