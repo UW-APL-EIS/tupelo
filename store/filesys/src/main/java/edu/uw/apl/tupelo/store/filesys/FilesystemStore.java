@@ -31,6 +31,7 @@ import org.apache.commons.io.FileUtils;
 
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.model.ProgressMonitor;
 import edu.uw.apl.tupelo.model.Utils;
@@ -289,7 +290,7 @@ public class FilesystemStore implements Store {
 	 * LOOK: We may/should have this already held as an attribute!
 	 */
 	@Override
-	public List<byte[]> digest( ManagedDiskDescriptor mdd )
+	public ManagedDiskDigest digest( ManagedDiskDescriptor mdd )
 		throws IOException {
 
 		if( !descriptorMap.containsKey( mdd ) ) {
@@ -302,6 +303,7 @@ public class FilesystemStore implements Store {
 			log.warn( "Digest missing: " + mdd );
 			return null;
 		}
+		/*
 		FileInputStream fis = new FileInputStream( f );
 		ObjectInputStream ois = new ObjectInputStream( fis );
 		List<byte[]> result = null;
@@ -311,6 +313,10 @@ public class FilesystemStore implements Store {
 		}
 		ois.close();
 		fis.close();
+		*/
+		FileReader fr = new FileReader( f );
+		ManagedDiskDigest result = ManagedDiskDigest.readFrom( fr );
+		fr.close();
 		return result;
 	}
 
@@ -346,7 +352,8 @@ public class FilesystemStore implements Store {
 		byte[] grain = new byte[(int)md.grainSizeBytes()];
 		InputStream is = md.getInputStream();
 		//		DigestInputStream dis = new DigestInputStream( is, sha1 );
-		List<byte[]> digest = new ArrayList<byte[]>( grainCount );
+		//		List<byte[]> digest = new ArrayList<byte[]>( grainCount );
+		ManagedDiskDigest digest = new ManagedDiskDigest();
 		for( int g = 1; g <= grainCount; g++ ) {
 			//	int nin = dis.read( grain );
 			int nin = is.read( grain );
@@ -369,13 +376,16 @@ public class FilesystemStore implements Store {
 		//		dis.close();
 		is.close();
 
-		System.out.println( "Done hash" );
 
-		FileOutputStream fos = new FileOutputStream( digestFile );
+		/*		FileOutputStream fos = new FileOutputStream( digestFile );
 		ObjectOutputStream oos = new ObjectOutputStream( fos );
 		oos.writeObject( digest );
 		oos.close();
 		fos.close();
+		*/
+		FileWriter fw = new FileWriter( digestFile );
+		digest.writeTo( fw );
+		fw.close();
 	}
 	
 	// for the benefit of the fuse-based ManagedDiskFileSystem
@@ -590,7 +600,7 @@ public class FilesystemStore implements Store {
 	}
 
 	static String digestFileName( ManagedDiskDescriptor mdd ) {
-		return asFileBase( mdd ) + ".sha1";
+		return asFileBase( mdd ) + "." + ManagedDisk.DIGESTALGORITHM;
 	}
 
 	static String asFileBase( ManagedDiskDescriptor mdd ) {

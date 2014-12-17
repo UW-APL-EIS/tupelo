@@ -56,7 +56,7 @@ public class FlatDisk extends ManagedDisk {
 	}
 
 	@Override
-	public void setParentDigest( List<byte[]> grainHashes ) {
+	public void setParentDigest( ManagedDiskDigest grainHashes ) {
 	}
 
 	@Override

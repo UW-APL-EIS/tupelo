@@ -67,7 +67,7 @@ abstract public class ManagedDisk {
 		header.compressAlgorithm = c;
 	}
 
-	abstract public void setParentDigest( List<byte[]> grainHashes );
+	abstract public void setParentDigest( ManagedDiskDigest grainHashes );
 
 	abstract public void setParent( ManagedDisk md );
 
@@ -137,6 +137,10 @@ abstract public class ManagedDisk {
 		header = h;
 	}
 
+	public String paramString() {
+		return "TODO";
+	}
+	
 	public ManagedDiskDescriptor getDescriptor() {
 		// LOOK: create once ?
 		return new ManagedDiskDescriptor( header.diskID, header.session );

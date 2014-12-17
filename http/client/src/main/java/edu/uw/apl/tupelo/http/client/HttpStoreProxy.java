@@ -3,6 +3,7 @@ package edu.uw.apl.tupelo.http.client;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -42,6 +43,7 @@ import org.apache.commons.logging.LogFactory;
 
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.model.ProgressMonitor;
 import edu.uw.apl.tupelo.store.Store;
@@ -256,11 +258,12 @@ public class HttpStoreProxy implements Store {
 	
 
 	@Override
-	public List<byte[]> digest( ManagedDiskDescriptor mdd )
+	public ManagedDiskDigest digest( ManagedDiskDescriptor mdd )
 		throws IOException {
 		HttpGet g = new HttpGet( server + "disks/data/digest/" + mdd.getDiskID() +
 								 "/" + mdd.getSession() );
-		g.addHeader( "Accept", "application/x-java-serialized-object" );
+		//		g.addHeader( "Accept", "application/x-java-serialized-object" );
+		g.addHeader( "Accept", "text/plain" );
 	
 		log.debug( g.getRequestLine() );
 		
@@ -268,7 +271,8 @@ public class HttpStoreProxy implements Store {
 		HttpResponse res = req.execute( g );
 		HttpEntity he = res.getEntity();
 		InputStream is = he.getContent();
-		ObjectInputStream ois = new ObjectInputStream( is );
+		/*
+		  ObjectInputStream ois = new ObjectInputStream( is );
 		try {
 			List<byte[]>result = (List<byte[]>)ois.readObject();
 			return result;
@@ -277,6 +281,11 @@ public class HttpStoreProxy implements Store {
 		} finally {
 			ois.close();
 		}
+		*/
+		InputStreamReader isr = new InputStreamReader( is );
+		ManagedDiskDigest result = ManagedDiskDigest.readFrom( isr );
+		isr.close();
+		return result;
 	}
 
 		

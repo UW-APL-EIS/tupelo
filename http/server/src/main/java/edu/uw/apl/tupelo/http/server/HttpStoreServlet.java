@@ -335,7 +335,7 @@ public class HttpStoreServlet extends HttpServlet {
 		// LOOK: check the content type...
 		String hdr = req.getHeader( "Content-Encoding" );
 
-		List<byte[]> digest = store.digest( mdd );
+		Object digest = store.digest( mdd );
 		
 		
 		if( false ) {

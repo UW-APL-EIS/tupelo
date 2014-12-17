@@ -13,6 +13,7 @@ import org.apache.commons.io.IOUtils;
 
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.SeekableInputStream;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.Store;
@@ -131,7 +132,7 @@ public class HttpManagedDisk extends ManagedDisk {
 	  never be creating an HttpManagedDisk
 	*/
 	@Override
-	public void setParentDigest( List<byte[]> hashes ) {
+	public void setParentDigest( ManagedDiskDigest grainHashes ) {
 		throw new UnsupportedOperationException( "setParentDigest" );
 	}
 

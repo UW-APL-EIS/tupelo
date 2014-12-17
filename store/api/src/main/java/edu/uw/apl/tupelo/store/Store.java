@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.ProgressMonitor;
 import edu.uw.apl.tupelo.model.Session;
 
@@ -32,7 +33,7 @@ public interface Store {
 
 	public UUID uuid( ManagedDiskDescriptor mdd ) throws IOException;
 
-	public List<byte[]> digest( ManagedDiskDescriptor mdd )
+	public ManagedDiskDigest digest( ManagedDiskDescriptor mdd )
 		throws IOException;
 	
 	public Collection<String> listAttributes( ManagedDiskDescriptor mdd )

@@ -36,6 +36,7 @@ import com.google.gson.JsonPrimitive;
 
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.Store;
 
@@ -301,11 +302,11 @@ public class DataServlet extends HttpServlet {
 		// LOOK: check the content type...
 		String hdr = req.getHeader( "Content-Encoding" );
 
-		List<byte[]> digest = store.digest( mdd );
+		ManagedDiskDigest digest = store.digest( mdd );
 		
 		
 		if( false ) {
-		} else if( Utils.acceptsJavaObjects( req ) ) {
+		} else if( false && Utils.acceptsJavaObjects( req ) ) {
 			res.setContentType( "application/x-java-serialized-object" );
 			OutputStream os = res.getOutputStream();
 			ObjectOutputStream oos = new ObjectOutputStream( os );
@@ -318,7 +319,8 @@ public class DataServlet extends HttpServlet {
 		} else {
 			res.setContentType( "text/plain" );
 			PrintWriter pw = res.getWriter();
-			pw.println( "TODO: Store.digest text/plain" );
+			digest.writeTo( pw );
+			//			pw.println( "TODO: Store.digest text/plain" );
 		}
 
 	}

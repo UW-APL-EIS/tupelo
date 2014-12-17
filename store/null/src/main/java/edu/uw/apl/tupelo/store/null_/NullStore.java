@@ -14,6 +14,7 @@ import org.apache.commons.io.output.NullOutputStream;
 import edu.uw.apl.tupelo.model.Constants;
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.model.ProgressMonitor;
 import edu.uw.apl.tupelo.store.Store;
@@ -91,11 +92,11 @@ public class NullStore implements Store {
 	}
 
 	@Override
-	public List<byte[]> digest( ManagedDiskDescriptor mdd )
+	public ManagedDiskDigest digest( ManagedDiskDescriptor mdd )
 		throws IOException {
 
 		// LOOK: should this be null ???
-		return Collections.emptyList();
+		return null;
 	}
 	
 	@Override

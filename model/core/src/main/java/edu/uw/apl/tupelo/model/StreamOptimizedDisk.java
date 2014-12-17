@@ -371,6 +371,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 									   - grainWrite );
 					dos.write( padding, 0, padLen );
 					log.debug( "Padding: " + padLen );
+					digestIndex++;
 					gtIndex++;
 					lba += header.grainSize;
 					written += (grainWrite + padLen);
@@ -411,7 +412,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 				grainDirectory[gdIndex] = gtOffset;
 				gdIndex++;
 				/*
-				  For full grain tables, no padding needing since the
+				  For full grain tables, no padding needed since the
 				  managed data file still sector aligned (the
 				  metadatamarker AND the grain table data both sector
 				  multiples)
@@ -419,6 +420,8 @@ public class StreamOptimizedDisk extends ManagedDisk {
 			}
 		}
 
+		// LOOK: we are not using any parentDigest for any remainder ??
+		
 		int unmanagedRemaining =
 			(int)(unmanagedData.size() -
 				  (wholeGrainTables * grainTableCoverageBytes));
@@ -457,6 +460,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 					}
 				}
 				if( allZeros ) {
+					zeroGTEs++;
 					log.debug( "Zero GT at " + gdIndex + " " + gtIndex );
 					grainTable[gtIndex] = 0;
 					gtIndex++;
@@ -688,6 +692,34 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		raf.close();
 	}
 
+	@Override
+	public String paramString() {
+		try {
+			readMetaData();
+		} catch( IOException ioe ) {
+			// LOOK:
+			return "";
+		}
+		int zeroGDEs = 0;
+		int zeroGTEs = 0;
+		int parentGTEs = 0;
+		
+		for( long[] gt : grainDirectory ) {
+			if( gt == ZEROGDE ) {
+				zeroGDEs++;
+				continue;
+			}
+			for( long gte : gt ) {
+				if( gte == 0 )
+					zeroGTEs++;
+				else if( gte == -1 )
+					parentGTEs++;
+			}
+		}
+		return "ZeroGDEs: " + zeroGDEs + ", zeroGTEs: " + zeroGTEs +
+			", parentGTEs: " + parentGTEs;
+	}
+	
 	public void reportMetaData() throws IOException {
 		readMetaData();
 		for( int i = 0; i < grainDirectory.length; i++ ) {
@@ -707,7 +739,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	
 			
 	@Override
-	public void setParentDigest( List<byte[]> grainHashes ) {
+	public void setParentDigest( ManagedDiskDigest grainHashes ) {
 		parentDigest = grainHashes;
 	}
 	
@@ -940,6 +972,8 @@ public class StreamOptimizedDisk extends ManagedDisk {
 								   fromGrainTable );
 					total += fromGrainTable;
 					posn += fromGrainTable;
+					if( parentStream != null )
+						parentStream.skip( fromGrainTable );
 				} else if( gt == PARENTGDE ) {
 					throw new IllegalStateException( "PARENTGDE!" );
 				} else {
@@ -1154,7 +1188,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		static final int TYPE_FOOTER = 3;
 	}
 
-	private List<byte[]> parentDigest;
+	private ManagedDiskDigest parentDigest;
 	
 	private ManagedDisk parent;
 	private long grainSizeBytes, grainTableCoverageBytes;

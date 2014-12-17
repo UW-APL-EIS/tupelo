@@ -29,14 +29,9 @@ import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
 
 import edu.uw.apl.commons.sleuthkit.image.Image;
-import edu.uw.apl.commons.sleuthkit.filesys.Attribute;
-import edu.uw.apl.commons.sleuthkit.filesys.Meta;
-import edu.uw.apl.commons.sleuthkit.filesys.FileSystem;
-import edu.uw.apl.commons.sleuthkit.filesys.DirectoryWalk;
-import edu.uw.apl.commons.sleuthkit.filesys.Walk;
-import edu.uw.apl.commons.sleuthkit.filesys.WalkFile;
-import edu.uw.apl.commons.sleuthkit.volsys.Partition;
 import edu.uw.apl.commons.sleuthkit.volsys.VolumeSystem;
+import edu.uw.apl.commons.sleuthkit.digests.VolumeSystemHash;
+import edu.uw.apl.commons.sleuthkit.digests.VolumeSystemHashCodec;
 
 /**
  * Simple Tupelo Utility: Walk some previously added ManagedDisk,
@@ -89,7 +84,7 @@ public class HashVS extends Base {
 	public void readArgs( String[] args ) {
 		Options os = commonOptions();
 		os.addOption( "a", false,
-					  "Store hash result as managedDisk attribute" );
+					  "Hash all managed disks (those done not re-computed)" );
 		os.addOption( "v", false, "Verbose" );
 
 		String usage = commonUsage() + " [-v] diskID sessionID";
@@ -105,8 +100,10 @@ public class HashVS extends Base {
 		}
 		commonParse( os, cl, usage, HEADER, FOOTER );
 
-		addAttribute = cl.hasOption( "a" );
+		all = cl.hasOption( "a" );
 		verbose = cl.hasOption( "v" );
+		if( all )
+			return;
 		args = cl.getArgs();
 		if( args.length < 2 ) {
 			printUsage( os, usage, HEADER, FOOTER );
@@ -122,19 +119,10 @@ public class HashVS extends Base {
 			throw new IllegalStateException
 				( "Not a directory: " + storeLocation );
 		}
-		FilesystemStore store = new FilesystemStore( dir );
+		store = new FilesystemStore( dir );
 		if( debug )
 			System.out.println( "Store type: " + store );
 
-		Collection<ManagedDiskDescriptor> stored = store.enumerate();
-		System.out.println( "Stored: " + stored );
-
-		ManagedDiskDescriptor mdd = locateDescriptor( store, diskID, sessionID );
-		if( mdd == null ) {
-			System.err.println( "Not stored: " + diskID + "," + sessionID );
-			System.exit(1);
-		}
-			
 		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( store );
 		
 		final File mountPoint = new File( "test-mount" );
@@ -158,69 +146,63 @@ public class HashVS extends Base {
 		// LOOK: wait for the fuse mount to finish.  Grr hate arbitrary sleeps!
 		Thread.sleep( 1000 * 2 );
 
-		File f = mdfs.pathTo( mdd );
-		System.out.println( "Located Managed Data: " + f );
+		if( all ) {
+			Collection<ManagedDiskDescriptor> mdds = store.enumerate();
+			for( ManagedDiskDescriptor mdd : mdds ) {
+				File f = mdfs.pathTo( mdd );
+				hashVolumeSystem( f, mdd );
+			}
+		} else {
+			ManagedDiskDescriptor mdd = locateDescriptor( store,
+														  diskID, sessionID );
+			if( mdd == null ) {
+				System.err.println( "Not stored: " + diskID + "," + sessionID );
+				System.exit(1);
+			}
+			File f = mdfs.pathTo( mdd );
+			hashVolumeSystem( f, mdd );
+		}
+	}
+
+
+	private void hashVolumeSystem( File f, ManagedDiskDescriptor mdd )
+		throws IOException {
+
+		System.out.println( "Hashing " + mdd );
+		String key = "hashvs";
+		byte[] value = store.getAttribute( mdd, key );
+		if( value != null )
+			return;
+		
 		Image i = new Image( f );
 		try {
-			VolumeSystem vs = new VolumeSystem( i );
+			VolumeSystem vs = null;
 			try {
+				vs = new VolumeSystem( i );
+			} catch( IllegalStateException noVolSys ) {
+				log.warn( noVolSys );
+				return;
+			}
+			try {
+				VolumeSystemHash vsh = VolumeSystemHash.create( vs );
 				StringWriter sw = new StringWriter();
-				PrintWriter pw = new PrintWriter( sw );
-				List<Partition> ps = vs.getPartitions();
-				for( Partition p : ps ) {
-					log.info( "" + p.start() + " to " + p.length() +
-							  " = " + p.description() );
-					pw.print( p.start() + "|" + p.length() +
-							  "|" + p.description() );
-					if( p.isAllocated() ) {
-						pw.println();
-						continue;
-					}
-					byte[] hash = digest( p );
-					String hashHex = new String( Hex.encodeHex( hash ) );
-					pw.println( "|" + hashHex );
-
-				}
-				if( addAttribute ) {
-					String value = sw.toString();
-					String key = "hashvolsys";
-					store.setAttribute( mdd, key, value.getBytes() );
-				}
+				VolumeSystemHashCodec.writeTo( vsh, sw );
+				String s = sw.toString();
+				value = s.getBytes();
+				store.setAttribute( mdd, key, value );
 			} finally {
-				// MUST release vs else leaves mdfs non-unmountable
 				vs.close();
 			}
 		} finally {
-			// MUST release i else leaves mdfs non-unmountable
 			i.close();
 		}
 	}
 
-	private byte[] digest( Partition p ) throws IOException {
-		MD.reset();
-		try( InputStream is = p.getInputStream() ) {
-				DigestInputStream dis = new DigestInputStream( is, MD );
-				while( true ) {
-					int nin = dis.read( DIGESTBUFFER );
-					if( nin < 0 )
-						break;
-				}
-			}
-		return MD.digest();
-	}
-
+	FilesystemStore store;
+	boolean all;
 	String diskID, sessionID;
 	static boolean verbose;
-	boolean addAttribute;
 
-	static byte[] DIGESTBUFFER = new byte[ 1024*1024 ];
-	static MessageDigest MD = null;
-	static {
-		try {
-			MD = MessageDigest.getInstance( "sha1" );
-		} catch( NoSuchAlgorithmException never ) {
-		}
-	}
 }
 
 // eof

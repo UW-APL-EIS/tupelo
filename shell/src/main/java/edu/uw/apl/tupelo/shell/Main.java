@@ -61,6 +61,7 @@ import edu.uw.apl.vmvols.fuse.VirtualMachineFileSystem;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.DiskImage;
 import edu.uw.apl.tupelo.model.FlatDisk;
 import edu.uw.apl.tupelo.model.PhysicalDisk;
@@ -146,10 +147,10 @@ public class Main extends Shell {
 		commandHelp( "space", "Print store's free disk space" );
 
 		/*
-		  hashvs, hash the volume system (unallocated areas) of an identified
+		  vshash, hash the volume system (unallocated areas) of an identified
 		  unmanaged disk
 		*/
-		addCommand( "hashvs", "(.+)", new Lambda() {
+		addCommand( "vshash", "(.+)", new Lambda() {
 				public void apply( String[] args ) throws Exception {
 					String needle = args[1];
 					needle = needle.trim();
@@ -168,14 +169,14 @@ public class Main extends Shell {
 					hashVolumeSystem( ud );
 				}
 			} );
-		commandHelp( "hashvs", "unmanagedDisk",
+		commandHelp( "vshash", "unmanagedDisk",
 					 "Hash each unallocated area of the identified unmanaged disk, storing the result as a managed disk attribute" );
 
 		/*
 		  hashfs, hash any/all filesystems of an identified
 		  unmanaged disk
 		*/
-		addCommand( "hashfs", "(.+)", new Lambda() {
+		addCommand( "fshash", "(.+)", new Lambda() {
 				public void apply( String[] args ) throws Exception {
 					String needle = args[1];
 					needle = needle.trim();
@@ -194,7 +195,7 @@ public class Main extends Shell {
 					hashFileSystems( ud );
 				}
 			} );
-		commandHelp( "hashfs", "unmanagedDisk",
+		commandHelp( "fshash", "unmanagedDisk",
 					 "Hash each filesystem of the identified unmanaged disk.  The resulting bodyfile is stored as a managed disk attribute" );
 		
 		// putdisk, xfer an unmanaged disk to the store
@@ -443,7 +444,7 @@ public class Main extends Shell {
 		Collections.sort( matching, ManagedDiskDescriptor.DEFAULTCOMPARATOR );
 		System.out.println( "Matching data: " + matching );
 
-		List<byte[]> digest = null;
+		ManagedDiskDigest digest = null;
 		UUID uuid = null;
 		if( !matching.isEmpty() ) {
 			ManagedDiskDescriptor recent = matching.get( matching.size()-1 );

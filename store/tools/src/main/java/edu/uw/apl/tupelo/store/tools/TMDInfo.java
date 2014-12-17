@@ -73,6 +73,7 @@ public class TMDInfo {
 		System.out.println( "Size: " + md.size() );
 		System.out.println( "UUID.Create: " + md.getUUIDCreate() );
 		System.out.println( "UUID.Parent: " + md.getUUIDParent() );
+		System.out.println( "Param: " + md.paramString() );
 		ManagedDiskDescriptor mdd = md.getDescriptor();
 		System.out.println( "DiskID: " + mdd.getDiskID() );
 		System.out.println( "Session: " + mdd.getSession().format() );

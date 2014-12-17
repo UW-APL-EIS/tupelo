@@ -124,7 +124,7 @@ public class Digest extends Base {
 			for( ManagedDiskDescriptor mdd : mdds ) {
 				long sz = store.size( mdd );
 				System.out.println( "Digesting: " + mdd +
-									" (" + sz + ") bytes" );
+									" (" + sz + " bytes)" );
 				store.computeDigest( mdd );
 			}
 		} else {
