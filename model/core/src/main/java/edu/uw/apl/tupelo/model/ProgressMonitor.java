@@ -88,12 +88,20 @@ public class ProgressMonitor {
 			};
 		t = new Thread( r );
 		t.start();
-		md.readFromWriteTo( cis, cos );
-		cis.close();
-		cos.close();
 		try {
+			md.readFromWriteTo( cis, cos );
+		} finally {
+			/*
+			  Even if the readFromWriteTo blows up, we need to clean up
+			  especially joining the byte counting thread
+			*/
+			cis.close();
+			cos.close();
+			try {
+			t.interrupt();
 			t.join();
-		} catch( InterruptedException ie ) {
+			} catch( InterruptedException ie ) {
+			}
 		}
 	}
 

@@ -339,11 +339,11 @@ public class StreamOptimizedDisk extends ManagedDisk {
 						md.update( readBuffer, offset, (int)grainSizeBytes );
 						byte[] hash = md.digest();
 						byte[] parent = parentDigest.get( digestIndex );
-						digestIndex++;
 						if( MessageDigest.isEqual( hash, parent ) ) {
 							parentGTEs++;
 							grainTable[gtIndex] = -1;
 							gtIndex++;
+							digestIndex++;
 							lba += header.grainSize;
 							continue;
 						}
