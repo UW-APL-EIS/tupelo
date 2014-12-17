@@ -173,19 +173,24 @@ public class FileHashService {
 	*/
 	private List<String> loadFileHashes( ManagedDiskDescriptor mdd )
 		throws IOException {
-		byte[] ba = store.getAttribute( mdd, "md5" );
-		if( ba == null )
-			return Collections.emptyList();
 		List<String> result = new ArrayList<String>();
-		ByteArrayInputStream bais = new ByteArrayInputStream( ba );
-		InputStreamReader isr = new InputStreamReader( bais );
-		LineNumberReader lnr = new LineNumberReader( isr );
-		String line = null;
-		while( (line = lnr.readLine()) != null ) {
-			line = line.trim();
-			if( line.isEmpty() || line.startsWith( "#" ) )
+		Collection<String> attrNames = store.listAttributes( mdd );
+		for( String attrName : attrNames ) {
+			if( !attrName.startsWith( "filehashes-" ) )
 				continue;
-			result.add( line );
+			byte[] ba = store.getAttribute( mdd, attrName );
+			if( ba == null )
+				continue;
+			ByteArrayInputStream bais = new ByteArrayInputStream( ba );
+			InputStreamReader isr = new InputStreamReader( bais );
+			LineNumberReader lnr = new LineNumberReader( isr );
+			String line = null;
+			while( (line = lnr.readLine()) != null ) {
+				line = line.trim();
+				if( line.isEmpty() || line.startsWith( "#" ) )
+					continue;
+				result.add( line );
+			}
 		}
 		return result;
 	}
