@@ -303,7 +303,11 @@ public class DataServlet extends HttpServlet {
 		String hdr = req.getHeader( "Content-Encoding" );
 
 		ManagedDiskDigest digest = store.digest( mdd );
-		
+		if( digest == null ) {
+			res.sendError( HttpServletResponse.SC_NOT_FOUND,
+						   "Missing digest: " + details );
+			return;
+		}
 		
 		if( false ) {
 		} else if( false && Utils.acceptsJavaObjects( req ) ) {

@@ -26,6 +26,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.StatusLine;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.client.HttpClient;
@@ -269,6 +270,10 @@ public class HttpStoreProxy implements Store {
 		
 		HttpClient req = new DefaultHttpClient( );
 		HttpResponse res = req.execute( g );
+		StatusLine sl = res.getStatusLine();
+		if( sl.getStatusCode() == HttpStatus.SC_NOT_FOUND )
+			return null;
+		
 		HttpEntity he = res.getEntity();
 		InputStream is = he.getContent();
 		/*

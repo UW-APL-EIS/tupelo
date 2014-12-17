@@ -22,6 +22,7 @@ import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.model.Constants;
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.DiskImage;
 import edu.uw.apl.tupelo.model.FlatDisk;
 import edu.uw.apl.tupelo.model.Session;
@@ -127,7 +128,7 @@ public class HttpStoreProxyTest {//extends junit.framework.TestCase {
 		store.put( fd );
 
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( di.getID(), s );
-		List<byte[]> digest = store.digest( mdd );
+		ManagedDiskDigest digest = store.digest( mdd );
 		long grainSizeBytes = ManagedDisk.GRAINSIZE_DEFAULT *
 			Constants.SECTORLENGTH;
 		assertEquals( digest.size(), f.length() / grainSizeBytes );
