@@ -47,7 +47,7 @@ public class VirtualDisk implements UnmanagedDisk {
 						  " disks, specify one." );
 		}
 		delegate = disks.get(0);
-		source = f;
+		source = delegate.getPath();
 	}
 
 	@Override
