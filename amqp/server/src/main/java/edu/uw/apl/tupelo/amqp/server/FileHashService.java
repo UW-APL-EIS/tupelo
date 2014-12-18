@@ -163,6 +163,8 @@ public class FileHashService {
 	}
 
 	public void stop() throws IOException {
+		if( channel == null )
+			return;
 		channel.close();
 	}
 	
