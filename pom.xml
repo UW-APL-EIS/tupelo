@@ -18,6 +18,17 @@
   <name>Tupelo Disk Management - Parent</name>
   <url>http://eis.apl.uw.edu</url>
   
+  <modules>
+    <module>model</module>
+    <module>logging</module>
+    <module>store</module>
+    <module>fuse</module> 
+    <module>http</module>
+    <module>amqp</module>
+    <module>cli</module>
+    <module>shell</module>
+  </modules>
+
   <organization>
     <name>Applied Physics Laboratory, University of Washington</name>
     <url>http://www.apl.uw.edu</url>
@@ -41,15 +52,6 @@
     </developer>
   </developers>
   
-  <modules>
-    <module>model</module>
-    <module>logging</module>
-    <module>store</module>
-    <module>fuse</module> 
-    <module>http</module>
-    <module>amqp</module>
-    <module>cli</module>
-  </modules>
 
   <dependencyManagement>
     <dependencies>
