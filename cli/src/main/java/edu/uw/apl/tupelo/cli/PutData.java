@@ -16,6 +16,7 @@ import edu.uw.apl.tupelo.model.DiskImage;
 import edu.uw.apl.tupelo.model.FlatDisk;
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.model.StreamOptimizedDisk;
 import edu.uw.apl.tupelo.model.UnmanagedDisk;
@@ -137,7 +138,7 @@ public class PutData extends CliBase {
 		Collections.sort( matching, ManagedDiskDescriptor.DEFAULTCOMPARATOR );
 		System.out.println( "Matching data: " + matching );
 		
-		List<byte[]> digest = null;
+		ManagedDiskDigest digest = null;
 		UUID uuid = null;
 		if( !matching.isEmpty() ) {
 			ManagedDiskDescriptor recent = matching.get( matching.size()-1 );
