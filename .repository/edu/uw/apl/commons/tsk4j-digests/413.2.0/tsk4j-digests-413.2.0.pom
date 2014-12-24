@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<project>
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>tsk4j-parent</artifactId>
+      <version>413.2.0</version>
+    </parent>
+    
+    <artifactId>tsk4j-digests</artifactId>
+    <version>413.2.0</version>
+    <name>TSK4J: Digests for Volume/File Systems</name>
+
+    <dependencies>
+      <dependency>
+	<groupId>${project.groupId}</groupId>
+	<artifactId>tsk4j-core</artifactId>
+	<version>${project.version}</version>
+      </dependency>
+      <dependency>
+	<groupId>commons-codec</groupId>
+	<artifactId>commons-codec</artifactId>
+      </dependency>
+      <dependency>
+	<groupId>log4j</groupId>
+	<artifactId>log4j</artifactId>
+	<version>1.2.17</version>
+	<scope>test</scope>
+      </dependency>
+    </dependencies>
+
+    <build>
+      <defaultGoal>compile</defaultGoal>
+<!--
+      <finalName>
+	${project.artifactId}-${aol}-${project.version}
+      </finalName>
+-->
+      <plugins>
+      </plugins>
+    </build>
+    
+</project>
