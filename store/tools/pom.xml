@@ -19,7 +19,7 @@
     <repository>
       <id>tupelo.local</id>
       <name>tupelo</name>
-      <url>file:${project.basedir}/../.repository</url>
+      <url>file:${project.basedir}/../../.repository</url>
       <releases>
 	<updatePolicy>always</updatePolicy>
       </releases>
@@ -46,7 +46,7 @@
     <dependency>
       <groupId>edu.uw.apl.commons</groupId>
       <artifactId>tsk4j-digests</artifactId>
-      <version>413.1.0</version>
+      <version>413.2.0</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
