@@ -87,7 +87,7 @@ public class FileHashClient {
 					  BROKERURLDEFAULT );
 
 		final String USAGE =
-			FileHashClient.class.getName() + " [-d] [-v] [-u brokerURL]";
+			FileHashClient.class.getName() + " [-d] [-v] [-u brokerURL] hashstring+";
 		final String HEADER = "";
 		final String FOOTER = "";
 		
@@ -173,8 +173,8 @@ public class FileHashClient {
 		FileHashResponse fhr = rpc2.appdata;
 		for( FileHashResponse.Hit h : fhr.hits ) {
 			String hashHex = new String( Hex.encodeHex( h.hash ) );
-			log.info( "Hit: " + hashHex + " " + h.descriptor + " " +
-					  h.path );
+			System.out.println( "Hit: " + hashHex + " " + h.descriptor + " " +
+								h.path );
 		}
 
 		channel.close();

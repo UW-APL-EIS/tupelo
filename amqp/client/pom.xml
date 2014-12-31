@@ -48,6 +48,10 @@
 		true
 	      </addDefaultSpecificationEntries>
 	    </manifest>
+	    <manifestEntries>
+	      <!-- This will allow log4j config file locating -->
+	      <Class-Path>.</Class-Path>
+	    </manifestEntries>
 	  </archive>
 	</configuration>
       </plugin>
