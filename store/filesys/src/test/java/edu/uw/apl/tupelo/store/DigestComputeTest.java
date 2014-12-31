@@ -9,6 +9,7 @@ import java.util.List;
 import edu.uw.apl.tupelo.model.DiskImage;
 import edu.uw.apl.tupelo.model.FlatDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
+import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.Session;
 
 public class DigestComputeTest extends junit.framework.TestCase {
@@ -26,7 +27,7 @@ public class DigestComputeTest extends junit.framework.TestCase {
 		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
 		for( ManagedDiskDescriptor mdd : mdds ) {
 			System.out.println( "Digesting: " + mdd );
-			List<byte[]> d = store.digest( mdd );
+			ManagedDiskDigest d = store.digest( mdd );
 			System.out.println( d );
 		}
 	}
