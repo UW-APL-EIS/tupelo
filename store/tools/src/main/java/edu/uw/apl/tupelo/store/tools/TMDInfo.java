@@ -11,8 +11,15 @@ import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 /**
  * Print a summary of the properties of a .tmd (Tupelo Managed Disk)
  * file supplied in args[0].  Goes straight to the file, 'bypassing'
- * any store logic or layout.
+ * any store logic or layout.  NOT a user-oriented tool in the Tupelo
+ * component set, more a diagnostic tool for power users (developers!)
+ *
+ * Usage: TMDInfo /path/to/tmdfile
+ *
+ * which then prints to stdout various properties (mostly from the
+ * meta-data 'header' section of any ManagedDisk) of the managed data.
  */
+
 public class TMDInfo {
 
 	static public void main( String[] args ) {
@@ -78,7 +85,6 @@ public class TMDInfo {
 		System.out.println( "DiskID: " + mdd.getDiskID() );
 		System.out.println( "Session: " + mdd.getSession().format() );
 	}
-	
 
 	String inFileName;
 }

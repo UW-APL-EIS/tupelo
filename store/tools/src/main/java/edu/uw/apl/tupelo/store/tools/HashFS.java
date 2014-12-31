@@ -24,8 +24,6 @@ import org.apache.log4j.LogManager;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.Store;
-import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
-import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
 
 import edu.uw.apl.commons.sleuthkit.image.Image;
 import edu.uw.apl.commons.sleuthkit.filesys.Attribute;
@@ -56,7 +54,7 @@ import edu.uw.apl.commons.sleuthkit.volsys.VolumeSystem;
  *
  */
 
-public class HashFS extends Base {
+public class HashFS extends MDFSBase {
 
 	static public void main( String[] args ) {
 		HashFS main = new HashFS();
@@ -77,100 +75,20 @@ public class HashFS extends Base {
 	public HashFS() {
 	}
 
-	public void readArgs( String[] args ) {
-		Options os = commonOptions();
-		os.addOption( "a", false,
-					  "Hash all managed disks (those done not re-computed)" );
-		os.addOption( "v", false, "Verbose" );
 
-		String usage = commonUsage() + " [-v] diskID sessionID";
-		final String HEADER = "";
-		final String FOOTER = "";
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-		} catch( ParseException pe ) {
-			printUsage( os, usage, HEADER, FOOTER );
-			System.exit(1);
-		}
-		commonParse( os, cl, usage, HEADER, FOOTER );
-
-		all = cl.hasOption( "a" );
-		verbose = cl.hasOption( "v" );
-		if( all )
-			return;
-		args = cl.getArgs();
-		if( args.length < 2 ) {
-			printUsage( os, usage, HEADER, FOOTER );
-			System.exit(1);
-		}
-		diskID = args[0];
-		sessionID = args[1];
-	}
-	
-	public void start() throws Exception {
-
-		File dir = new File( storeLocation );
-		if( !dir.isDirectory() ) {
-			throw new IllegalStateException
-				( "Not a directory: " + storeLocation );
-		}
-		store = new FilesystemStore( dir );
-		if( debug )
-			System.out.println( "Store type: " + store );
-
-		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( store );
-		
-		final File mountPoint = new File( "test-mount" );
-		mountPoint.mkdirs();
-		mountPoint.deleteOnExit();
-		if( debug )
-			System.out.println( "Mounting '" + mountPoint + "'" );
-		mdfs.mount( mountPoint, true );
-		Runtime.getRuntime().addShutdownHook( new Thread() {
-				public void run() {
-					if( debug )
-						System.out.println( "Unmounting '" + mountPoint + "'" );
-					try {
-						mdfs.umount();
-					} catch( Exception e ) {
-						System.err.println( e );
-					}
-				}
-			} );
-		
-		// LOOK: wait for the fuse mount to finish.  Grr hate arbitrary sleeps!
-		Thread.sleep( 1000 * 2 );
-
-		if( all ) {
-			Collection<ManagedDiskDescriptor> mdds = store.enumerate();
-			for( ManagedDiskDescriptor mdd : mdds ) {
-				File f = mdfs.pathTo( mdd );
-				hashFileSystems( f, mdd );
-			}
-		} else {
-			ManagedDiskDescriptor mdd = locateDescriptor( store,
-														  diskID, sessionID );
-			if( mdd == null ) {
-				System.err.println( "Not stored: " + diskID + "," + sessionID );
-				System.exit(1);
-			}
-			File f = mdfs.pathTo( mdd );
-			hashFileSystems( f, mdd );
-		}
-	}
-	
-	private void hashFileSystems( File f, ManagedDiskDescriptor mdd )
+	@Override
+	protected void process( File mdfsPath, ManagedDiskDescriptor mdd )
 		throws Exception {
-
+		
 		System.out.println( "Hashing " + mdd );
-		Image i = new Image( f );
+		Image i = new Image( mdfsPath );
 		try {
-			System.out.println( "Trying volume system on " + f );
+			if( debug )
+				System.out.println( "Trying volume system on " + mdfsPath );
 			boolean b = walkVolumeSystem( i, mdd );
 			if( !b ) {
-				System.out.println( "Trying file system on " + f );
+				if( debug )
+					System.out.println( "Trying file system on " + mdfsPath );
 				walkFileSystem( i, mdd );
 			}
 		} finally {
@@ -198,8 +116,10 @@ public class HashFS extends Base {
 			for( Partition p : ps ) {
 				if( !p.isAllocated() )
 					continue;
-				System.out.println( "At sector " + p.start() +
-									", located " + p.description() );
+				if( debug ) {
+					System.out.println( "At sector " + p.start() +
+										", located " + p.description() );
+				}
 				Map<String,byte[]> fileHashes = new HashMap<String,byte[]>();
 				FileSystem fs = null;
 				try {
@@ -319,12 +239,6 @@ public class HashFS extends Base {
 		store.setAttribute( mdd, key, value.getBytes() );
 	}
 	
-
-	FilesystemStore store;
-	boolean all;
-	String diskID, sessionID;
-	static boolean verbose;
-
 	static byte[] DIGESTBUFFER = new byte[ 1024*1024 ];
 	static MessageDigest MD5 = null;
 	static {

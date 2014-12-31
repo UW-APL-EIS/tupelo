@@ -1,5 +1,6 @@
 package edu.uw.apl.tupelo.store.tools;
 
+import java.io.Console;
 import java.io.File;
 import java.io.BufferedWriter;
 import java.io.PrintWriter;
@@ -77,13 +78,16 @@ public class Digest extends Base {
 	public Digest() {
 	}
 
+	@Override
+	/*
+	  Am NOT calling super method, since cmd line arg processing not
+	  composable.
+	*/
 	public void readArgs( String[] args ) {
 		Options os = commonOptions();
-		os.addOption( "a", false,
-					  "Digest all managed disks (those done not re-computed)" );
-		os.addOption( "v", false, "Verbose" );
+		os.addOption( "i", false, "Interactive" );
 
-		String usage = commonUsage() + " [-a] [-f] [-v] (diskID sessionID)?";
+		String usage = commonUsage() + " [-i] (diskID sessionID)?";
 		final String HEADER = "";
 		final String FOOTER = "";
 		CommandLineParser clp = new PosixParser();
@@ -95,9 +99,7 @@ public class Digest extends Base {
 			System.exit(1);
 		}
 		commonParse( os, cl, usage, HEADER, FOOTER );
-
-		all = cl.hasOption( "a" );
-		verbose = cl.hasOption( "v" );
+		interactive = cl.hasOption( "i" );
 		if( all )
 			return;
 		args = cl.getArgs();
@@ -108,7 +110,27 @@ public class Digest extends Base {
 		diskID = args[0];
 		sessionID = args[1];
 	}
-	
+
+	/**
+	 * Ask the user, via the console, for a yes/no answer to the
+	 * question of digesting the managed disk as identified in the
+	 * prompt.
+	 */
+	private boolean proceedTest( ManagedDiskDescriptor mdd ) {
+		Console c = System.console();
+		if( c == null )
+			return true;
+		if( !interactive )
+			return true;
+		String line = c.readLine( "" + mdd + "? y/n " );
+		if( line == null )
+			return false;
+		line = line.trim();
+		if( line.isEmpty() )
+			return false;
+		return line.charAt(0) == 'y' || line.charAt(0) == 'Y';
+	}
+
 	public void start() throws Exception {
 		File dir = new File( storeLocation );
 		if( !dir.isDirectory() ) {
@@ -121,8 +143,15 @@ public class Digest extends Base {
 
 		if( all ) {
 			Collection<ManagedDiskDescriptor> mdds = store.enumerate();
-			for( ManagedDiskDescriptor mdd : mdds ) {
+			List<ManagedDiskDescriptor> sorted =
+				new ArrayList<ManagedDiskDescriptor>( mdds );
+			Collections.sort( sorted,
+							  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
+			for( ManagedDiskDescriptor mdd : sorted ) {
 				long sz = store.size( mdd );
+				boolean proceed = proceedTest( mdd );
+				if( !proceed )
+					continue;
 				System.out.println( "Digesting: " + mdd +
 									" (" + sz + " bytes)" );
 				store.computeDigest( mdd );
@@ -138,10 +167,7 @@ public class Digest extends Base {
 		}
 	}
 
-
-	boolean all;
-	String diskID, sessionID;
-	static boolean verbose;
+	boolean interactive;
 }
 
 // eof

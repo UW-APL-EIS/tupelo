@@ -49,7 +49,7 @@ import edu.uw.apl.commons.sleuthkit.digests.BodyFileCodec;
  *
  */
 
-public class BodyFile extends Base {
+public class BodyFile extends MDFSBase {
 
 	static public void main( String[] args ) {
 		BodyFile main = new BodyFile();
@@ -70,94 +70,10 @@ public class BodyFile extends Base {
 	public BodyFile() {
 	}
 
-	public void readArgs( String[] args ) {
-		Options os = commonOptions();
-		os.addOption( "a", false,
-					  "Hash all managed disks (those done not re-computed)" );
-		os.addOption( "v", false, "Verbose" );
-
-		String usage = commonUsage() + " [-v] diskID sessionID";
-		final String HEADER = "";
-		final String FOOTER = "";
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-		} catch( ParseException pe ) {
-			printUsage( os, usage, HEADER, FOOTER );
-			System.exit(1);
-		}
-		commonParse( os, cl, usage, HEADER, FOOTER );
-		all = cl.hasOption( "a" );
-		verbose = cl.hasOption( "v" );
-		if( all )
-			return;
-		args = cl.getArgs();
-		if( args.length < 2 ) {
-			printUsage( os, usage, HEADER, FOOTER );
-			System.exit(1);
-		}
-		diskID = args[0];
-		sessionID = args[1];
-	}
-	
-	public void start() throws Exception {
-		File dir = new File( storeLocation );
-		if( !dir.isDirectory() ) {
-			throw new IllegalStateException
-				( "Not a directory: " + storeLocation );
-		}
-		store = new FilesystemStore( dir );
-		if( debug )
-			System.out.println( "Store type: " + store );
-
-		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( store );
-		
-		final File mountPoint = new File( "test-mount" );
-		if( !mountPoint.exists() ) {
-			mountPoint.mkdirs();
-			mountPoint.deleteOnExit();
-		}
-		if( debug )
-			System.out.println( "Mounting '" + mountPoint + "'" );
-		mdfs.mount( mountPoint, true );
-		Runtime.getRuntime().addShutdownHook( new Thread() {
-				public void run() {
-					if( debug )
-						System.out.println( "Unmounting '" + mountPoint + "'" );
-					try {
-						mdfs.umount();
-					} catch( Exception e ) {
-						System.err.println( e );
-					}
-				}
-			} );
-		
-		// LOOK: wait for the fuse mount to finish.  Grr hate arbitrary sleeps!
-		Thread.sleep( 1000 * 2 );
-		
-		if( all ) {
-			Collection<ManagedDiskDescriptor> mdds = store.enumerate();
-			for( ManagedDiskDescriptor mdd : mdds ) {
-				File f = mdfs.pathTo( mdd );
-				bodyFiles( f, mdd );
-			}
-		} else {
-			ManagedDiskDescriptor mdd = locateDescriptor( store,
-														  diskID, sessionID );
-			if( mdd == null ) {
-				System.err.println( "Not stored: " + diskID + "," +
-									sessionID );
-				System.exit(1);
-			}
-			File f = mdfs.pathTo( mdd );
-			bodyFiles( f, mdd );
-		}
-	}
-
-	private void bodyFiles( File f, ManagedDiskDescriptor mdd )
+	@Override
+	protected void process( File mdfsPath, ManagedDiskDescriptor mdd )
 		throws Exception {
-		Image i = new Image( f );
+		Image i = new Image( mdfsPath );
 		try {
 			VolumeSystem vs = null;
 			try {
@@ -186,7 +102,8 @@ public class BodyFile extends Base {
 						String key = "bodyfile-" +
 							p.start() + "-" + p.length();
 						store.setAttribute( mdd, key, value.getBytes() );
-						//						BodyFileCodec.format( bf, System.out );
+						if( verbose || debug )
+							BodyFileCodec.format( bf, System.out );
 						fs.close();
 					} catch( IllegalStateException noFileSystem ) {
 						continue;
@@ -202,12 +119,6 @@ public class BodyFile extends Base {
 		}
 		
 	}
-
-	
-	String diskID, sessionID;
-	static boolean verbose;
-	FilesystemStore store;
-	boolean all;
 }
 
 // eof

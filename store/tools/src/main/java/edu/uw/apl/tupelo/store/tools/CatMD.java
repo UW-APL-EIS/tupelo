@@ -11,9 +11,15 @@ import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 
 /**
- * Simply open the identified managed disk and stream its entire
- * contents to stdout.  Really just tests the
- * ManagedDisk.getInputStream and readImpls.
+ * Open the identified managed disk (identified via diskID, sessionID)
+ * and stream its entire contents to stdout.  Hence the name 'catmd',
+ * mimics the Unix tool cat.
+ *
+ * Really just tests the correctness ManagedDisk.getInputStream and
+ * readImpls.  Likely to be used in conjunction with other tools in a
+ * pipe, e.g.
+ *
+ * CatMD -s someStoreURL someDiskID someSessionID | md5sum
  */
 
 public class CatMD extends Base {
@@ -35,33 +41,6 @@ public class CatMD extends Base {
 	public CatMD() {
 	}
 
-	public void readArgs( String[] args ) {
-		Options os = commonOptions();
-		os.addOption( "v", false, "Verbose" );
-
-		String usage = commonUsage() + " [-v] (diskID sessionID)?";
-		final String HEADER = "";
-		final String FOOTER = "";
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-		} catch( ParseException pe ) {
-			printUsage( os, usage, HEADER, FOOTER );
-			System.exit(1);
-		}
-		commonParse( os, cl, usage, HEADER, FOOTER );
-
-		verbose = cl.hasOption( "v" );
-		args = cl.getArgs();
-		if( args.length < 2 ) {
-			printUsage( os, usage, HEADER, FOOTER );
-			System.exit(1);
-		}
-		diskID = args[0];
-		sessionID = args[1];
-	}
-	
 	public void start() throws Exception {
 		File dir = new File( storeLocation );
 		if( !dir.isDirectory() ) {
@@ -69,7 +48,7 @@ public class CatMD extends Base {
 				( "Not a directory: " + storeLocation );
 		}
 		FilesystemStore store = new FilesystemStore( dir );
-		if( debug )
+		if( debug || verbose )
 			System.out.println( "Store type: " + store );
 		ManagedDiskDescriptor mdd = locateDescriptor( store,
 													  diskID, sessionID );
@@ -87,9 +66,6 @@ public class CatMD extends Base {
 			System.out.write( ba, 0, nin );
 		}
 	}
-
-	String diskID, sessionID;
-	static boolean verbose;
 }
 
 // eof
