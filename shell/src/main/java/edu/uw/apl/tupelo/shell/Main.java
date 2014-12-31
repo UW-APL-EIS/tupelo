@@ -106,7 +106,7 @@ public class Main extends Shell {
 		String tmpDirS = System.getProperty( "java.io.tmpdir" );
 		tmpDir = new File( tmpDirS );
 		storeLocation = "./test-store";
-		verbose = true;
+		verbose = false;
 
 		// report available Java memory...
 		addCommand( "mem", new Lambda() {
@@ -245,7 +245,7 @@ public class Main extends Shell {
 			String[] ss = cl.getOptionValues( "u" );
 			for( String s : ss ) {
 				File f = new File( s );
-				if( !( f.isFile() && f.canRead() ) )
+				if( !( f.canRead() ) )
 					continue;
 				if( VirtualDisk.likelyVirtualDisk( f ) ) {
 					VirtualDisk vd = new VirtualDisk( f );
@@ -405,7 +405,8 @@ public class Main extends Shell {
 	void reportPhysicalDisks( int n ) {
 		for( PhysicalDisk pd : physicalDisks ) {
 			String fmt = String.format( UNMANAGEDDISKREPORTFORMAT,
-										n, pd.getID(), pd.size(), pd.getSource() );
+										n, pd.getID(), pd.size(),
+										pd.getSource() );
 			System.out.println( fmt );
 			n++;
 		}
@@ -442,7 +443,10 @@ public class Main extends Shell {
 			}
 		}
 		Collections.sort( matching, ManagedDiskDescriptor.DEFAULTCOMPARATOR );
-		System.out.println( "Matching data: " + matching );
+		System.out.println( "Matching managed disks:" );
+		for( ManagedDiskDescriptor el : matching ) {
+			System.out.println( " " + el.getSession() );
+		}
 
 		ManagedDiskDigest digest = null;
 		UUID uuid = null;
@@ -450,11 +454,14 @@ public class Main extends Shell {
 			ManagedDiskDescriptor recent = matching.get( matching.size()-1 );
 			log.info( "Retrieving uuid for: "+ recent );
 			uuid = store.uuid( recent );
-			System.out.println( "UUID: " + uuid );
+			if( debug )
+				System.out.println( "UUID: " + uuid );
 			log.info( "Retrieving digest for: "+ recent );
 			digest = store.digest( recent );
 			if( digest != null )
-				System.out.println( "Digest: " + digest.size() );
+				System.out.println( "Retrieved digest for " +
+									recent.getSession() + ": " +
+									digest.size() );
 			
 		}
 		checkSession();
