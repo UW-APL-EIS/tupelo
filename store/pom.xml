@@ -20,6 +20,7 @@
     <module>api</module>
     <module>filesys</module>
     <module>null</module>
+    <module>tools</module>
   </modules>
 
 </project>
