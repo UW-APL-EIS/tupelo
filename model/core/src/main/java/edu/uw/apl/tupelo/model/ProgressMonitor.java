@@ -90,6 +90,8 @@ public class ProgressMonitor {
 		t.start();
 		try {
 			md.readFromWriteTo( cis, cos );
+		} catch( Exception e ) {
+			t.interrupt();
 		} finally {
 			/*
 			  Even if the readFromWriteTo blows up, we need to clean up
@@ -98,8 +100,7 @@ public class ProgressMonitor {
 			cis.close();
 			cos.close();
 			try {
-			t.interrupt();
-			t.join();
+				t.join();
 			} catch( InterruptedException ie ) {
 			}
 		}
