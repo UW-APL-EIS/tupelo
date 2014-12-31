@@ -47,7 +47,7 @@
     <dependency>
       <groupId>edu.uw.apl.commons</groupId>
       <artifactId>tsk4j-digests</artifactId>
-      <version>413.1.0</version>
+      <version>413.2.0</version>
     </dependency>
 
     <dependency>
@@ -72,6 +72,12 @@
       <groupId>edu.uw.apl.commons</groupId>
       <artifactId>vmvols-fuse</artifactId>
       <version>2.1.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>commons-shell</artifactId>
+      <version>1.0</version>
     </dependency>
   </dependencies>
   
