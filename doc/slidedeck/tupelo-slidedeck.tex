@@ -11,7 +11,7 @@
 
 
 \title[Tupelo] % (optional, use only with long paper titles)
-{Towards Automated Disk Forensics}
+{Tupelo --- Towards Automated Disk Forensics}
 
 \subtitle
 {Sub} % (optional)
@@ -47,7 +47,152 @@ University of Washington}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Managed and Unmanaged Disks}
+\begin{frame}{Introduction}
+
+\begin{itemize}
+\item Tupelo is a set of Java/C programs for efficient whole disk
+  acquisition, storage and analysis.
+
+\item Leverages existing open-source forensics library called
+  Sleuthkit to walk filesystems.
+
+\item Integrates with emerging standard STIX (Structured
+  Threat Information Expression) to ingest and
+  author shared information of malicious artifacts.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{frame}{Goals}
+
+To minimize the time, effort and expense of maintaining the health of
+computer hard drives.  To achieve this
+
+\begin{itemize}
+
+\item Whole drive acquisition must be easy and (relatively!) fast.
+
+\item Repeated acquisition must be space-efficient.
+
+\item Analysis of disk contents must be automated to the greatest
+  extent possible.
+
+\end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Problem of Trust}
+
+If the drive you wish to acquire (image) is suspected of containing
+malicious artifacts, how can software residing on that same disk
+be relied upon to present accurate disk content?
+
+Tupelo does ``dead disk acquisition'', and runs of trusted media,
+e.g. a bootable CD/USB.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Tupelo Workflows and the Store}
+
+\begin{itemize}
+\item
+Users acquire whole drive contents, storing a copy in a {\em Tupelo
+  store}.
+
+\item
+Once in the store, contents are analysed: filesystems, un-allocated
+areas.
+
+\item
+Analysis results also placed in the store alongside the content as {\em
+  attributes}, key/value pairs with arbitrary values.
+
+\item
+Same disk can be acquired repeatedly, and many disks can be acquired.
+
+\end{itemize}
+
+Store is essentially a structured (but not relational) database.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Supported Disk Types}
+
+Can acquire three flavors of whole disk content:
+
+\begin{description}
+\item[Physical]  An entire hard drive.  To ensure ``dead'', boot from
+  Tupelo CD.
+
+\item[Virtual] A hard drive of a virtual machine.  To ensure ``dead'',
+  acquire with VM powered off.  VirtualBox and VMWare disks supported.
+
+\item[Disk Image] A previously obtained whole disk image, as a file.
+  Dead by definition.
+\end{description}
+
+Could also boot virtual machines from virtualized Tupelo CD, treats
+virtual disks as physical.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Use Cases}
+
+Tupelo supports several modes of use.
+
+
+\begin{itemize}
+\item 
+Single User
+
+\item
+Single Administrator
+
+\item
+Administrator Group
+
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+End user scenario.  One hard drive to acquire, store on
+  external disk (USB/eSATA), boot from Tupelo CD.  Acquire on a
+  schedule, e.g. once a week.  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+Single administrator scenario.  Many drives to acquire, also on a
+  schedule.  Reference images (e.g. vanilla Win7 install) added to
+  store reduces time spent classifying artifacts.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+Administrator scenario.  Many drives to acquire, also on a
+  schedule.  Reference images (e.g. vanilla Win7 install) added to
+  store reduces time spent classifying artifacts.
+\end{frame}
+
 
 \begin{frame}{Managed and Unmanaged Disks}
 
