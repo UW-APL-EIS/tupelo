@@ -505,7 +505,8 @@ public class Main extends Shell {
 				};
 			store.put( md, cb, 5 );
 		}
-		store.setAttribute( mdd, "path", ud.getSource().getPath().getBytes() );
+		store.setAttribute( mdd, "unmanaged.path",
+							ud.getSource().getPath().getBytes() );
 	}
 
 	private void hashVolumeSystem( UnmanagedDisk ud ) throws IOException {
