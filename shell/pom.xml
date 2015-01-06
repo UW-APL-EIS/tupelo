@@ -64,7 +64,6 @@
     <dependency>
       <groupId>edu.uw.apl.commons</groupId>
       <artifactId>tsk4j-digests</artifactId>
-      <version>413.1.0</version>
     </dependency>
     <dependency>
       <groupId>edu.uw.apl.commons</groupId>
