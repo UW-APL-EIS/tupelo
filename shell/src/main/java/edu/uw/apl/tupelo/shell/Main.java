@@ -400,6 +400,7 @@ public class Main extends Shell {
 		System.out.println( header );
 		reportPhysicalDisks( 1 );
 		reportVirtualDisks( 1 + physicalDisks.size() );
+		reportDiskImages( 1 + physicalDisks.size() + virtualDisks.size() );
 	}
 
 	void reportPhysicalDisks( int n ) {
@@ -417,6 +418,16 @@ public class Main extends Shell {
 			String fmt = String.format( UNMANAGEDDISKREPORTFORMAT,
 										n, vd.getID(), vd.size(),
 										vd.getSource().getName() );
+			System.out.println( fmt );
+			n++;
+		}
+	}
+
+	void reportDiskImages( int n ) {
+		for( DiskImage di : diskImages ) {
+			String fmt = String.format( UNMANAGEDDISKREPORTFORMAT,
+										n, di.getID(), di.size(),
+										di.getSource().getName() );
 			System.out.println( fmt );
 			n++;
 		}
