@@ -123,8 +123,17 @@ public class FlatDisk extends ManagedDisk {
 	 */
 	@Override
 	public void verify() throws IOException {
-		if( unmanagedData == null )
-			throw new IllegalStateException( "Verify failed. noUnmanagedData" );
+		if( unmanagedData == null ) {
+			if( true ) {
+				/*
+				  Over http, we would have no unmanaged data access,
+				  so cannot attempt a verify at all.  The result is then what?
+				*/
+				return;
+			} else {
+				throw new IllegalStateException( "Verify failed. noUnmanagedData" );
+			}
+		}
 		if( managedData == null )
 			throw new IllegalStateException( "Verify failed. noManagedData" );
 		long usize = unmanagedData.size();
