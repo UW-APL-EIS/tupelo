@@ -147,7 +147,7 @@ public class AttributesServlet extends HttpServlet {
 		} catch( ParseException notAfterRegexMatch ) {
 		}
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( diskID, s );
-		String key = m.group( 3 );
+		String key = m.group( ATTRNAMEGROUPINDEX );
 
 		// LOOK: check the content type...
 		String hdr = req.getHeader( "Content-Encoding" );
@@ -187,6 +187,8 @@ public class AttributesServlet extends HttpServlet {
 
 		Matcher m = ATTRPATHREGEX.matcher( details );
 		if( !m.matches() ) {
+			log.warn( "Details not matching regex: " +
+					  ATTRPATHREGEX.pattern() );
 			res.sendError( HttpServletResponse.SC_NOT_FOUND,
 						   "Malformed managed disk descriptor: " + details );
 			return;
@@ -198,7 +200,8 @@ public class AttributesServlet extends HttpServlet {
 		} catch( ParseException notAfterRegexMatch ) {
 		}
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( diskID, s );
-		String key = m.group( 3 );
+
+		String key = m.group( ATTRNAMEGROUPINDEX );
 
 		// LOOK: check the content type...
 		String hdr = req.getHeader( "Content-Encoding" );
@@ -211,7 +214,8 @@ public class AttributesServlet extends HttpServlet {
 		store.setAttribute( mdd, key, value );
 	}
 
-	private void listAttributes( HttpServletRequest req, HttpServletResponse res,
+	private void listAttributes( HttpServletRequest req,
+								 HttpServletResponse res,
 								 String details )
 		throws IOException, ServletException {
 
@@ -273,10 +277,20 @@ public class AttributesServlet extends HttpServlet {
 		return new ManagedDiskDescriptor( diskID, s );
 	}
 
+	static final String ATTRNAMEREGEX = "([\\p{Alnum}_:\\.]+)";
+	
 	static public final Pattern ATTRPATHREGEX = Pattern.compile
-		( Constants.MDDPIREGEX.pattern() + "/(\\p{Alnum}+)" );
+		( Constants.MDDPIREGEX.pattern() + "/" + ATTRNAMEREGEX );
+	
+	/*
+	  The diskID and session regexs may themselves have capturing groups,
+	  here we identify the actual group match for each component we want
+	*/
+	static final int DISKIDGROUPINDEX = 1;
+	static final int SESSIONIDGROUPINDEX = 2;
+	static final int ATTRNAMEGROUPINDEX = 5;
 
-private Store store;
+	private Store store;
 	private Gson gson;
 	private Log log;
 
