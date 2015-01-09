@@ -144,7 +144,7 @@ public class Main extends Shell {
 										 
 				}
 			} );
-		commandHelp( "space", "Print store's free disk space" );
+		commandHelp( "us", "List local unmanaged disks" );
 
 		/*
 		  vshash, hash the volume system (unallocated areas) of an identified
@@ -222,7 +222,7 @@ public class Main extends Shell {
 					}
 				}
 			} );
-		commandHelp( "putdisk", "unmanagedDisk",
+		commandHelp( "putdisk", "unmanagedDiskPath|unmanagedDiskIndex",
 					 "Transfer an identified unmanaged disk to the store" );
 	}
 
@@ -232,6 +232,7 @@ public class Main extends Shell {
 		os.addOption( "d", false, "debug" );
 		os.addOption( "s", true, "store location" );
 		os.addOption( "u", true, "unmanaged disk" );
+		os.addOption( "V", false, "show version number and exit" );
 		CommandLineParser clp = new PosixParser();
 		CommandLine cl = clp.parse( os, args );
 		debug = cl.hasOption( "d" );
@@ -255,6 +256,12 @@ public class Main extends Shell {
 					diskImages.add( di );
 				}
 			}
+		}
+		if( cl.hasOption( "V" ) ) {
+			Package p = getClass().getPackage();
+			String version = p.getImplementationVersion();
+			System.out.println( p.getName() + "/" + version );
+			System.exit(0);
 		}
 		args = cl.getArgs();
 		if( args.length > 0 ) {
@@ -384,13 +391,18 @@ public class Main extends Shell {
 	
 	void reportManagedDisks( Collection<ManagedDiskDescriptor> mdds ) {
 		String header = String.format( MANAGEDDISKREPORTFORMAT,
-									   "ID", "Session" );
+									   "N", "ID", "Session" );
 		System.out.println( header );
-		for( ManagedDiskDescriptor mdd : mdds ) {
-			String fmt = String.format( MANAGEDDISKREPORTFORMAT,
+		int n = 1;
+		List<ManagedDiskDescriptor> sorted =
+			new ArrayList<ManagedDiskDescriptor>( mdds );
+		Collections.sort( sorted, ManagedDiskDescriptor.DEFAULTCOMPARATOR );
+		for( ManagedDiskDescriptor mdd : sorted ) {
+			String fmt = String.format( MANAGEDDISKREPORTFORMAT, n,
 										mdd.getDiskID(),
 										mdd.getSession() );
 			System.out.println( fmt );
+			n++;
 		}
 	}
 
@@ -467,12 +479,15 @@ public class Main extends Shell {
 			uuid = store.uuid( recent );
 			if( debug )
 				System.out.println( "UUID: " + uuid );
-			log.info( "Retrieving digest for: "+ recent );
+			log.info( "Requesting digest for: "+ recent );
 			digest = store.digest( recent );
-			if( digest != null )
-				System.out.println( "Retrieved digest for " +
-									recent.getSession() + ": " +
-									digest.size() );
+			if( digest == null ) {
+				log.warn( "No digest, continuing with full disk put" );
+			} else {
+				log.info( "Retrieved digest for " +
+						  recent.getSession() + ": " +
+						  digest.size() );
+			}
 			
 		}
 		checkSession();
@@ -514,7 +529,8 @@ public class Main extends Shell {
 						}
 					}
 				};
-			store.put( md, cb, 5 );
+			int progressMonitorUpdateIntervalSecs = 5;
+			store.put( md, cb, progressMonitorUpdateIntervalSecs );
 		}
 		store.setAttribute( mdd, "unmanaged.path",
 							ud.getSource().getPath().getBytes() );
@@ -633,7 +649,8 @@ public class Main extends Shell {
 		}
 	}
 
-	private void hashFileSystemsNonVirtual( UnmanagedDisk ud ) throws IOException {
+	private void hashFileSystemsNonVirtual( UnmanagedDisk ud )
+		throws IOException {
 		Image i = new Image( ud.getSource() );
 		try {
 			hashFileSystemsImpl( i, ud );
@@ -707,7 +724,7 @@ public class Main extends Shell {
 
 	static final String UNMANAGEDDISKREPORTFORMAT = "%2s %42s %16s %16s";
 
-	static final String MANAGEDDISKREPORTFORMAT = "%42s %17s";
+	static final String MANAGEDDISKREPORTFORMAT = "%2s %42s %17s";
 }
 
 
