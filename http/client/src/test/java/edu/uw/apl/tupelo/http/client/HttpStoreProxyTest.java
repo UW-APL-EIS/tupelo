@@ -28,48 +28,65 @@ import edu.uw.apl.tupelo.model.FlatDisk;
 import edu.uw.apl.tupelo.model.Session;
 
 /**
- * In order to run these http client-side tests, we need the
- * corresponding server-side up.  So, in a separate terminal:
+ * These tests USED to be reliant on the Tupelo server being run in a separate terminal:
  *
  * $ cd /path/to/tupelo/http/server
  * $ mvn jetty:run
  *
- * which should start the Tupelo Http Server (in the Jetty web
- * container) on port 8888/tcp.
+ * which started the Tupelo Http Server (in the Jetty web
+ * container) on port 8888/tcp.  We would then unit test this client code:
+ *
+ * $ cd /path/to/tupelo/http/client
+ * $ mvn test
+ *
+ * That approach was ugly, and needed a human in the loop to manage
+ * the server side.  It would not sit with with an automated build
+ * environment like Jenkins. So, we now make use of a mortbay (jetty
+ * folks) api for managing jetty from code, see {@link #setServer()}.
  */
 
 public class HttpStoreProxyTest {//extends junit.framework.TestCase {
 
+	// Main Jetty object, the web server itself...
 	static Server server;
 
-	static String serverHome =
-		"/home/stuart/apl/projects/infosec/dims/tupelo/http/server";
-	
-	Store store;
+	// Configuration params for getting a Tupelo war invoked...
+	static String serverModuleHome = "../server";
+	static int httpPort = 8888;
+	static String contextPath = "/tupelo";
+
+	private Store store;
 
 	@BeforeClass
 	public static void setServer() throws Exception {
-		if( true )
-			return;
-		server = new Server( 8888 );
+		server = new Server( httpPort );
 		server.setStopAtShutdown( true );
 		WebAppContext wac = new WebAppContext();
-		wac.setContextPath( "/tupelo" );
-		wac.setWar( serverHome + "/target/tupelo-http-server-0.0.1.war" );
+		wac.setContextPath( contextPath );
+
+		// LOOK: hunting around in server module filesystem!!  Any better way ??
+		File serverDir = new File( serverModuleHome );
+		File warDir = new File( serverDir, "target" );
+		File warFile = new File( warDir, "tupelo-http-server-0.0.1.war" );
+		if( !warFile.exists() )
+			warFile = new File( warDir, "tupelo.war" );
+		wac.setWar( warFile.getPath() );
+
 		/*
 		  wac.setResourceBase( serverHome + "/src/main/webapp" );
 		URL servlets = new URL( "file://" + serverHome + "/target/classes/" );
 		URLClassLoader ucl = new URLClassLoader( new URL[] { servlets } );
 		*/
 		//wac.setClassLoader( ucl );
+
 		server.setHandler( wac );
 		server.start();
 	}
 
 	@Before
 	public void buildStore() {
-		store = new HttpStoreProxy( "http://localhost:8888/tupelo" );
-		System.out.println( store );
+		String storeURL = "http://localhost:" + httpPort + "/" + contextPath;
+		store = new HttpStoreProxy( storeURL );
 	}
 
 	@Test
@@ -87,10 +104,11 @@ public class HttpStoreProxyTest {//extends junit.framework.TestCase {
 	public void testUsableSpace() throws IOException {
 		long us = store.getUsableSpace();
 		System.out.println( "Usablespace: " + us );
+		assertTrue( us > 0 );
 	}
 
-	//	@Test
-	@Ignore
+	@Test
+	//@Ignore
 	public void testNewSession() throws IOException {
 		Session s1 = store.newSession();
 		System.out.println( "Session1: " + s1 );
@@ -107,19 +125,23 @@ public class HttpStoreProxyTest {//extends junit.framework.TestCase {
 
 	@Ignore
 	public void testPutData() throws IOException {
-		File f = new File( "32m" );
+		File f = new File( "src/test/resources/32m" );
 		if( !f.exists() )
 			return;
 		DiskImage di = new DiskImage( f );
 
+		Collection<ManagedDiskDescriptor> mddsPrePut = store.enumerate();
 		Session s = store.newSession();
 		FlatDisk fd = new FlatDisk( di, s );
 		store.put( fd );
+
+		Collection<ManagedDiskDescriptor> mddsPostPut = store.enumerate();
+		assertTrue( mddsPostPut.size() == mddsPrePut.size() + 1 );
 	}
 
 	@Ignore
 	public void testDigest() throws IOException {
-		File f = new File( "64m" );
+		File f = new File( "src/test/resources/64m" );
 		if( !f.exists() )
 			return;
 		DiskImage di = new DiskImage( f );
@@ -167,6 +189,7 @@ public class HttpStoreProxyTest {//extends junit.framework.TestCase {
 
 	@Test
 	public void testRoundTripAttribute() throws IOException {
+		System.out.println( "testRoundTripAttribute" );
 		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
 		assertNotNull( mdds );
 		if( mdds.isEmpty() )
