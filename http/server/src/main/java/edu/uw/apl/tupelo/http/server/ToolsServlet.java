@@ -39,6 +39,7 @@ import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 import edu.uw.apl.tupelo.store.tools.BodyFile;
 import edu.uw.apl.tupelo.store.tools.HashVS;
+import edu.uw.apl.tupelo.store.tools.HashFS;
 import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
 
 
@@ -55,7 +56,7 @@ import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
  * /tools
  * /tools/NAME/DID/SID/
  *
- * for the various tool NAMES: digest, hashfs, hashvs.
+ * for the various tool NAMES: digest, hashfs, hashvs, bodyfile.
  *
  * The first url produces a (html-marked up) 'matrix' of all managed
  * disks and tool names, for trivial point-and-click tool invocation.
@@ -117,12 +118,15 @@ public class ToolsServlet extends HttpServlet {
 		} else if( pi.startsWith( "/digest/" ) ) {
 			String details = pi.substring( "/digest/".length() );
 			computeDigest( req, res, details );
-		} else if( pi.startsWith( "/hashvs/" ) ) {
+		} else if( pi.startsWith( "/hashvs/" ) ) { 
 			String details = pi.substring( "/hashvs/".length() );
 			hashVolumeSystem( req, res, details );
+		} else if( pi.startsWith( "/hashfs/" ) ) {
+			String details = pi.substring( "/hashfs/".length() );
+			hashFileSystems( req, res, details );
 		} else if( pi.startsWith( "/bodyfile/" ) ) {
 			String details = pi.substring( "/bodyfile/".length() );
-			bodyfile( req, res, details );
+			bodyfiles( req, res, details );
 		} else {
 			res.sendError( HttpServletResponse.SC_NOT_FOUND,
 						   "Unknown command '" + pi + "'" );
@@ -215,7 +219,42 @@ public class ToolsServlet extends HttpServlet {
 		new Thread( r ).start();
 	}
 
-	private void bodyfile( HttpServletRequest req,
+	private void hashFileSystems( HttpServletRequest req,
+								   HttpServletResponse res,
+								   final String details )
+		throws IOException, ServletException {
+		
+		log.debug( "hashFileSystems.details: '" + details  + "'" );
+
+		Matcher m = Constants.MDDPIREGEX.matcher( details );
+		if( !m.matches() ) {
+			res.sendError( HttpServletResponse.SC_NOT_FOUND,
+						   "Malformed managed disk descriptor: " + details );
+			return;
+		}
+		String diskID = m.group(1);
+		Session s = null;
+		try {
+			s = Session.parse( store.getUUID(), m.group(2) );
+		} catch( ParseException notAfterRegexMatch ) {
+		}
+	   final ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( diskID, s );
+
+	   ManagedDiskFileSystem mdfs = getMDFS();
+	   final File mdfsPath = mdfs.pathTo( mdd );
+	   Runnable r = new Runnable() {
+			   public void run() {
+				   try {
+					   HashFS.process( mdfsPath, mdd, store );
+					} catch( Exception e ) {
+						log.warn( details + " -> " + e );
+					}
+				}
+			};
+		new Thread( r ).start();
+	}
+
+	private void bodyfiles( HttpServletRequest req,
 						   HttpServletResponse res,
 						   final String details )
 		throws IOException, ServletException {
