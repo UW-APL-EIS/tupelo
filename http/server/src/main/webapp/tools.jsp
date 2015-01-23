@@ -18,6 +18,8 @@ The following managed disks are in this store.
     <input type="submit" name="submit" value="Digest" /></form></td>
 <td><form method="post" action="./tools/hashvs/<c:out value="${mdd.diskID}/${mdd.session}"/>">
     <input type="submit" name="submit" value="Hash VolumeSystem" /></form></td>
+<td><form method="post" action="./tools/bodyfile//<c:out value="${mdd.diskID}/${mdd.session}"/>">
+    <input type="submit" name="submit" value="Body File(s)" /></form></td>
 </tr>
 </c:forEach>
 </table>

@@ -37,12 +37,10 @@ import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
+import edu.uw.apl.tupelo.store.tools.BodyFile;
+import edu.uw.apl.tupelo.store.tools.HashVS;
 import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
 
-import edu.uw.apl.commons.sleuthkit.image.Image;
-import edu.uw.apl.commons.sleuthkit.volsys.VolumeSystem;
-import edu.uw.apl.commons.sleuthkit.digests.VolumeSystemHash;
-import edu.uw.apl.commons.sleuthkit.digests.VolumeSystemHashCodec;
 
 /**
  * A servlet handling just requests which run processing tools against
@@ -122,6 +120,9 @@ public class ToolsServlet extends HttpServlet {
 		} else if( pi.startsWith( "/hashvs/" ) ) {
 			String details = pi.substring( "/hashvs/".length() );
 			hashVolumeSystem( req, res, details );
+		} else if( pi.startsWith( "/bodyfile/" ) ) {
+			String details = pi.substring( "/bodyfile/".length() );
+			bodyfile( req, res, details );
 		} else {
 			res.sendError( HttpServletResponse.SC_NOT_FOUND,
 						   "Unknown command '" + pi + "'" );
@@ -205,31 +206,43 @@ public class ToolsServlet extends HttpServlet {
 	   Runnable r = new Runnable() {
 			   public void run() {
 				   try {
-					   Image i = new Image( mdfsPath );
-					   try {
-						   VolumeSystem vs = null;
-						   try {
-							   vs = new VolumeSystem( i );
-						   } catch( IllegalStateException noVolSys ) {
-							   log.warn( noVolSys );
-							   return;
-						   }
-						   try {
-							   VolumeSystemHash vsh = VolumeSystemHash.create
-								   ( vs );
-							   StringWriter sw = new StringWriter();
-							   VolumeSystemHashCodec.writeTo( vsh, sw );
-							   String s = sw.toString();
-							   byte[] value = s.getBytes();
-							   String key = "hashvs";
-							   store.setAttribute( mdd, key, value );
-						   } finally {
-							   vs.close();
-						   }
-					   } finally {
-						   i.close();
-					   }
-					   
+					   HashVS.process( mdfsPath, mdd, store );
+					} catch( Exception e ) {
+						log.warn( details + " -> " + e );
+					}
+				}
+			};
+		new Thread( r ).start();
+	}
+
+	private void bodyfile( HttpServletRequest req,
+						   HttpServletResponse res,
+						   final String details )
+		throws IOException, ServletException {
+		
+		log.debug( "bodyfile.details: '" + details  + "'" );
+		
+		Matcher m = Constants.MDDPIREGEX.matcher( details );
+		if( !m.matches() ) {
+			res.sendError( HttpServletResponse.SC_NOT_FOUND,
+						   "Malformed managed disk descriptor: " + details );
+			return;
+		}
+		String diskID = m.group(1);
+		Session s = null;
+		try {
+			s = Session.parse( store.getUUID(), m.group(2) );
+		} catch( ParseException notAfterRegexMatch ) {
+		}
+	   final ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( diskID, s );
+	   
+	   ManagedDiskFileSystem mdfs = getMDFS();
+	   final File mdfsPath = mdfs.pathTo( mdd );
+	   Runnable r = new Runnable() {
+			   public void run() {
+				   try {
+					   boolean printResult = false;
+					   BodyFile.process( mdfsPath, mdd, store, printResult );
 					} catch( Exception e ) {
 						log.warn( details + " -> " + e );
 					}
