@@ -21,6 +21,8 @@ import java.util.Map;
 import org.apache.commons.cli.*;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
@@ -60,32 +62,45 @@ import edu.uw.apl.commons.sleuthkit.digests.VolumeSystemHashCodec;
  *
  */
 
-public class HashVS extends MDFSBase {
+public class HashVS {
 
-	static public void main( String[] args ) {
-		HashVS main = new HashVS();
-		try {
-			main.readArgs( args );
-			main.start();
-		} catch( Exception e ) {
-			System.err.println( e );
-			if( debug )
-				e.printStackTrace();
-			System.exit(-1);
-		} finally {
-			LogManager.shutdown();
+	static public class Main extends MDFSBase {
+		static public void main( String[] args ) {
+			Main main = new Main();
+			try {
+				main.readArgs( args );
+				main.start();
+			} catch( Exception e ) {
+				System.err.println( e );
+				if( debug )
+					e.printStackTrace();
+				System.exit(-1);
+			} finally {
+				LogManager.shutdown();
+			}
+			
 		}
-			  
-	}
-
-	public HashVS() {
+	
+		@Override
+		protected void process( File mdfsPath, ManagedDiskDescriptor mdd )
+			throws IOException {
+			
+			HashVS.process( mdfsPath, mdd, store );
+		}
 	}
 	
-	@Override
-	protected void process( File mdfsPath, ManagedDiskDescriptor mdd )
-		throws IOException {
+	/*
+	  In addition to being callable locally by this package, the core
+	  logic of this class is available to outside callers, notably the
+	  http/server, which has no 'cmd line'.  Note the local use of
+	  commons-logging, re-iterating the point that this method has
+	  many caller scenarios.
+	*/
+	static public void process( File mdfsPath, ManagedDiskDescriptor mdd,
+								Store store ) throws IOException {
 		
-		System.out.println( "Hashing " + mdd );
+		Log log = LogFactory.getLog( HashVS.class );
+		log.info( "Hashing " + mdd );
 		String key = "hashvs";
 		byte[] value = store.getAttribute( mdd, key );
 		if( value != null )

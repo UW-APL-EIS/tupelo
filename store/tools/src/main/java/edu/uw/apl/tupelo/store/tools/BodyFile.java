@@ -21,12 +21,12 @@ import java.util.Map;
 import org.apache.commons.cli.*;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.log4j.LogManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.Store;
-import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
-import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
 
 import edu.uw.apl.commons.sleuthkit.image.Image;
 import edu.uw.apl.commons.sleuthkit.filesys.FileSystem;
@@ -36,6 +36,12 @@ import edu.uw.apl.commons.sleuthkit.digests.BodyFileBuilder;
 import edu.uw.apl.commons.sleuthkit.digests.BodyFileCodec;
 
 /**
+ * Given the identified ManagedDiskDescriptors (either one supplied on
+ * cmd line, or by enumerating over a store), locate all filesystems
+ * of each managed disk and produce a 'BodyFile', using
+ * tsk4j/tsk. Store the resulting BodyFile as a store attribute
+ * alongside the managed disk.
+ 
  * Note: This program makes use of fuse4j/fuse and so has an impact on
  * the host filesystem as a whole.  In principle, a fuse mount point is
  * created at program start and deleted at program end.  However, if
@@ -46,33 +52,46 @@ import edu.uw.apl.commons.sleuthkit.digests.BodyFileCodec;
  *
  * We do have a shutdown hook for the umount installed, but it appears
  * unreliable.
- *
  */
 
-public class BodyFile extends MDFSBase {
+public class BodyFile {
 
-	static public void main( String[] args ) {
-		BodyFile main = new BodyFile();
-		try {
-			main.readArgs( args );
-			main.start();
-		} catch( Exception e ) {
-			System.err.println( e );
-			if( debug )
-				e.printStackTrace();
-			System.exit(-1);
-		} finally {
-			LogManager.shutdown();
+	static public class Main extends MDFSBase {
+		static public void main( String[] args ) {
+			Main main = new Main();
+			try {
+				main.readArgs( args );
+				main.start();
+			} catch( Exception e ) {
+				System.err.println( e );
+				if( debug )
+					e.printStackTrace();
+				System.exit(-1);
+			} finally {
+				LogManager.shutdown();
+			}
+			
 		}
-			  
+		
+		@Override
+		protected void process( File mdfsPath, ManagedDiskDescriptor mdd )
+			throws Exception {
+			
+			/*
+			  Delegate to BodyFile class, which has the core logic.
+			  This way, we can have many entries points into that core logic,
+			  e.g. http/server calls too.
+			*/
+			
+			BodyFile.process( mdfsPath, mdd, store, verbose || debug );
+		}
 	}
-
-	public BodyFile() {
-	}
-
-	@Override
-	protected void process( File mdfsPath, ManagedDiskDescriptor mdd )
+	
+	static public void process( File mdfsPath, ManagedDiskDescriptor mdd,
+								Store store, boolean printResult )
 		throws Exception {
+		Log log = LogFactory.getLog( BodyFile.class );
+		
 		Image i = new Image( mdfsPath );
 		try {
 			VolumeSystem vs = null;
@@ -102,7 +121,7 @@ public class BodyFile extends MDFSBase {
 						String key = "bodyfile-" +
 							p.start() + "-" + p.length();
 						store.setAttribute( mdd, key, value.getBytes() );
-						if( verbose || debug )
+						if( printResult )
 							BodyFileCodec.format( bf, System.out );
 						fs.close();
 					} catch( IllegalStateException noFileSystem ) {

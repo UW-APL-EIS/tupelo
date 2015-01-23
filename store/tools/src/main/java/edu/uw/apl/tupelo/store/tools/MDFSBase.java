@@ -8,8 +8,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.cli.*;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
@@ -30,8 +28,7 @@ import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
 abstract class MDFSBase extends Base {
 
 	protected MDFSBase() {
-		storeLocation = STORELOCATIONDEFAULT;
-		log = Logger.getLogger( getClass() );
+		super();
 	}
 
 		/**
