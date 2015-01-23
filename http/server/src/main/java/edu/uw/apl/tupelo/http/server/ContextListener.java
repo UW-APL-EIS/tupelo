@@ -14,6 +14,7 @@ import java.util.Properties;
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 import edu.uw.apl.tupelo.amqp.server.FileHashService;
+import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -83,6 +84,7 @@ public class ContextListener implements ServletContextListener {
 		}
 		File dataRoot = new File( rootS ).getCanonicalFile();
 		dataRoot.mkdirs();
+		sc.setAttribute( DATAROOTKEY, dataRoot );
 		log.info( "Store Root: " + dataRoot );
 		Store store = new FilesystemStore( dataRoot );
 		log.info( "Store UUID: " + store.getUUID() );
@@ -119,11 +121,27 @@ public class ContextListener implements ServletContextListener {
 		FileHashService fhs = (FileHashService)sc.getAttribute
 			( AMQPSERVICEKEY );
 		if( fhs != null ) {
+			log.info( "Stopping AMQP service" ):
 			try {
 				fhs.stop();
 			} catch( IOException ioe ) {
 				log.warn( ioe );
 			}
+		}
+		ManagedDiskFileSystem mdfs = (ManagedDiskFileSystem)sc.getAttribute
+			( MDFSOBJKEY );
+		if( mdfs != null ) {
+			log.info( "Unmounting MDFS" ):
+			try {
+				mdfs.umount();
+			} catch( Exception e ) {
+				log.warn( e );
+			}
+		}
+		File mdfsMountPoint = (File)sc.getAttribute( MDFSMOUNTKEY );
+		if( mdfsMountPoint != null ) {
+			log.info( "Deleting MDFS mount point" ):
+			mdfsMountPoint.delete();
 		}
 		log.info( "ContextDestroyed" );
 	}
@@ -137,6 +155,12 @@ public class ContextListener implements ServletContextListener {
 
 	static public final String AMQPBROKERKEY = "amqpbroker";
 	static public final String AMQPSERVICEKEY = "amqpservice";
+
+	// For the ManagedDiskFileSystem object itself...
+	static public final String MDFSOBJKEY = "mdfs.obj";
+
+	// For the ManagedDiskFileSystem's mount point, a File object...
+	static public final String MDFSMOUNTKEY = "mdfs.mount";
 }
 
 

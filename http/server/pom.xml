@@ -20,19 +20,28 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>tupelo-store-filesys</artifactId>
-      <version>0.0.1</version>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>tupelo-fuse</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>tupelo-amqp-server</artifactId>
-      <version>0.0.1</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>tupelo-logging</artifactId>
-      <version>0.0.1</version>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>tsk4j-digests</artifactId>
     </dependency>
 
     <dependency>

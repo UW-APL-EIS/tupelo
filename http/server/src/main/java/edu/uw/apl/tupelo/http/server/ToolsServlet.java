@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.io.ObjectOutputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,18 +33,16 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonSerializer;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonPrimitive;
-
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
+import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
 
+import edu.uw.apl.commons.sleuthkit.image.Image;
+import edu.uw.apl.commons.sleuthkit.volsys.VolumeSystem;
+import edu.uw.apl.commons.sleuthkit.digests.VolumeSystemHash;
+import edu.uw.apl.commons.sleuthkit.digests.VolumeSystemHashCodec;
 
 /**
  * A servlet handling just requests which run processing tools against
@@ -55,13 +54,13 @@ import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
  *
  * The expected url layout (i.e. path entered into web.xml) for this servlet is
  *
- * /tools/
+ * /tools
  * /tools/NAME/DID/SID/
  *
  * for the various tool NAMES: digest, hashfs, hashvs.
  *
- * The first url produces a 'matrix' of all managed disks and tool
- * names, for trivial point-and-click tool invocation.
+ * The first url produces a (html-marked up) 'matrix' of all managed
+ * disks and tool names, for trivial point-and-click tool invocation.
 
  * All other urls invoke methods and should be done via POST.  They
  * are started in a newly spawned thread, which outlives the http
@@ -84,13 +83,6 @@ public class ToolsServlet extends HttpServlet {
 		  view it as a FilesystemStore, to be able to invoke e.g. computeDigest()
 		*/
 		store = (FilesystemStore)sc.getAttribute( ContextListener.STOREKEY );
-
-		// gson object claimed thread-safe, so can be a member...
-		GsonBuilder gsonb = new GsonBuilder();
-		gsonb.registerTypeAdapter(Session.class, Constants.SESSIONSERIALIZER );
-		gson = gsonb.create();
-
-		//		log.info( getClass() + " " + log );
 
 	}
 	
@@ -144,10 +136,11 @@ public class ToolsServlet extends HttpServlet {
 
 		// We are the model, we formulate the data...
 		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
-		ArrayList<ManagedDiskDescriptor> sorted = new ArrayList<ManagedDiskDescriptor>
+		ArrayList<ManagedDiskDescriptor> sorted =
+			new ArrayList<ManagedDiskDescriptor>
 			( mdds );
 		Collections.sort( sorted, ManagedDiskDescriptor.DEFAULTCOMPARATOR );
-		req.setAttribute( "mdds", mdds );
+		req.setAttribute( "mdds", sorted );
 
 		// and delegate the JSP view for rendering, classic MVC
 		RequestDispatcher rd = req.getRequestDispatcher( "./tools.jsp" );
@@ -186,7 +179,8 @@ public class ToolsServlet extends HttpServlet {
 		new Thread( r ).start();
 	}
 
-	private void hashVolumeSystem( HttpServletRequest req, HttpServletResponse res,
+	private void hashVolumeSystem( HttpServletRequest req,
+								   HttpServletResponse res,
 								   final String details )
 		throws IOException, ServletException {
 		
@@ -206,10 +200,36 @@ public class ToolsServlet extends HttpServlet {
 		}
 	   final ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( diskID, s );
 
-		Runnable r = new Runnable() {
-				public void run() {
-					try {
-						//						store.computeDigest( mdd );
+	   ManagedDiskFileSystem mdfs = getMDFS();
+	   final File mdfsPath = mdfs.pathTo( mdd );
+	   Runnable r = new Runnable() {
+			   public void run() {
+				   try {
+					   Image i = new Image( mdfsPath );
+					   try {
+						   VolumeSystem vs = null;
+						   try {
+							   vs = new VolumeSystem( i );
+						   } catch( IllegalStateException noVolSys ) {
+							   log.warn( noVolSys );
+							   return;
+						   }
+						   try {
+							   VolumeSystemHash vsh = VolumeSystemHash.create
+								   ( vs );
+							   StringWriter sw = new StringWriter();
+							   VolumeSystemHashCodec.writeTo( vsh, sw );
+							   String s = sw.toString();
+							   byte[] value = s.getBytes();
+							   String key = "hashvs";
+							   store.setAttribute( mdd, key, value );
+						   } finally {
+							   vs.close();
+						   }
+					   } finally {
+						   i.close();
+					   }
+					   
 					} catch( Exception e ) {
 						log.warn( details + " -> " + e );
 					}
@@ -218,8 +238,40 @@ public class ToolsServlet extends HttpServlet {
 		new Thread( r ).start();
 	}
 
+
+	// look: do double-checked locking ??
+	private synchronized ManagedDiskFileSystem getMDFS() {
+		ServletContext sc = this.getServletContext();
+		ManagedDiskFileSystem mdfs = (ManagedDiskFileSystem)
+			sc.getAttribute( ContextListener.MDFSOBJKEY );
+		if( mdfs == null ) {
+			File dataRoot = (File)sc.getAttribute
+				( ContextListener.DATAROOTKEY );
+			File mountPoint = new File( dataRoot, "mdfs" );
+			mountPoint.mkdirs();
+			mdfs = new ManagedDiskFileSystem( store );
+			boolean needsOwnThread = true;
+			try {
+				mdfs.mount( mountPoint, needsOwnThread );
+				// LOOK: wait for the fuse mount to finish.
+				// Grr hate arbitrary sleeps!
+				Thread.sleep( 1000 * 2 );
+			} catch( Exception e ) {
+				log.warn( e );
+				return null;
+			}
+			
+			/*
+			  Make both the mdfs object AND mount point available
+			  for clean up at context destroy time
+			*/
+			sc.setAttribute( ContextListener.MDFSOBJKEY, mdfs );
+			sc.setAttribute( ContextListener.MDFSMOUNTKEY, mountPoint );
+		}
+		return mdfs;
+	}
+	
 	private FilesystemStore store;
-	private Gson gson;
 	private Log log;
 
 }

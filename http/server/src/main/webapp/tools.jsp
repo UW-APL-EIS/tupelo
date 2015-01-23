@@ -12,8 +12,12 @@ The following managed disks are in this store.
 
 <table>
 <c:forEach items="${mdds}" var="mdd" varStatus="s">
-<tr><td><c:out value="${mdd}"/></td><td><form method="post" action="./tools/digest/<c:out value="${mdd.diskID}/${mdd.session}"/>">
+<tr>
+<td><c:out value="${mdd}"/></td>
+<td><form method="post" action="./tools/digest/<c:out value="${mdd.diskID}/${mdd.session}"/>">
     <input type="submit" name="submit" value="Digest" /></form></td>
+<td><form method="post" action="./tools/hashvs/<c:out value="${mdd.diskID}/${mdd.session}"/>">
+    <input type="submit" name="submit" value="Hash VolumeSystem" /></form></td>
 </tr>
 </c:forEach>
 </table>
