@@ -121,7 +121,7 @@ public class ContextListener implements ServletContextListener {
 		FileHashService fhs = (FileHashService)sc.getAttribute
 			( AMQPSERVICEKEY );
 		if( fhs != null ) {
-			log.info( "Stopping AMQP service" ):
+			log.info( "Stopping AMQP service" );
 			try {
 				fhs.stop();
 			} catch( IOException ioe ) {
@@ -131,7 +131,7 @@ public class ContextListener implements ServletContextListener {
 		ManagedDiskFileSystem mdfs = (ManagedDiskFileSystem)sc.getAttribute
 			( MDFSOBJKEY );
 		if( mdfs != null ) {
-			log.info( "Unmounting MDFS" ):
+			log.info( "Unmounting MDFS" );
 			try {
 				mdfs.umount();
 			} catch( Exception e ) {
@@ -140,7 +140,7 @@ public class ContextListener implements ServletContextListener {
 		}
 		File mdfsMountPoint = (File)sc.getAttribute( MDFSMOUNTKEY );
 		if( mdfsMountPoint != null ) {
-			log.info( "Deleting MDFS mount point" ):
+			log.info( "Deleting MDFS mount point" );
 			mdfsMountPoint.delete();
 		}
 		log.info( "ContextDestroyed" );
