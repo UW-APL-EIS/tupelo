@@ -4,12 +4,12 @@
   <parent>
     <groupId>edu.uw.apl</groupId>
     <artifactId>tupelo-parent</artifactId>
-    <version>0.0.1</version>
+    <version>1.0.0</version>
   </parent>
 
   <groupId>edu.uw.apl</groupId>
   <artifactId>tupelo-shell</artifactId>
-  <version>0.0.1</version>
+  <version>1.0.0</version>
   <name>Tupelo Disk Management - Shell</name>
   <url>http://maven.apache.org</url>
 

@@ -4,12 +4,12 @@
   <parent>
     <groupId>edu.uw.apl</groupId>
     <artifactId>tupelo-amqp-parent</artifactId>
-    <version>0.0.1</version>
+    <version>1.0.0</version>
   </parent>
 
   <groupId>edu.uw.apl</groupId>
   <artifactId>tupelo-amqp-objects</artifactId>
-  <version>0.0.1</version>
+  <version>1.0.0</version>
   <packaging>jar</packaging>
   <name>Tupelo Disk Management - AMQP Objects</name>
 
