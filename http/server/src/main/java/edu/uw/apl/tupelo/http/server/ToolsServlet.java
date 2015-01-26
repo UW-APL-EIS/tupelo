@@ -40,6 +40,7 @@ import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 import edu.uw.apl.tupelo.store.tools.BodyFile;
 import edu.uw.apl.tupelo.store.tools.HashFS;
 import edu.uw.apl.tupelo.store.tools.HashVS;
+import edu.uw.apl.tupelo.store.tools.HashFS;
 import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
 
 
@@ -56,7 +57,7 @@ import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
  * /tools
  * /tools/NAME/DID/SID/
  *
- * for the various tool NAMES: digest, hashfs, hashvs.
+ * for the various tool NAMES: digest, hashfs, hashvs, bodyfile.
  *
  * The first url produces a (html-marked up) 'matrix' of all managed
  * disks and tool names, for trivial point-and-click tool invocation.
@@ -118,7 +119,7 @@ public class ToolsServlet extends HttpServlet {
 		} else if( pi.startsWith( "/digest/" ) ) {
 			String details = pi.substring( "/digest/".length() );
 			computeDigest( req, res, details );
-		} else if( pi.startsWith( "/hashvs/" ) ) {
+		} else if( pi.startsWith( "/hashvs/" ) ) { 
 			String details = pi.substring( "/hashvs/".length() );
 			hashVolumeSystem( req, res, details );
 		} else if( pi.startsWith( "/hashfs/" ) ) {

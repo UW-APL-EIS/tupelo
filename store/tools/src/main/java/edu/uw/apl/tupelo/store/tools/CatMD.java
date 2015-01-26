@@ -50,8 +50,8 @@ public class CatMD extends Base {
 		FilesystemStore store = new FilesystemStore( dir );
 		if( debug || verbose )
 			System.out.println( "Store type: " + store );
-		ManagedDiskDescriptor mdd = locateDescriptor( store,
-													  diskID, sessionID );
+		ManagedDiskDescriptor mdd = Utils.locateDescriptor
+			( store, diskID, sessionID );
 		if( mdd == null ) {
 			System.err.println( "Not stored: " + diskID + "," + sessionID );
 			System.exit(1);

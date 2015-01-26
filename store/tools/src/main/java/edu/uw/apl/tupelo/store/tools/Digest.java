@@ -157,8 +157,8 @@ public class Digest extends Base {
 				store.computeDigest( mdd );
 			}
 		} else {
-			ManagedDiskDescriptor mdd = locateDescriptor( store,
-														  diskID, sessionID );
+			ManagedDiskDescriptor mdd = Utils.locateDescriptor
+				( store, diskID, sessionID );
 			if( mdd == null ) {
 				System.err.println( "Not stored: " + diskID + "," + sessionID );
 				System.exit(1);
