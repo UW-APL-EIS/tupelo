@@ -7,12 +7,12 @@
   <parent>
     <groupId>edu.uw.apl</groupId>
     <artifactId>tupelo-http-parent</artifactId>
-    <version>0.0.1</version>
+    <version>1.0.0</version>
   </parent>
 
   <groupId>edu.uw.apl</groupId>
   <artifactId>tupelo-http-server</artifactId>
-  <version>0.0.1</version>
+  <version>1.0.0</version>
   <packaging>war</packaging>
   <name>Tupelo Disk Management - Http Store Servlet</name>
 
@@ -58,7 +58,14 @@
   </dependencies>
 
   <build>
+    <!-- 
+	 Wah, we are having to DISCARD the version number info from
+	 the final artifact name. Otherwise, as the version number
+	 increases over time, scripted tools like Jenkins, ansible
+	 will not be able to locate the artifact by name.
+    -->
     <finalName>tupelo</finalName>
+
     <plugins>
       <plugin>
 	<groupId>org.apache.maven.plugins</groupId>
