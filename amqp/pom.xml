@@ -7,12 +7,12 @@
   <parent>
     <groupId>edu.uw.apl</groupId>
     <artifactId>tupelo-parent</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
   </parent>
 
   <groupId>edu.uw.apl</groupId>
   <artifactId>tupelo-amqp-parent</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <packaging>pom</packaging>
   <name>Tupelo Disk Management - AMQP Parent</name>
 

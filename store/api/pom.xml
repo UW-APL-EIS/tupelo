@@ -7,11 +7,11 @@
   <parent>
     <groupId>edu.uw.apl</groupId>
     <artifactId>tupelo-store-parent</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
   </parent>
 
   <artifactId>tupelo-store-api</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <packaging>jar</packaging>
   <name>Tupelo Disk Management - Store API</name>
 

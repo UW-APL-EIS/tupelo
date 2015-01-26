@@ -6,11 +6,11 @@
   <parent>
     <groupId>edu.uw.apl</groupId>
     <artifactId>tupelo-model-parent</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
   </parent>
 
   <artifactId>tupelo-model-physical</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <packaging>jar</packaging>
 
   <name>Tupelo Disk Management - Model (Physical Disks)</name>
@@ -36,7 +36,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>tupelo-model-core</artifactId>
-      <version>1.0.0</version>
+      <version>1.1.0</version>
     </dependency>
   </dependencies>
 
