@@ -1,8 +1,7 @@
 *.class
 target
-paste
-*~
 *.tmd
 maven-metadata-local.xml
+pom.xml.versionsBackup
 
 # eof
