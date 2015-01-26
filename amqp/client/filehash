@@ -1,13 +1,18 @@
 #!/bin/bash
 
 ARTIFACT=tupelo-amqp-client
-VERSION=0.0.1
 
-JAR=target/$ARTIFACT-$VERSION.jar
+# The code version number is part of the main jar name.  Rather than
+# hard-coding it here, we locate the jar with the LATEST version. Thus
+# we always run the LATEST code, should many versions be present.
+
+JARNAME=`ls target | grep $ARTIFACT | sort -n -r | head -1`
+JARPATH=target/$JARNAME
+
 PACKAGE=edu.uw.apl.tupelo.amqp.client
 CLAZZ=FileHashClient
 
-exec java -classpath $JAR $PACKAGE.$CLAZZ "$@"
+exec java -classpath $JARPATH $PACKAGE.$CLAZZ "$@"
 
 # eof
 
