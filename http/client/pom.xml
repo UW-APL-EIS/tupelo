@@ -7,12 +7,12 @@
   <parent>
     <groupId>edu.uw.apl</groupId>
     <artifactId>tupelo-http-parent</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
   </parent>
 
   <groupId>edu.uw.apl</groupId>
   <artifactId>tupelo-http-client</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <name>Tupelo Disk Management - Http Store Proxy</name>
 
   <dependencies>
