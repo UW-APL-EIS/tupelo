@@ -1,0 +1,21 @@
+#!/bin/sh
+
+DIRNAME=`dirname $0`
+
+ARTIFACT=tupelo-fuse
+
+# The code version number is part of the main jar name.  Rather than
+# hard-coding it here, we locate the jar with the LATEST version. Thus
+# we always run the LATEST code, should many versions be present.
+
+JARNAME=`ls $DIRNAME/target | grep $ARTIFACT | sort -n -r | head -1`
+JARPATH=$DIRNAME/target/$JARNAME
+
+PACKAGE=edu.uw.apl.tupelo.fuse
+CLAZZ=Main
+
+JAVA_OPTS="-Dlog4j.configuration=mdfs.log4j.properties"
+
+exec java $JAVA_OPTS -classpath $JARPATH $PACKAGE.$CLAZZ "$@"
+
+# eof
