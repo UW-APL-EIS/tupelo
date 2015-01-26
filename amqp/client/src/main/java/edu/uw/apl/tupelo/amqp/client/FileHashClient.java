@@ -85,9 +85,10 @@ public class FileHashClient {
 		os.addOption( "u", true,
 					  "Broker url. Defaults to " +
 					  BROKERURLDEFAULT );
+		os.addOption( "V", false, "show version number and exit" );
 
 		final String USAGE =
-			FileHashClient.class.getName() + " [-d] [-v] [-u brokerURL] hashstring+";
+			FileHashClient.class.getName() + " [-d] [-v] [-u brokerURL] [-V] hashstring+";
 		final String HEADER = "";
 		final String FOOTER = "";
 		
@@ -98,6 +99,12 @@ public class FileHashClient {
 		} catch( ParseException pe ) {
 			printUsage( os, USAGE, HEADER, FOOTER );
 			System.exit(1);
+		}
+		if( cl.hasOption( "V" ) ) {
+			Package p = getClass().getPackage();
+			String version = p.getImplementationVersion();
+			System.out.println( p.getName() + "/" + version );
+			System.exit(0);
 		}
 		debug = cl.hasOption( "d" );
 		verbose = cl.hasOption( "v" );
