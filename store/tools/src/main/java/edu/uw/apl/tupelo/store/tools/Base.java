@@ -93,18 +93,6 @@ class Base {
 		}
 	}
 
-	public ManagedDiskDescriptor locateDescriptor( Store s,
-												   String diskID,
-												   String sessionID )
-		throws IOException {
-		for( ManagedDiskDescriptor mdd : s.enumerate() ) {
-			if( mdd.getDiskID().equals( diskID ) &&
-				mdd.getSession().toString().equals( sessionID ) ) {
-				return mdd;
-			}
-		}
-		return null;
-	}
 	
 	protected String storeLocation;
 	protected FilesystemStore store;

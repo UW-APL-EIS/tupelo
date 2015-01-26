@@ -102,16 +102,6 @@ abstract class MDFSBase extends Base {
 			process( f, mdd );
 		}
 	}
-
-	protected boolean isAttributePresent( ManagedDiskDescriptor mdd,
-										  String needle ) throws IOException {
-		Collection<String> haystack = store.listAttributes( mdd );
-		for( String attrName : haystack ) {
-			if( attrName.equals( needle ) )
-				return true;
-		}
-		return false;
-	}
-	
 }
+
 // eof
