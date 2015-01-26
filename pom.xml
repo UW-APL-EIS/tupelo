@@ -25,7 +25,6 @@
     <module>fuse</module> 
     <module>http</module>
     <module>amqp</module>
-    <module>cli</module>
     <module>shell</module>
   </modules>
 
