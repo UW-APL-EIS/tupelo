@@ -370,8 +370,8 @@ public class FilesystemStore implements Store {
 			byte[] hash = mdg.digest( grain );
 			digest.add( hash );
 			mdg.reset();
-			if( log.isDebugEnabled() )
-				log.debug( g );
+			if( log.isTraceEnabled() )
+				log.trace( g );
 		}
 		//		dis.close();
 		is.close();
