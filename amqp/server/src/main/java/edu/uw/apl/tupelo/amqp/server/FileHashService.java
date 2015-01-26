@@ -178,7 +178,7 @@ public class FileHashService {
 		List<String> result = new ArrayList<String>();
 		Collection<String> attrNames = store.listAttributes( mdd );
 		for( String attrName : attrNames ) {
-			if( !attrName.startsWith( "filehashes-" ) )
+			if( !attrName.startsWith( "hashfs-" ) )
 				continue;
 			byte[] ba = store.getAttribute( mdd, attrName );
 			if( ba == null )

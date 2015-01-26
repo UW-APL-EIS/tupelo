@@ -38,6 +38,7 @@ import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 import edu.uw.apl.tupelo.store.tools.BodyFile;
+import edu.uw.apl.tupelo.store.tools.HashFS;
 import edu.uw.apl.tupelo.store.tools.HashVS;
 import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
 
@@ -88,12 +89,12 @@ public class ToolsServlet extends HttpServlet {
 		throws IOException, ServletException {
 		
 		String sp = req.getServletPath();
-		log.debug( "Post.ServletPath: " + sp );
+		log.debug( "Get.ServletPath: " + sp );
 		String pi = req.getPathInfo();
-		log.debug( "Post.PathInfo: " + pi );
+		log.debug( "Get.PathInfo: " + pi );
 
 		if( false ) {
-		} else if( pi == null ) {
+		} else if( pi == null || pi.equals( "/" ) ) {
 			list( req, res );
 		} else {
 			res.sendError( HttpServletResponse.SC_NOT_FOUND,
@@ -120,9 +121,12 @@ public class ToolsServlet extends HttpServlet {
 		} else if( pi.startsWith( "/hashvs/" ) ) {
 			String details = pi.substring( "/hashvs/".length() );
 			hashVolumeSystem( req, res, details );
+		} else if( pi.startsWith( "/hashfs/" ) ) {
+			String details = pi.substring( "/hashfs/".length() );
+			hashFileSystems( req, res, details );
 		} else if( pi.startsWith( "/bodyfile/" ) ) {
 			String details = pi.substring( "/bodyfile/".length() );
-			bodyfile( req, res, details );
+			bodyfiles( req, res, details );
 		} else {
 			res.sendError( HttpServletResponse.SC_NOT_FOUND,
 						   "Unknown command '" + pi + "'" );
@@ -166,12 +170,15 @@ public class ToolsServlet extends HttpServlet {
 			s = Session.parse( store.getUUID(), m.group(2) );
 		} catch( ParseException notAfterRegexMatch ) {
 		}
-	   final ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( diskID, s );
+	   final ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( diskID,
+																	s );
 
 		Runnable r = new Runnable() {
 				public void run() {
 					try {
+						log.info( "Start: computeDigest " + mdd );
 						store.computeDigest( mdd );
+						log.info( "End: computeDigest " + mdd );
 					} catch( Exception e ) {
 						log.warn( details + " -> " + e );
 					}
@@ -206,7 +213,9 @@ public class ToolsServlet extends HttpServlet {
 	   Runnable r = new Runnable() {
 			   public void run() {
 				   try {
+					   log.info( "Start: hashVS " + mdd );
 					   HashVS.process( mdfsPath, mdd, store );
+					   log.info( "End: hashVS " + mdd );
 					} catch( Exception e ) {
 						log.warn( details + " -> " + e );
 					}
@@ -215,7 +224,44 @@ public class ToolsServlet extends HttpServlet {
 		new Thread( r ).start();
 	}
 
-	private void bodyfile( HttpServletRequest req,
+	private void hashFileSystems( HttpServletRequest req,
+								   HttpServletResponse res,
+								   final String details )
+		throws IOException, ServletException {
+		
+		log.debug( "hashFileSystems.details: '" + details  + "'" );
+
+		Matcher m = Constants.MDDPIREGEX.matcher( details );
+		if( !m.matches() ) {
+			res.sendError( HttpServletResponse.SC_NOT_FOUND,
+						   "Malformed managed disk descriptor: " + details );
+			return;
+		}
+		String diskID = m.group(1);
+		Session s = null;
+		try {
+			s = Session.parse( store.getUUID(), m.group(2) );
+		} catch( ParseException notAfterRegexMatch ) {
+		}
+	   final ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( diskID, s );
+
+	   ManagedDiskFileSystem mdfs = getMDFS();
+	   final File mdfsPath = mdfs.pathTo( mdd );
+	   Runnable r = new Runnable() {
+			   public void run() {
+				   try {
+					   log.info( "Start: hashFS " + mdd );
+					   HashFS.process( mdfsPath, mdd, store );
+					   log.info( "End: hashFS " + mdd );
+					} catch( Exception e ) {
+						log.warn( details + " -> " + e );
+					}
+				}
+			};
+		new Thread( r ).start();
+	}
+
+	private void bodyfiles( HttpServletRequest req,
 						   HttpServletResponse res,
 						   final String details )
 		throws IOException, ServletException {
@@ -241,8 +287,10 @@ public class ToolsServlet extends HttpServlet {
 	   Runnable r = new Runnable() {
 			   public void run() {
 				   try {
+					   log.info( "Start: bodyfiles " + mdd );
 					   boolean printResult = false;
 					   BodyFile.process( mdfsPath, mdd, store, printResult );
+					   log.info( "End: bodyfiles " + mdd );
 					} catch( Exception e ) {
 						log.warn( details + " -> " + e );
 					}

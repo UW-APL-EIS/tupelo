@@ -75,19 +75,28 @@ public class ProgressMonitorTest extends junit.framework.TestCase {
 		pme.start();
 	}
 
-	public void _testMonitor1gFlat() throws IOException {
+	public void testMonitor1gFlat() throws IOException {
 		// Avoid placing in src/test/resources, since surefire makes COPIES!
 		File f = new File( "./1g.zero" );
+		testMonitorFlat( f );
+	}
+	
+	private void testMonitorFlat( File f ) throws IOException {
 		if( !f.exists() )
 			return;
-		System.out.println( f );
-		UnmanagedDisk ud = new DiskImage( f );
-		FlatDisk fd = new FlatDisk( ud, Session.CANNED );
-		NullOutputStream nos = new NullOutputStream();
-		ManagedDiskMonitor mdm = new ManagedDiskMonitor( fd );
-		ProgressMonitor pme = new ProgressMonitor( fd, nos, mdm, 5 );
-		pme.start();
-		assertTrue( mdm.total == ud.size() );
+		
+		int N = 100;
+
+		for( int i = 1; i <= N; i++ ) {
+			System.out.println( "testMonitorFlat : " + f + " " + i );
+			UnmanagedDisk ud = new DiskImage( f );
+			FlatDisk fd = new FlatDisk( ud, Session.CANNED );
+			NullOutputStream nos = new NullOutputStream();
+			ManagedDiskMonitor mdm = new ManagedDiskMonitor( fd );
+			ProgressMonitor pme = new ProgressMonitor( fd, nos, mdm, 5 );
+			pme.start();
+			assertTrue( mdm.total == ud.size() );
+		}
 	}
 
 	public void testMonitor1gStreamOptimized() throws IOException {
@@ -105,16 +114,22 @@ public class ProgressMonitorTest extends junit.framework.TestCase {
 	private void testMonitorStreamOptimized( File f ) throws IOException {
 		if( !f.exists() )
 			return;
-		System.out.println( f );
-		UnmanagedDisk ud = new DiskImage( f );
-		StreamOptimizedDisk sod = new StreamOptimizedDisk( ud, Session.CANNED );
-		sod.setCompression( ManagedDisk.Compressions.SNAPPY );
-		ManagedDiskMonitor mdm = new ManagedDiskMonitor( sod );
-		NullOutputStream nos = new NullOutputStream();
-		ProgressMonitor pme = new ProgressMonitor( sod, nos, mdm, 5 );
-		pme.start();
-		nos.close();
-		assertTrue( mdm.total == ud.size() );
+
+		int N = 100;
+
+		for( int i = 1; i <= N; i++ ) {
+			System.out.println( "testMonitorStreamOptimized : " + f + " " + i );
+			UnmanagedDisk ud = new DiskImage( f );
+			StreamOptimizedDisk sod = new StreamOptimizedDisk( ud,
+															   Session.CANNED );
+			sod.setCompression( ManagedDisk.Compressions.SNAPPY );
+			ManagedDiskMonitor mdm = new ManagedDiskMonitor( sod );
+			NullOutputStream nos = new NullOutputStream();
+			ProgressMonitor pme = new ProgressMonitor( sod, nos, mdm, 5 );
+			pme.start();
+			nos.close();
+			assertTrue( mdm.total == ud.size() );
+		}
 	}
 }
 

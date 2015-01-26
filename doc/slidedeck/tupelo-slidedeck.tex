@@ -13,8 +13,8 @@
 \title[Tupelo] % (optional, use only with long paper titles)
 {Tupelo --- Towards Automated Disk Forensics}
 
-\subtitle
-{Sub} % (optional)
+%\subtitle
+%{Sub} % (optional)
 
 \author[] % (optional, use only with lots of authors)
 {Stuart Maclean \\
@@ -40,14 +40,14 @@ University of Washington}
 \end{frame}
 
 
-\begin{frame}{Outline}
-  \tableofcontents[pausesections]
-  % You might wish to add the option [pausesections]
-\end{frame}
+%\begin{frame}{Outline}
+%  \tableofcontents[pausesections]
+%  % You might wish to add the option [pausesections]
+%\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Introduction}
+\begin{frame}{Tupelo - What Is It?}
 
 \begin{itemize}
 \item Tupelo is a set of Java/C programs for efficient whole disk
@@ -58,7 +58,7 @@ University of Washington}
 
 \item Integrates with emerging standard STIX (Structured
   Threat Information Expression) to ingest and
-  author shared information of malicious artifacts.
+  author shared information about malicious artifacts.
 
 \end{itemize}
 
@@ -67,7 +67,7 @@ University of Washington}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-\begin{frame}{Goals}
+\begin{frame}{Tupelo Goals}
 
 To minimize the time, effort and expense of maintaining the health of
 computer hard drives.  To achieve this
@@ -83,19 +83,20 @@ computer hard drives.  To achieve this
 
 \end{itemize}
 
-
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Problem of Trust}
+\begin{frame}{The Problem of Trust}
 
-If the drive you wish to acquire (image) is suspected of containing
+If the drive you wish to acquire is suspected of containing
 malicious artifacts, how can software residing on that same disk
-be relied upon to present accurate disk content?
+be relied upon to present accurate disk content? 
 
-Tupelo does ``dead disk acquisition'', and runs of trusted media,
-e.g. a bootable CD/USB.
+\vskip 20pt
+
+Tupelo does ``dead disk acquisition'', and runs from trusted media,
+e.g. a bootable CD/USB.  Yes, you have to power down.
 
 \end{frame}
 
@@ -109,12 +110,15 @@ Users acquire whole drive contents, storing a copy in a {\em Tupelo
   store}.
 
 \item
-Once in the store, contents are analysed: filesystems, un-allocated
+Data transitions from being {\em unmanaged} to being {\em managed}.
+
+\item
+Once managed, contents are analysed: filesystems, un-allocated
 areas.
 
 \item
-Analysis results also placed in the store alongside the content as {\em
-  attributes}, key/value pairs with arbitrary values.
+Analysis results also placed in the store alongside the managed data
+as {\em attributes}, key/value pairs with arbitrary values.
 
 \item
 Same disk can be acquired repeatedly, and many disks can be acquired.
@@ -125,6 +129,27 @@ Store is essentially a structured (but not relational) database.
 
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Analysis Products}
+
+For each managed disk (what/when), run store tools (via Sleuthkit)
+
+\begin{itemize}
+\item Un-allocated areas hash - finds MBR malware, hidden data.
+
+\item
+Filesystem hashes - input to IOC-based lookup.
+
+\item
+Bodyfiles - expanded hashes, contain file times, owner etc.
+
+\end{itemize}
+
+Examples?
+
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Supported Disk Types}
@@ -132,18 +157,43 @@ Store is essentially a structured (but not relational) database.
 Can acquire three flavors of whole disk content:
 
 \begin{description}
-\item[Physical]  An entire hard drive.  To ensure ``dead'', boot from
+\item[Physical] Entire hard drive.  To ensure ``dead'', boot from
   Tupelo CD.
 
-\item[Virtual] A hard drive of a virtual machine.  To ensure ``dead'',
+\item[Virtual] Hard drive of a virtual machine.  To ensure ``dead'',
   acquire with VM powered off.  VirtualBox and VMWare disks supported.
 
 \item[Disk Image] A previously obtained whole disk image, as a file.
   Dead by definition.
 \end{description}
 
-Could also boot virtual machines from virtualized Tupelo CD, treats
-virtual disks as physical.
+Could also boot virtual machines from virtualized Tupelo CD, then 
+a virtual disk is essentially physical.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]{What and When}
+
+Everything submitted to the Tupelo store is tagged with two
+identifying labels.
+
+\begin{description}
+\item[What]  An identifier for the disk.  We use the disk's vendor
+  plus serial number, not any info stored {\em on} the disk, nor any
+  local user name for the data.  
+
+\item[When] A timestamp, in the form of a sessionID (ticket,token)
+  handed out by the store when the client connects.  Store ensures
+  unique and serialized distribution of sessionIDs.
+\end{description}
+
+Example:
+\begin{verbatim}
+what = ATA-SAMSUNG HD253GJ-S26CJ90B203913
+when = 20150106.0005
+\end{verbatim}
 
 \end{frame}
 
@@ -151,18 +201,17 @@ virtual disks as physical.
 
 \begin{frame}{Use Cases}
 
-Tupelo supports several modes of use.
-
+Tupelo's generality supports several modes of use:
 
 \begin{itemize}
 \item 
 Single User
 
 \item
-Single Administrator
+Local Area Administrator
 
 \item
-Administrator Group
+Wide Area Administrator 
 
 \end{itemize}
 
@@ -171,34 +220,120 @@ Administrator Group
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
-End user scenario.  One hard drive to acquire, store on
-  external disk (USB/eSATA), boot from Tupelo CD.  Acquire on a
-  schedule, e.g. once a week.  
+\begin{frame}{Single User}
+
+\begin{itemize}
+\item Home user, one system, one hard drive.
+
+\item Store is an external hard disk (USB/eSATA)
+
+\item Acquire on a schedule, e.g. once a week.
+
+\item Run store tools manually to produce volume, filesystem
+  differences.
+
+\item Useful as a backup?
+
+\end{itemize}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
-Single administrator scenario.  Many drives to acquire, also on a
-  schedule.  Reference images (e.g. vanilla Win7 install) added to
-  store reduces time spent classifying artifacts.
+\begin{frame}{Local Area Administrator}
+
+\begin{itemize}
+\item Group administrator.  Many drives to acquire, also on a
+  schedule.  Possible end-user does the acquire!
+
+\item Store is network-accessible.
+
+\item Reference images (e.g. vanilla Win7 install) added to
+  store reduces time spent classifying artifacts.  
+
+\item
+Also store known goods (e.g. NSRL) and known bads (e.g. IOCs)
+
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
-Administrator scenario.  Many drives to acquire, also on a
-  schedule.  Reference images (e.g. vanilla Win7 install) added to
-  store reduces time spent classifying artifacts.
+\begin{frame}{Wide Area Administrator}
+
+In addition to local area administrator usage
+
+\begin{itemize}
+\item
+Stores linked to form a graph, expands knowledge base.
+
+\item
+Stores listen on message bus for IOCs (e.g. STIX).  Enables near
+real-time identification of malicious artifacts.
+
+\end{itemize}
+
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Managed and Unmanaged Disks}
+\begin{frame}{Message Bus Framework}
+
+In addition to accepting unmanaged data, over e.g. http, Tupelo store
+also listens on a message bus (currently AMQP):
+
+\begin{itemize}
+\item
+Client programs ask (via AMQP posts) ``Who has seen this hash?''.
+
+\item
+Results relayed to requester, but also to originating Tupelo user.
+
+\item
+Frees Tupelo user from drudgery of IOC handling.
+
+\end{itemize}
 
 \end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Tupelo System Architecture}
+
+\begin{center}
+\begin{tikzpicture}
+
+%\draw[help lines] (0,0) grid (10,10);
+
+\draw [red] (5,5) -- (5,10);
+\draw [red] (5,5) -- (10,5);
+\node [below] at (2.5,10) {User Disks / Unmanaged};
+\node [below] at (7.5,10) {Tupelo Store / Managed};
+
+%% First putdata, user 1
+\draw [->, green] (2,9) -- (4.5,9);
+\node at (1,9) { $UD_{1},T_{1}$ };
+\node at (7.5,9) { $MD_{1},T_{1}$ };
+\node at (8,8.5) { $MD_{1},T_{1} VSHash$ };
+\node at (8,8) { $MD_{1},T_{1} FSHash$ };
+\node at (8,7.5) { $MD_{1},T_{1} BodyFile$ };
+
+%% First putdata, user 2
+\draw [->, green] (2,7) -- (4.5,7);
+\node at (1,7) { $UD_{2},T_{2}$ };
+\node at (7.5,7) { $MD_{2},T_{2}$ };
+
+%% AMQP
+\draw [<->, green] (7.5,4.5) -- (7.5,2.5);
+\node at (7.5,2) { IOC?};
+
+\end{tikzpicture}
+\end{center}
+
+\end{frame}
+
+
 
 \begin{frame}{Initial Data Acquisition}
 

@@ -10,6 +10,8 @@ import java.io.OutputStream;
 
 import org.apache.commons.io.input.CountingInputStream;
 import org.apache.commons.io.output.CountingOutputStream;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Used for monitoring how ManagedDisk 'transfer' operations are
@@ -59,6 +61,7 @@ public class ProgressMonitor {
 		cos = new CountingOutputStream( os );
 		this.cb = cb;
 		this.updateIntervalSecs = updateIntervalSecs;
+		log = LogFactory.getLog( getClass() );
 	}
 
 	public void start() throws IOException {
@@ -91,6 +94,7 @@ public class ProgressMonitor {
 		try {
 			md.readFromWriteTo( cis, cos );
 		} catch( Exception e ) {
+			log.warn( e );
 			t.interrupt();
 		} finally {
 			/*
@@ -116,6 +120,7 @@ public class ProgressMonitor {
 	Callback cb;
 	int updateIntervalSecs;
 	Thread t;
+	Log log;
 }
 
 // eof

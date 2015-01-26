@@ -7,11 +7,14 @@ import java.io.InputStreamReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
@@ -532,8 +535,31 @@ public class Main extends Shell {
 			int progressMonitorUpdateIntervalSecs = 5;
 			store.put( md, cb, progressMonitorUpdateIntervalSecs );
 		}
+
+		/*
+		  Store various attributes about the UNMANAGED state that
+		  serve as a context for the acquisition.  None of these are
+		  REQUIRED to be 'correct', they are purely informational.
+		*/
+		String user = System.getProperty( "user.name" );
+		store.setAttribute( mdd, "unmanaged.user",
+							user.getBytes() );
+		Date timestamp = new Date();
+		// storing the timestamp as a STRING
+		store.setAttribute( mdd, "unmanaged.timestamp",
+							("" + timestamp).getBytes() );
+		
 		store.setAttribute( mdd, "unmanaged.path",
 							ud.getSource().getPath().getBytes() );
+
+		try {
+			InetAddress ia = InetAddress.getLocalHost();
+			String dotDecimal = ia.getHostAddress();
+			store.setAttribute( mdd, "unmanaged.inetaddress",
+								dotDecimal.getBytes() );
+		} catch( UnknownHostException uhe ) {
+		}
+			
 	}
 
 	private void hashVolumeSystem( UnmanagedDisk ud ) throws IOException {

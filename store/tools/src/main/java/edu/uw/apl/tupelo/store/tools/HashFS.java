@@ -119,7 +119,6 @@ public class HashFS {
 		} catch( Exception iae ) {
 			return false;
 		}
-		
 		List<Partition> ps = vs.getPartitions();
 		try {
 			for( Partition p : ps ) {
@@ -127,13 +126,17 @@ public class HashFS {
 					continue;
 				log.debug( "At sector " + p.start() +
 						   ", located " + p.description() );
+				String key = keyName( p.start(), p.length() );
+				boolean exists = Utils.isAttributePresent( store, mdd, key );
+				if( exists )
+					continue;
 				Map<String,byte[]> fileHashes = new HashMap<String,byte[]>();
 				FileSystem fs = null;
 				try {
 					fs = new FileSystem( i, p.start() );
 					walk( fs, fileHashes );
 					fs.close();
-					System.out.println( " FileHashes : " + fileHashes.size() );
+					log.info( " FileHashes : " + fileHashes.size() );
 					record( fileHashes, p.start(), p.length(), mdd, store );
 				} catch( IllegalStateException noFilesystem ) {
 					continue;
@@ -150,11 +153,16 @@ public class HashFS {
 										Store store )
 		throws Exception {
 
+		String key = keyName( 0, 0 );
+		boolean exists = Utils.isAttributePresent( store, mdd, key );
+		if( exists )
+			return;
+		
 		Map<String,byte[]> fileHashes = new HashMap<String,byte[]>();
 		FileSystem fs = new FileSystem( i );
 		try {
 			walk( fs, fileHashes );
-			System.out.println( "FileHashes: " + fileHashes.size() );
+			log.debug( "FileHashes: " + fileHashes.size() );
 			// signify a standalone file system via a 0,0 sector interval
 			record( fileHashes, 0, 0, mdd, store );
 		} finally {
@@ -171,7 +179,7 @@ public class HashFS {
 						process( f, path, fileHashes );
 						return Walk.WALK_CONT;
 					} catch( Exception e ) {
-						System.err.println( e );
+						log.warn( e );
 						return Walk.WALK_ERROR;
 					}
 				}
@@ -227,6 +235,10 @@ public class HashFS {
 		}
 		return MD5.digest();
 	}
+
+	static String keyName( long startSector, long sectorCount ) {
+		return "hashfs-" + startSector + "-" + sectorCount;
+	}
 	
 	static private void record( Map<String,byte[]> fileHashes,
 								long start, long length,
@@ -236,9 +248,6 @@ public class HashFS {
 		
 		List<String> sorted = new ArrayList<String>( fileHashes.keySet() );
 		Collections.sort( sorted );
-		
-		String key = "filehashes-" + start + "-" + length + ".txt";
-		
 		StringWriter sw = new StringWriter();
 		PrintWriter pw = new PrintWriter( sw );
 		for( String fName : sorted ) {
@@ -248,6 +257,7 @@ public class HashFS {
 		}
 		pw.close();
 		String value = sw.toString();
+		String key = keyName( start, length );
 		store.setAttribute( mdd, key, value.getBytes() );
 	}
 	
