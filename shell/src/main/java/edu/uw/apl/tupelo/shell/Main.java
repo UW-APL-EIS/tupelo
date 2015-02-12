@@ -227,6 +227,33 @@ public class Main extends Shell {
 			} );
 		commandHelp( "putdisk", "unmanagedDiskPath|unmanagedDiskIndex",
 					 "Transfer an identified unmanaged disk to the store" );
+
+		// list attributes for a given managed disk
+		addCommand( "as", "(.+)", new Lambda() {
+				public void apply( String[] args ) throws Exception {
+					String needle = args[1];
+					ManagedDiskDescriptor mdd = null;
+					try {
+						mdd = locateManagedDisk( needle );
+					} catch( RuntimeException iae ) {
+						System.err.println( iae );
+						return;
+					}
+					if( mdd == null ) {
+						System.out.println( "No managed disk: " +
+											needle );
+						return;
+					}
+					try {
+						listAttributes( mdd );
+					} catch( IOException ioe ) {
+						log.warn( ioe );
+						System.err.println( "" + ioe );
+					}
+				}
+			} );
+		commandHelp( "as", "managedDiskIndex",
+					 "List attributes of an identified managed disk" );
 	}
 
 	public void readArgs( String[] args ) throws Exception {
@@ -285,6 +312,12 @@ public class Main extends Shell {
 		super.start();
 	}
 
+	
+	private void listAttributes( ManagedDiskDescriptor mdd ) throws IOException{
+		Collection<String> attrNames = store.listAttributes( mdd );
+		reportAttributes( attrNames );
+	}
+	
 	private UnmanagedDisk locateUnmanagedDisk( String needle ) {
 		try {
 			int i = Integer.parseInt( needle );
@@ -332,6 +365,31 @@ public class Main extends Shell {
 		return null;
 	}
 	
+	private ManagedDiskDescriptor locateManagedDisk( String needle )
+		throws IOException {
+		try {
+			int i = Integer.parseInt( needle );
+			return locateManagedDisk( i );
+		} catch( NumberFormatException nfe ) {
+			// proceed with name-based lookup...
+		}
+		// TODO
+		return null;
+	}
+
+	private ManagedDiskDescriptor locateManagedDisk( int index ) 
+		throws IOException {
+		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
+		List<ManagedDiskDescriptor> sorted =
+			new ArrayList<ManagedDiskDescriptor>( mdds );
+		Collections.sort( sorted, ManagedDiskDescriptor.DEFAULTCOMPARATOR );
+		int total = sorted.size();
+		if( index < 1 || index > total )
+			throw new IllegalArgumentException( "Index out-of-range: " +
+												index );
+		return sorted.get(index-1);
+	}
+
 	private void identifyUnmanagedDisks() {
 		identifyPhysicalDisks();
 	}
@@ -404,6 +462,20 @@ public class Main extends Shell {
 			String fmt = String.format( MANAGEDDISKREPORTFORMAT, n,
 										mdd.getDiskID(),
 										mdd.getSession() );
+			System.out.println( fmt );
+			n++;
+		}
+	}
+
+	void reportAttributes( Collection<String> attrNames ) {
+		String header = String.format( ATTRIBUTEREPORTFORMAT,
+									   "N", "Name" );
+		System.out.println( header );
+		int n = 1;
+		List<String> sorted = new ArrayList<String>( attrNames );
+		Collections.sort( sorted );
+		for( String s : sorted ) {
+			String fmt = String.format( ATTRIBUTEREPORTFORMAT, n, s );
 			System.out.println( fmt );
 			n++;
 		}
@@ -751,6 +823,8 @@ public class Main extends Shell {
 	static final String UNMANAGEDDISKREPORTFORMAT = "%2s %42s %16s %16s";
 
 	static final String MANAGEDDISKREPORTFORMAT = "%2s %42s %17s";
+
+	static final String ATTRIBUTEREPORTFORMAT = "%2s %42s";
 }
 
 
