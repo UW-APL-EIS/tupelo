@@ -28,6 +28,48 @@ import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.Store;
 
 /**
+ * Expose the contents of a Tupelo store as a <em>filesystem</em>,
+ * suitable for inspection by e.g. <code>md5sum, dd, mmls, fls,
+ * etc</code>.  Each file exposed is a <em>device file</em> rather
+ * than a regular file, so think <code>/dev/sda</code> and not
+ * <code>/etc/fstab</code>. Only device-aware tools like the ones
+ * mentioned above can make any sense of this filesystem.
+
+ * Typical usage is
+ * <pre>
+ *
+ * Store s = new FilesystemStore();
+ * ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( s );
+ * File mountPoint = new File( "mount" );
+ * mountPoint.mkdirs();
+ * boolean ownThread = true|false;
+ * mdfs.mount( mountPoint, ownThread );
+ * </pre>
+ *
+ * where <code>ownThread</code> depends on the calling code needing to
+ * continue or not.  When used in a main program (see e.g. {@link
+ * Main}), set to false.  When used in e.g. a web application, set to
+ * true.
+ * <p>
+ * To unmount, externally run {@code fusermount -u mount}.  This
+ * same command could also be wrapped in a
+ * <code>Process/ProcessBuilder</code> if to be run locally, which is
+ * how the {@link #umount() umount} method works.
+ *
+ * <p>
+ * The filessytem layout for the managed disks is then
+ *
+ * <pre>
+ * /diskIDX/sessionIDY
+ * </pre>
+ *
+ * for all disks X and all sessions Y.  You could then do this, for
+ * some available file, <p>
+ *
+ * <pre>
+ * $ md5sum /path/to/mount/diskID1/sessionID2
+ * </pre>
+ *
  * Note how we access the 'Store' object totally by the base Store
  * interface.  We do NOT need to know here HOW the Store is
  * implemented (though of course the likely implementation is a
@@ -35,6 +77,14 @@ import edu.uw.apl.tupelo.store.Store;
  */
 public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 
+	/**
+	 * Construct a ManagedDiskFileSystem given a Tupelo store.  Will
+	 * expose each managed disk (a what/when pair) as a device file
+	 * under the ManagedDiskFileSystem mount point.
+	 *
+	 @param s the Tupelo store whose managed disks are to exposed as a
+	 filesystem.
+	 */
 	public ManagedDiskFileSystem( Store s ) {
 		store = s;
 		startTime = (int) (System.currentTimeMillis() / 1000L);
@@ -53,6 +103,18 @@ public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 		}
 	}
 	
+	/**
+	 * Do the fuse mount.  Until this command called, the store's
+	 * contents are not visible to the host filesystem.
+	 *
+	 * @param mountPoint a directory on the host file system at which
+	 * to do the mount.  Must exist a priori.
+
+	 * @param ownThread false if caller willing to block until the
+	 * mount is torn down (by an external <code>fusermount -u
+	 * mount</code>).  A caller which needs a new thread spawned
+	 * supplies true.
+	 */
 	public void mount( File mountPoint, boolean ownThread ) throws Exception {
 		if( !mountPoint.isDirectory() )
 			throw new IllegalArgumentException( "Mountpoint not a dir: " +
@@ -60,7 +122,20 @@ public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 		this.mountPoint = mountPoint;
 		/*
 		  The -f says no fork, we need this!!
+
 		  The -s says single-threaded, we need this!!
+
+		  LOOK: Consider relaxing this and synchronizing on the
+		  SeekableInputStream objects, may improve performance ??
+		  Can't have arbitrary multi-threaded access to each
+		  SeekableInputStream (since it has state and is NOT
+		  synchronized internally) but MT-access to distinct
+		  SeekableInputStreams likely OK. Likely we are not achieving
+		  this latter situation even with the current -s option set to
+		  true.  Not sure if 'fuse single threaded' means a single
+		  thread for the entire filesystem, or a single thread per
+		  opened file.
+		  
 		  The -r says read-only, which makes sense here
 		*/
 		String[] args = { mountPoint.getPath(), "-f", "-s", "-r"  };
@@ -80,6 +155,11 @@ public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 	}
 
 	/**
+	 * Unmount the filesystem, the dual of {@link #mount(java.io.File,
+	 * boolean) mount}.  Only makes sense if the mount was done such
+	 * that the caller was able to continue, with the file system
+	 * running in its own thread.
+	 *
 	 * @return The exit code of the 'fusermount -u' sub-process
 	 */
 	public int umount() throws Exception {
@@ -101,13 +181,17 @@ public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 		try {
 			return store.enumerate();
 		} catch( IOException ioe ) {
+			log.warn( ioe );
 			return Collections.emptyList();
 		}
 	}
 
 	/**
-	   Convenience for client apps so they know where in the 'file system'
-	   a ManagedDisk can be located
+	   Convenience method, for applications to derive where in the
+	   mounted file system a ManagedDisk can be located.
+
+	   @param mdd a descriptor (diskID+sessionID) for the managed disk
+	   of interest
 	*/
 	public File pathTo( ManagedDiskDescriptor mdd ) {
 		File f = new File( mountPoint, mdd.getDiskID() );
@@ -121,8 +205,6 @@ public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 		if( log.isTraceEnabled() ) {
 			log.trace( "getattr " + path );
 		}
-
-		//		System.out.println( "getattr: " + path );
 
 		Collection<ManagedDiskDescriptor> mdds = descriptors();
 
@@ -288,7 +370,19 @@ public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 	}
 
 	
-	// fh is filehandle passed from open
+	/**
+	  @param path the file to read.  Represents a single managed disk
+	  (what/when).
+
+	  @param fh filehandle passed from {@link #open(String, int,
+	  fuse.FuseOpenSetter) open)}. We know it represents a
+	  SeekableInputStream.
+
+	  @param buf a buffer to store the read data.  Has a known
+	  available space, which governs how much data we should/can read.
+
+	  @param offset file offset at which to read.  We seek to it.
+	*/
 	@Override
 	public int read(String path, Object fh, ByteBuffer buf, long offset)
 		throws FuseException {
@@ -365,14 +459,17 @@ public class ManagedDiskFileSystem extends AbstractFilesystem3 {
 	private File mountPoint;
 	private final Map<Object,byte[]> readBuffers;
 	private final Log log;
-	
+
+	/*
+	  We check provided paths as identifying valid managed disk content
+	  via these two regexs
+	*/
 	static final Pattern DISKIDPATHREGEX = Pattern.compile
 		( "^(" + ManagedDiskDescriptor.DISKIDREGEX.pattern() + ")/?$" );
 
 	static final Pattern MANAGEDDISKDESCRIPTORPATHREGEX = Pattern.compile
 		( "^(" + ManagedDiskDescriptor.DISKIDREGEX.pattern() + ")/(" +
 		  Session.SHORTREGEX.pattern() + ")/?$" );
-
 }
 
 // eof

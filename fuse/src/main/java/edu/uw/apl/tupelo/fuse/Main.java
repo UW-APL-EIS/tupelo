@@ -13,14 +13,21 @@ import fuse.FuseMount;
 
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 
-public class Main {
+/**
+ * A command-line entry point to creating a ManagedDiskFileSystem.
+ * Takes a Tupelo store by local file name.  Various command line
+ * options enable dryrun, verbose etc. To run:
+ *
+ * <pre>
+ * java edu.uw.apl.tupelo.fuse.Main -s /path/to/tupeloStore mountPoint
+ * </pre>
+ *
+ * where the mount point directory must exist a priori.
+ * 
+ */
 
-	static private void printUsage( Options os, String usage,
-									String header, String footer ) {
-		HelpFormatter hf = new HelpFormatter();
-		hf.setWidth( 80 );
-		hf.printHelp( usage, header, os, footer );
-	}
+ public class Main {
+
 
 	public static void main(String[] args) throws Exception {
 		Options os = new Options();
@@ -75,8 +82,14 @@ public class Main {
 		mdfs.mount( mount, ownThread );
 	}
 
-	static final String STORELOCATIONDEFAULT = "./test-store";
-	
+	static private void printUsage( Options os, String usage,
+									String header, String footer ) {
+		HelpFormatter hf = new HelpFormatter();
+		hf.setWidth( 80 );
+		hf.printHelp( usage, header, os, footer );
+	}
+
+	 static final String STORELOCATIONDEFAULT = "./test-store";
 }
 
 // eof
