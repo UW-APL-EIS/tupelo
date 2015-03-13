@@ -166,7 +166,8 @@ public class FileHashClient {
 		channel.basicPublish( EXCHANGE, "who-has", bp, json.getBytes() );
 
         QueueingConsumer consumer = new QueueingConsumer(channel);
-        channel.basicConsume( replyQueueName, true, consumer);
+		boolean autoAck = true;
+        channel.basicConsume( replyQueueName, autoAck, consumer);
 
 		QueueingConsumer.Delivery delivery = consumer.nextDelivery();
 		String message = new String(delivery.getBody());
