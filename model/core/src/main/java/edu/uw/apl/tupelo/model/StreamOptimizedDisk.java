@@ -134,8 +134,11 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		  capacity.
 		*/
 		long capacityGrains = lenAligned / Constants.SECTORLENGTH;
+		// Currently we have just a single sector header...
+		long overhead = 1;
 		header = new Header( diskID, session, DiskTypes.STREAMOPTIMIZED,
-							 parentUUID, capacityGrains, grainSize );
+							 parentUUID, capacityGrains, grainSize,
+							 overhead );
 
 		header.padding = padding;
 		header.dataOffset = Header.SIZEOF;
@@ -493,6 +496,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 				gtIndex++;
 				lba += header.grainSize;
 				written += (grainWrite + padLen);
+
 				if( written % Constants.SECTORLENGTH != 0 )
 					throw new IllegalStateException( "" + written );
 			}
@@ -554,7 +558,7 @@ public class StreamOptimizedDisk extends ManagedDisk {
 
 		// This is the grain directory write...
 		for( int gde = 0; gde < grainDirectory.length; gde++ ) {
-			log.debug( "GD: " + gde + " "+ grainDirectory[gde] );
+			log.debug( "GD: " + gde + " " + grainDirectory[gde] );
 			dos.writeInt( (int)grainDirectory[gde] );
 		}
 		written += (4 * grainDirectory.length);
@@ -580,6 +584,9 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		mdm.writeTo( dos );
 		written += MetadataMarker.SIZEOF;
 		
+		if( written % Constants.SECTORLENGTH != 0 )
+			throw new IllegalStateException( "" + written );
+
 		ByteArrayOutputStream hdr = new ByteArrayOutputStream();
 		header.writeTo( hdr );
 		ByteArrayInputStream ftr = new ByteArrayInputStream( hdr.toByteArray() );
@@ -588,11 +595,17 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		footer.writeTo( (DataOutput)dos );
 		written += Header.SIZEOF;
 		
+		if( written % Constants.SECTORLENGTH != 0 )
+			throw new IllegalStateException( "" + written );
+		
 		// Finally, the end-of-stream marker
 		mdm = new MetadataMarker( 0, MetadataMarker.TYPE_EOS );
 		mdm.writeTo( dos );
 		written += MetadataMarker.SIZEOF;
 					 
+		if( written % Constants.SECTORLENGTH != 0 )
+			throw new IllegalStateException( "" + written );
+
 		log.info( "Written " + written );
 		dos.flush();
 		bis.close();

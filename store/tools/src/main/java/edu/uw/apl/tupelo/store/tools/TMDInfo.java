@@ -29,6 +29,8 @@ public class TMDInfo {
 			main.start();
 		} catch( Exception e ) {
 			System.err.println( e );
+			if( debug )
+				e.printStackTrace();
 			System.exit(-1);
 		} finally {
 			LogManager.shutdown();
@@ -41,7 +43,8 @@ public class TMDInfo {
 
 	public void readArgs( String[] args ) {
 		Options os = new Options();
-		String usage = TMDInfo.class.getName() + " /path/to/tmdfile";
+		os.addOption( "d", false, "Debug" );
+		String usage = TMDInfo.class.getName() + " [-d] /path/to/tmdfile";
 		final String header = "Print properties of given .tmd file.";
 		final String footer = "";
 		CommandLineParser clp = new PosixParser();
@@ -54,6 +57,7 @@ public class TMDInfo {
 			hf.printHelp( usage, header, os, footer );
 			System.exit(1);
 		}
+		debug = cl.hasOption( "d" );
 		args = cl.getArgs();
 		if( args.length < 1 ) {
 			HelpFormatter hf = new HelpFormatter();
@@ -77,15 +81,17 @@ public class TMDInfo {
 	public void report( ManagedDisk md, File source ) throws Exception {
 		System.out.println( "Source: " + source );
 		System.out.println( "Type: " + md.getClass() );
-		System.out.println( "Size: " + md.size() );
-		System.out.println( "UUID.Create: " + md.getUUIDCreate() );
-		System.out.println( "UUID.Parent: " + md.getUUIDParent() );
-		System.out.println( "Param: " + md.paramString() );
 		ManagedDiskDescriptor mdd = md.getDescriptor();
 		System.out.println( "DiskID: " + mdd.getDiskID() );
 		System.out.println( "Session: " + mdd.getSession().format() );
+		System.out.println( "Size: " + md.size() );
+		System.out.println( "UUID.Create: " + md.getUUIDCreate() );
+		System.out.println( "UUID.Parent: " + md.getUUIDParent() );
+		System.out.println( "Compression: " + md.getCompression() );
+		System.out.println( "Param: " + md.paramString() );
 	}
 
+	static boolean debug;
 	String inFileName;
 }
 

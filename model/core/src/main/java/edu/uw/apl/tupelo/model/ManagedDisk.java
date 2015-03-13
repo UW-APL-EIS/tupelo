@@ -67,6 +67,10 @@ abstract public class ManagedDisk {
 		header.compressAlgorithm = c;
 	}
 
+	public Compressions getCompression() {
+		return header.compressAlgorithm;
+	}
+	
 	abstract public void setParentDigest( ManagedDiskDigest grainHashes );
 
 	abstract public void setParent( ManagedDisk md );
@@ -155,7 +159,7 @@ abstract public class ManagedDisk {
 		 */
 		public Header( String diskID, Session s,
 					   DiskTypes type, UUID uuidParent, long capacity,
-					   long grainSize ) {
+					   long grainSize, long overhead ) {
 			/*
 			  Record the version of the code creating/writing the header.
 			  See also Version.java
@@ -170,6 +174,7 @@ abstract public class ManagedDisk {
 			this.grainSize = grainSize;
 			this.numGTEsPerGT = NUMGTESPERGT;
 			this.compressAlgorithm = Compressions.NONE;
+			this.overhead = overhead;
 		}
 
 		Header( InputStream is ) throws IOException {
@@ -183,8 +188,11 @@ abstract public class ManagedDisk {
 			}
 			// LOOK: version checking, can we reliably read/understand this data ?
 			version = di.readInt();
+
+			// LOOK: check enum bounds...
 			int typeI = di.readInt();
 			type = DiskTypes.values()[typeI];
+
 			flags = di.readInt();
 
 			long ms8 = di.readLong();
@@ -218,8 +226,11 @@ abstract public class ManagedDisk {
 			numGTEsPerGT = di.readInt();
 			gdOffset = di.readLong();
 			rgdOffset = di.readLong();
+			overhead = di.readLong();
 			dataOffset = di.readLong();
 			padding = di.readInt();
+
+			// LOOK: check enum bounds...
 			int compressAlgorithmInt = di.readInt();
 			compressAlgorithm = Compressions.values()[compressAlgorithmInt];
 		}
@@ -257,6 +268,7 @@ abstract public class ManagedDisk {
 			dop.writeInt( numGTEsPerGT );
 			dop.writeLong( gdOffset );
 			dop.writeLong( rgdOffset );
+			dop.writeLong( overhead );
 			dop.writeLong( dataOffset );
 			dop.writeInt( padding );
 			dop.writeInt( compressAlgorithm.ordinal() );
@@ -279,6 +291,10 @@ abstract public class ManagedDisk {
 		final long capacity, grainSize;
 		int numGTEsPerGT;
 		long gdOffset, rgdOffset;
+
+		// how many sectors the header and any metadata take up
+		long overhead;
+
 		long dataOffset;
 		int padding;
 		Compressions compressAlgorithm;
@@ -295,8 +311,10 @@ abstract public class ManagedDisk {
 			DISKIDSIZEOF + SESSIONSIZEOF +
 			16 + 16 +			// uuid x 2
 			8 + 8 +				// capacity, grainSize
-			4 + 8 + 8 + 8 +		// numGTEsPerGT, offset x 3
-			+ 4 +				// padding
+			4 + 8 + 8 +			// numGTEsPerGT, gdOffset, rgdOffset
+			8 +					// overhead
+			8 +					// data offset
+			4 +					// padding
 			4;					// compressAlgorithm
 
 		// The number of bytes allocated on disk for a Header

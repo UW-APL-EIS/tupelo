@@ -149,6 +149,16 @@ public class Main extends Shell {
 			} );
 		commandHelp( "us", "List local unmanaged disks" );
 
+		// report the store url...
+		addCommand( "s", new Lambda() {
+				public void apply( String[] args ) throws Exception {
+					System.out.println( "Store: " + storeLocation );
+					
+										 
+				}
+			} );
+		commandHelp( "s", "Print the store location" );
+
 		/*
 		  vshash, hash the volume system (unallocated areas) of an identified
 		  unmanaged disk
@@ -160,8 +170,10 @@ public class Main extends Shell {
 					UnmanagedDisk ud = null;
 					try {
 						ud = locateUnmanagedDisk( needle );
-					} catch( RuntimeException re ) {
-						System.err.println( re.getMessage() );
+					} catch( IndexOutOfBoundsException oob ) {
+						System.err.println
+							( "No unmanaged disk " + needle +
+							  ". Use 'us' to list unmanaged disks" );
 						return;
 					}
 					if( ud == null ) {
@@ -186,8 +198,10 @@ public class Main extends Shell {
 					UnmanagedDisk ud = null;
 					try {
 						ud = locateUnmanagedDisk( needle );
-					} catch( RuntimeException re ) {
-						System.err.println( re.getMessage() );
+					} catch( IndexOutOfBoundsException oob ) {
+						System.err.println
+							( "No unmanaged disk " + needle +
+							  ". Use 'us' to list unmanaged disks" );
 						return;
 					}
 					if( ud == null ) {
@@ -208,8 +222,10 @@ public class Main extends Shell {
 					UnmanagedDisk ud = null;
 					try {
 						ud = locateUnmanagedDisk( needle );
-					} catch( RuntimeException iae ) {
-						System.err.println( iae );
+					} catch( IndexOutOfBoundsException oob ) {
+						System.err.println
+							( "No unmanaged disk " + needle +
+							  ". Use 'us' to list unmanaged disks" );
 						return;
 					}
 					if( ud == null ) {
@@ -306,12 +322,21 @@ public class Main extends Shell {
 
 	@Override
 	public void start() throws Exception {
-		store = buildStore();
+		try {
+			store = buildStore();
+		} catch( IllegalStateException ise ) {
+			System.err.println( "Cannot locate store: '" + storeLocation +
+								"'." );
+			System.err.println( "For a file-based store, first 'mkdir " +
+								storeLocation + "'" );
+			System.exit(1);
+			
+		}
 		report( "Store: " + storeLocation );
 		identifyUnmanagedDisks();
 		super.start();
 	}
-
+	
 	
 	private void listAttributes( ManagedDiskDescriptor mdd ) throws IOException{
 		Collection<String> attrNames = store.listAttributes( mdd );
@@ -350,8 +375,8 @@ public class Main extends Shell {
 		int total = physicalDisks.size() + virtualDisks.size() +
 			diskImages.size();
 		if( needle < 1 || needle > total )
-			throw new IllegalArgumentException( "Index out-of-range: " +
-												needle );
+			throw new IndexOutOfBoundsException( "Index out-of-range: " +
+												 needle );
 		needle--;
 		if( needle < physicalDisks.size() )
 			return physicalDisks.get( needle );

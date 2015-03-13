@@ -6,8 +6,11 @@ CLAZZ=$1
 shift
 
 ARTIFACT=tupelo-store-tools
-VERSION=0.0.1
-JAR=$ARTIFACT-$VERSION.jar
+
+# Locate latest versioned jar rather than hard-code one
+JARNAME=`ls $DIRNAME/target | grep $ARTIFACT | sort -n -r | head -1`
+JARPATH=$DIRNAME/target/$JARNAME
+
 PACKAGE=edu.uw.apl.tupelo.store.tools
 
 #JAVA_OPTS="-Dlog4j.debug"
@@ -17,6 +20,6 @@ PACKAGE=edu.uw.apl.tupelo.store.tools
 [ -d $DIRNAME/target ] && cp $DIRNAME/log4j.properties $DIRNAME/target/
 
 # This codebase built using JDK 1.7 and requires a JRE 1.7 also...
-exec java $JAVA_OPTS -cp $DIRNAME/target/$JAR $PACKAGE.$CLAZZ "$@"
+exec java $JAVA_OPTS -cp $JARPATH $PACKAGE.$CLAZZ "$@"
 
 # eof

@@ -43,10 +43,14 @@ public class Version {
 		} catch( Exception e ) {
 			throw new ExceptionInInitializerError( e );
 		}
-		VERSION = ((MAJOR & 0xff) << 16) | ((MINOR & 0xff) << 8) | (PATCH & 0xff);
+		VERSION = ((MAJOR & 0xff) << 16) |
+			((MINOR & 0xff) << 8) |
+			(PATCH & 0xff);
 
 		// Do we really want to report this ??
-		System.out.println( "Version: " + MAJOR + "." + MINOR + "." + PATCH );
+		if( false )
+			System.out.println( "Version: " +
+								MAJOR + "." + MINOR + "." + PATCH );
 		
 	}
 	

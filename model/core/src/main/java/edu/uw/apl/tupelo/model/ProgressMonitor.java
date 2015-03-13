@@ -50,7 +50,12 @@ public class ProgressMonitor {
 		public void update( long unmanagedBytesRead,
 							long managedBytesWritten, long elapsed );
 	}
-	
+
+	/**
+	 * @param os the output stream to which managed disk data is to be written.
+	 * Typically decided by a store implementation.
+	 *
+	 */
 	public ProgressMonitor( ManagedDisk md, OutputStream os,
 							Callback cb, int updateIntervalSecs )
 		throws IOException {
@@ -93,6 +98,7 @@ public class ProgressMonitor {
 		t.start();
 		try {
 			md.readFromWriteTo( cis, cos );
+			cos.flush();
 		} catch( Exception e ) {
 			log.warn( e );
 			t.interrupt();

@@ -44,8 +44,10 @@ public class FlatDisk extends ManagedDisk {
 		String diskID = unmanagedData.getID();
 		UUID parent = Constants.NULLUUID;
 		long capacity = len / Constants.SECTORLENGTH;
+		// Currently we have just a single sector header...
+		long overhead = 1;
 		header = new Header( diskID, session, DiskTypes.FLAT, parent,
-							 capacity, GRAINSIZE_DEFAULT );
+							 capacity, GRAINSIZE_DEFAULT, overhead );
 		header.dataOffset = Header.SIZEOF;
 	}
 
@@ -131,7 +133,8 @@ public class FlatDisk extends ManagedDisk {
 				*/
 				return;
 			} else {
-				throw new IllegalStateException( "Verify failed. noUnmanagedData" );
+				throw new IllegalStateException
+					( "Verify failed. noUnmanagedData" );
 			}
 		}
 		if( managedData == null )
@@ -141,7 +144,6 @@ public class FlatDisk extends ManagedDisk {
 		if( usize + Header.SIZEOF != msize )
 			throw new IllegalStateException( "Verify failed: bad size compare");
 	}
-
 
 	public void writeTo( File f ) throws IOException {
 		FileOutputStream fos = new FileOutputStream( f );
