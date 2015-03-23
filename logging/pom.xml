@@ -33,18 +33,31 @@
     <!-- 
 	 Logging to rabbitmq needs that appender.  We do NOT need this
 	 at build time, but by including it here we eliminate other
-	 modules needing it, they instead just depend on us.
+	 modules explicitly depending on it, they instead just depend
+	 on us.
     -->
     <dependency>
-      <groupId>com.plant42</groupId>
+      <groupId>uk.ac.ox.it.vle</groupId>
       <artifactId>rabbitmq-log4j-appender</artifactId>
-      <version>1.0.1</version>
+      <version>1.1</version>
       <scope>runtime</scope>
     </dependency>
   </dependencies>
 
-
   <build>
     <defaultGoal>compile</defaultGoal>
+    <resources>
+      <resource>
+	<directory>src/main/resources</directory>
+	<filtering>true</filtering>
+      </resource>
+      <resource>
+	<directory>src/test/resources</directory>
+	<filtering>true</filtering>
+      </resource>
+    </resources>
+    <filters>
+      <filter>filter.properties</filter>
+    </filters>
   </build>
 </project>
