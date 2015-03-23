@@ -59,5 +59,24 @@
     <filters>
       <filter>filter.properties</filter>
     </filters>
+    <plugins>
+      <plugin>
+	<artifactId>maven-antrun-plugin</artifactId>
+	<version>1.8</version>
+	<executions>
+	  <execution>
+	    <phase>validate</phase>
+	    <configuration>
+	      <target>
+		<ant antfile="ant.filecheck.xml"/>
+	      </target>
+	    </configuration>
+	    <goals>
+	      <goal>run</goal>
+	    </goals>
+	  </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 </project>

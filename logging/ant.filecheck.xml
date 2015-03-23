@@ -1,0 +1,11 @@
+<project default="touch">
+
+  <target name="touch"  depends="check" unless="present">
+    <touch file="filter.properties"/>
+  </target>
+  
+  <target name="check">
+    <available file="filter.properties" property="present"/>
+  </target>
+</project>
+  
