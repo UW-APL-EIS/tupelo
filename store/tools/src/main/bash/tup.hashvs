@@ -1,0 +1,7 @@
+#!/bin/bash
+
+tup.storebase 'HashVS$Main' "$@"
+
+# eof
+
+

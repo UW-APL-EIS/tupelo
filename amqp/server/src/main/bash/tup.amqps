@@ -1,0 +1,27 @@
+#!/bin/bash
+
+DIRNAME=`dirname $0`
+
+ARTIFACT=tupelo-amqp-server
+PACKAGE=edu.uw.apl.tupelo.amqp.server
+CLAZZ=AMQPServer
+
+# The code version number is part of the main jar name.  Rather than
+# hard-coding it here, we locate the jar with the LATEST version. Thus
+# we always run the LATEST code, should many versions be present.
+
+JARSHOME=$DIRNAME/../jars
+JAR=`ls $JARSHOME | grep $ARTIFACT | sort -n -r | head -1`
+
+#echo $JARSHOME
+echo Using: $JAR
+#echo $PACKAGE
+#echo $CLAZZ
+
+#JAVA_OPTS="-Dlog4j.debug -Dlog4j.configuration=tupelo.log4j.properties"
+JAVA_OPTS="-Dlog4j.configuration=tupelo.log4j.properties"
+#echo $JAVA_OPTS
+
+java $JAVA_OPTS -cp $JARSHOME/$JAR $PACKAGE.$CLAZZ "$@"
+
+# eof

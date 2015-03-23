@@ -1,0 +1,6 @@
+#!/bin/bash
+
+tup.storebase Digest "$@"
+
+# eof
+
