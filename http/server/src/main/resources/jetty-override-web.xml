@@ -8,11 +8,13 @@
     <param-value>./test-store</param-value>
   </context-param>
 
+<!--
   <context-param>
     <param-name>amqpbroker</param-name>
     <param-value>
-      amqp://rpc_user:rpcm3pwd@rabbitmq.prisem.washington.edu
+      NOT HERE ANY MORE, see ./tupelo.prp for filtered resource approach
     </param-value>
   </context-param>
+-->
 
 </web-app>

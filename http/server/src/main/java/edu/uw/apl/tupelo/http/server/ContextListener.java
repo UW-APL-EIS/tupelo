@@ -92,8 +92,49 @@ public class ContextListener implements ServletContextListener {
 		sc.setAttribute( STOREKEY, store );
 	}
 
+	/**
+	 * @return amqp broker url as a string, or null if not found on any of
+	 * the possible search locations
+	 */
+	private String locateBrokerUrl( ServletContext sc ) {
+		String result = null;
+
+		/*
+		  Search 1: value supplied in context init param list.  Could
+		  be hard-wired into web.xml (bad) or truly supplied by
+		  container (OK as long as that file NOT under version
+		  control).  If non-null, we use.
+		*/
+		
+		if( result == null ) {
+			result = sc.getInitParameter( AMQPBROKERKEY );
+		}
+
+		/*
+		  Search 2: value supplied in a properties object located on
+		  the classpath via resource name /tupelo.prp.  Presumably,
+		  the build will populate this resource with appropriate
+		  values, done via Maven filtered resources (keeps sensitive
+		  strings OUT of version- controlled sources).
+		*/
+		if( result == null ) {
+			InputStream is = this.getClass().getResourceAsStream
+				( "/tupelo.prp" );
+			if( is != null ) {
+				try {
+					Properties p = new Properties();
+					p.load( is );
+					is.close();
+					result = p.getProperty( AMQPBROKERKEY );
+				} catch( IOException ioe ) {
+				}
+			}
+		}
+		return result;
+	}
+
 	private void startAMQP( ServletContext sc ) throws IOException {
-		String brokerURL = sc.getInitParameter( AMQPBROKERKEY );
+		String brokerURL = locateBrokerUrl( sc );
 		if( brokerURL == null ) {
 			log.warn( "Missing context param: " + AMQPBROKERKEY );
 			log.warn( "Unable to start AMQP Services" );
@@ -153,7 +194,7 @@ public class ContextListener implements ServletContextListener {
 	static public final String DATAROOTKEY = "dataroot";
 	static public final String STOREKEY = "store";
 
-	static public final String AMQPBROKERKEY = "amqpbroker";
+	static public final String AMQPBROKERKEY = "amqp.url";
 	static public final String AMQPSERVICEKEY = "amqpservice";
 
 	// For the ManagedDiskFileSystem object itself...
