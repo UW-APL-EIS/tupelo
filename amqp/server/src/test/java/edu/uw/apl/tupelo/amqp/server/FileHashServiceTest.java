@@ -2,6 +2,7 @@ package edu.uw.apl.tupelo.amqp.server;
 
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.null_.NullStore;
+import edu.uw.apl.tupelo.utils.Discovery;
 
 public class FileHashServiceTest extends junit.framework.TestCase {
 
@@ -19,7 +20,7 @@ public class FileHashServiceTest extends junit.framework.TestCase {
 	 */
 	public void test1() throws Exception {
 		Store s = new NullStore();
-		String url = BROKERURLDEFAULT;
+		String url = Discovery.locatePropertyValue( "amqp.url" );
 		final FileHashService fhs = new FileHashService( s, url );
 		Runnable r = new Runnable() {
 				@Override
@@ -38,9 +39,6 @@ public class FileHashServiceTest extends junit.framework.TestCase {
 		fhs.stop();
 		t.join();
 	}
-
-	static final String BROKERURLDEFAULT =
-		"amqp://rpc_user:rpcm3pwd@rabbitmq.prisem.washington.edu";
 }
 
 // eof

@@ -1,6 +1,9 @@
 package edu.uw.apl.tupelo.amqp.server;
 
 import java.io.File;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.io.LineNumberReader;
@@ -22,6 +25,7 @@ import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 import edu.uw.apl.tupelo.http.client.HttpStoreProxy;
+import edu.uw.apl.tupelo.utils.Discovery;
 
 /**
  * A 'main' front end around the primary logic in {@link
@@ -49,10 +53,11 @@ public class AMQPServer {
 	}
 
 	AMQPServer() {
-		storeLocation = STORELOCATIONDEFAULT;
-		brokerUrl = BROKERURLDEFAULT;
 		log = Logger.getLogger( getClass() );
+		storeLocation = STORELOCATIONDEFAULT;
+		brokerUrl = Discovery.locatePropertyValue( "amqp.url" );
 	}
+
 
 	public void readArgs( String[] args ) {
 		Options os = new Options();
@@ -62,8 +67,7 @@ public class AMQPServer {
 					  "Store url/directory. Defaults to " +
 					  STORELOCATIONDEFAULT );
 		os.addOption( "u", true,
-					  "Broker url. Defaults to " +
-					  BROKERURLDEFAULT );
+					  "Broker url. Can also be located on path and in resource" );
 
 		final String USAGE =
 			AMQPServer.class.getName() +
@@ -144,9 +148,6 @@ public class AMQPServer {
 	
 	static final String STORELOCATIONDEFAULT = "./test-store";
 
-	// LOOK: Get credentials out of source code!
-	static final String BROKERURLDEFAULT =
-		"amqp://rpc_user:rpcm3pwd@rabbitmq.prisem.washington.edu";
 }
 
 // eof

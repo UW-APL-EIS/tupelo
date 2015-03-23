@@ -25,6 +25,7 @@ import edu.uw.apl.tupelo.amqp.objects.RPCObject;
 import edu.uw.apl.tupelo.amqp.objects.Utils;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
+import edu.uw.apl.tupelo.utils.Discovery;
 
 /**
  * Put a 'who-has file content matching this hash' request on to a
@@ -71,20 +72,21 @@ public class FileHashClient {
 	}
 
 	FileHashClient() {
-		brokerUrl = BROKERURLDEFAULT;
+		log = Logger.getLogger( getClass() );
 		boolean withPrettyPrinting = true;
 		gson = Utils.createGson( withPrettyPrinting );
 		hashes = new ArrayList<String>();
-		log = Logger.getLogger( getClass() );
+		brokerUrl = Discovery.locatePropertyValue( "amqp.url" );
+		log.info( "BrokerUrl: " + brokerUrl );
 	}
 
+	
 	public void readArgs( String[] args ) throws IOException {
 		Options os = new Options();
 		os.addOption( "d", false, "Debug" );
 		os.addOption( "v", false, "Verbose" );
 		os.addOption( "u", true,
-					  "Broker url. Defaults to " +
-					  BROKERURLDEFAULT );
+					  "Broker url. Can also be located on path and in resource" );
 		os.addOption( "V", false, "show version number and exit" );
 
 		final String USAGE =
@@ -203,9 +205,6 @@ public class FileHashClient {
 	static boolean debug, verbose;
 	
 	private List<String> hashes;
-	
-	static final String BROKERURLDEFAULT =
-		"amqp://rpc_user:rpcm3pwd@rabbitmq.prisem.washington.edu";
 	
 	static final String EXCHANGE = "tupelo";
 }
