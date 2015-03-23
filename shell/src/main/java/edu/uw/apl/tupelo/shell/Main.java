@@ -272,15 +272,35 @@ public class Main extends Shell {
 					 "List attributes of an identified managed disk" );
 	}
 
+	static protected void printUsage( Options os, String usage,
+									  String header, String footer ) {
+		HelpFormatter hf = new HelpFormatter();
+		hf.setWidth( 80 );
+		hf.printHelp( usage, header, os, footer );
+	}
+
+
 	public void readArgs( String[] args ) throws Exception {
 		Options os = new Options();
 		os.addOption( "c", true, "command string" );
 		os.addOption( "d", false, "debug" );
-		os.addOption( "s", true, "store location" );
-		os.addOption( "u", true, "unmanaged disk" );
+		os.addOption( "s", true, "store location (file/http)" );
+		os.addOption( "u", true, "path to unmanaged disk" );
 		os.addOption( "V", false, "show version number and exit" );
+
+		String USAGE = Main.class.getName() + " [-c] [-d] [-s] [-u] [-V]";
+		final String HEADER = "";
+		final String FOOTER = "";
+
 		CommandLineParser clp = new PosixParser();
-		CommandLine cl = clp.parse( os, args );
+		CommandLine cl = null;
+		try {
+			cl = clp.parse( os, args );
+		} catch( Exception e ) {
+			printUsage( os, USAGE, HEADER, FOOTER );
+			System.exit(1);
+		}
+		
 		debug = cl.hasOption( "d" );
 		if( cl.hasOption( "s" ) ) {
 			storeLocation = cl.getOptionValue( "s" );
