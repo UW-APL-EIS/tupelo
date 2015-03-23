@@ -19,6 +19,7 @@
   <url>http://eis.apl.uw.edu</url>
   
   <modules>
+    <module>utils</module>
     <module>model</module>
     <module>logging</module>
     <module>store</module>
