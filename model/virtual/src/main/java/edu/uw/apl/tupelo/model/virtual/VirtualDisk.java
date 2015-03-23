@@ -14,7 +14,7 @@ import edu.uw.apl.vmvols.model.vmware.VMwareVM;
 
 /**
  * A simple bridge class, bridging from Tupelo model objects
- * (UnmanagedDisk) to * the vmvols artifact (outside of Tupelo) which
+ * (UnmanagedDisk) to the vmvols artifact (outside of Tupelo) which
  * enables VirtualBox (vdi) and VMWare (vmdk) disk content to be read
  * on the host.
  *
