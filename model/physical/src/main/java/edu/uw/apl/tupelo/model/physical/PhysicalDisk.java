@@ -49,7 +49,8 @@ public class PhysicalDisk implements UnmanagedDisk {
 		String s = serialNumber( disk.getPath() );
 		if( s != null )
 			s = s.trim();
-		return v + "-" + p + "-" + s;
+		String concat = v + "-" + p + "-" + s;
+		return concat.replaceAll( "\\s", "_" );
 	}
 	
 	@Override
