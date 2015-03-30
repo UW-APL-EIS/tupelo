@@ -7,18 +7,13 @@ log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
 log4j.appender.stdout.target=System.out
 
 # Trying out logging to amqp/rabbit
-# "amqp://rpc_user:rpcm3pwd@rabbitmq.prisem.washington.edu";
 log4j.appender.rabbitmq=com.plant42.log4j.appenders.RabbitMQAppender
 log4j.appender.rabbitmq.identifier=identifier
-log4j.appender.rabbitmq.host=rabbitmq.prisem.washington.edu
-log4j.appender.rabbitmq.port=5672
-log4j.appender.rabbitmq.username=rpc_user
-log4j.appender.rabbitmq.password=rpcm3pwd
-log4j.appender.rabbitmq.virtualHost=/
+log4j.appender.rabbitmq.url = amqp://USER:PASSWORD@host/
+
 #log4j.appender.rabbitmq.exchange=sdmlogs
 log4j.appender.rabbitmq.exchange=logs
 log4j.appender.rabbitmq.type=fanout
-log4j.appender.rabbitmq.durable=true
 #log4j.appender.rabbitmq.queue=log4j-queue
 log4j.appender.rabbitmq.layout=com.plant42.log4j.layouts.JSONLayout
 
