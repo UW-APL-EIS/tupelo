@@ -8,7 +8,7 @@ import org.apache.commons.io.output.NullOutputStream;
 /**
  * Testing ProgressMonitor class.  We use a NullOutputStream for all
  * 'stores' so do not pay any cost on disk of monitoring various
- * 'unmanaged to manged' transfers.
+ * 'unmanaged to managed' transfers.
 
  * A simple ProgressMonitor.Callback impl just prints out progress,
  * including percent complete. Asserts are also made that the in byte
@@ -85,7 +85,11 @@ public class ProgressMonitorTest extends junit.framework.TestCase {
 		if( !f.exists() )
 			return;
 		
-		int N = 100;
+		/*
+		  LOOK: why are we doing this over and over? Looking
+		  for interactions (on disk?) between runs??
+		*/
+		int N = 5;
 
 		for( int i = 1; i <= N; i++ ) {
 			System.out.println( "testMonitorFlat : " + f + " " + i );
@@ -115,7 +119,11 @@ public class ProgressMonitorTest extends junit.framework.TestCase {
 		if( !f.exists() )
 			return;
 
-		int N = 100;
+		/*
+		  LOOK: why are we doing this over and over? Looking
+		  for interactions (on disk?) between runs??
+		*/
+		int N = 5;
 
 		for( int i = 1; i <= N; i++ ) {
 			System.out.println( "testMonitorStreamOptimized : " + f + " " + i );

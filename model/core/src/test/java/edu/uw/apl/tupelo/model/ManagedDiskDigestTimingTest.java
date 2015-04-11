@@ -9,6 +9,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.DigestInputStream;
 
+/**
+ * Given a ManagedDisk, as would be stored on disk in a Tupelo store,
+ * we read all its data, in grains, and md5 each grain.  We see how
+ * long all the md5 'grain hashing' takes.  It seems to be
+ * sloooooooow.
+ */
+
 public class ManagedDiskDigestTimingTest extends junit.framework.TestCase {
 
 	public void testNull() {
@@ -31,10 +38,12 @@ public class ManagedDiskDigestTimingTest extends junit.framework.TestCase {
 	}
 
 	/*
-	  Desktop-keyed is a 40GB disk from an Ubuntu Linux vm.
-	  Of course the original unmanaged disk would be a VirtualDisk,
-	  but we have externally converted this to a DiskImage since that
-	  is what is used here
+	  Desktop-keyed is a 40GB disk from an Ubuntu Linux vm constructed
+	  as part of a packer/vagrant ISO-to-usable-VM tool chain.
+
+	  Of course the original unmanaged disk would be a VirtualDisk
+	  (specifically, a .vmdk), but we have externally converted this
+	  to a DiskImage (a .dd file) since that is what is used here.
 	*/
 	public void testDesktopKeyed() throws IOException {
 		File f = new File( "data/desktop-keyed.dd" );
