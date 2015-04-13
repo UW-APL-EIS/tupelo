@@ -51,7 +51,7 @@ import org.apache.commons.logging.LogFactory;
  *
  * The expected url layout (i.e. path entered into web.xml) for this
  * servlet is (where DID is 'disk id' and SID is 'session id', both
- * strings:
+ * strings):
  *
  * /disks/data/enumerate
  * /disks/data/put/DID/SID
@@ -60,7 +60,7 @@ import org.apache.commons.logging.LogFactory;
  * /disks/data/digest/DID/SID
  *
  *
- * /disks/data/get/DID/SID (todo, currently no support for retrieving managed data)
+ * /disks/data/get/DID/SID (TODO, currently no support for retrieving managed data)
  *
  */
 public class DataServlet extends HttpServlet {

@@ -4,8 +4,20 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.util.Random;
 
+/**
+ * A test/fake implementation of an UnmanagedDisk.  This one is an
+ * in-memory disk (needs no real backing disk) which produces random
+ * data when read.  The 'random' nature does NOT give a new random
+ * buffer for each read, it just re-uses the same buffer.  The only
+ * way the local buffer is filled with fresh 'random' data is when a
+ * larger buffer is needed, due to a larger length being read than we
+ * had previously seen.
+ */
 public class RandomDisk extends MemoryDisk {
 
+	/**
+	 * @param size byte count for this disk
+	 */
 	public RandomDisk( long size ) {
 		super( size );
 	}
@@ -25,18 +37,17 @@ public class RandomDisk extends MemoryDisk {
 			rng = new Random();
 		}
 		
+		/**
+		 * @param actual - NOT the len that the caller passed, but
+		 * a computed maximum byte count from
+		 * {@link MemoryDisk#read(byte[],int,int)}
+		 */
 		@Override
-		public int readImpl( byte[] b, int off, int len )
+		protected int readImpl( byte[] b, int off, int actual )
 			throws IOException {
 			
-			// Do min in long space, since size - posn may overflow int...
-			long actualL = Math.min( size - posn, len );
-			
-			// Cannot blindly coerce a long to int, result could be -ve
-			int actual = actualL > Integer.MAX_VALUE ? Integer.MAX_VALUE :
-				(int)actualL;
-			
 			if( actual > buffer.length ) {
+				// LOOK: could blow up, what if actual=MaxInt ??
 				buffer = new byte[actual];
 				for( int i = 0; i < buffer.length; i++ )
 					buffer[i] = (byte)rng.nextInt();

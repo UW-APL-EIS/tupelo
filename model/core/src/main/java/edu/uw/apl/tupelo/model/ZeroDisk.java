@@ -19,28 +19,29 @@ public class ZeroDisk extends MemoryDisk {
 	}
 	
 	class ZeroInputStream extends MemoryDiskInputStream {
-			ZeroInputStream() {
-				buffer = new byte[0];
-			}
-			
-			@Override
-			public int readImpl( byte[] b, int off, int len )
-				throws IOException {
-
-				// Do min in long space, since size - posn may overflow int...
-				long actualL = Math.min( size - posn, len );
-
-				// Cannot blindly coerce a long to int, result could be -ve
-				int actual = actualL > Integer.MAX_VALUE ? Integer.MAX_VALUE :
-					(int)actualL;
-				
-				if( actual > buffer.length ) {
-					buffer = new byte[actual];
-				}
-				System.arraycopy( buffer, 0, b, off, actual );
-				return actual;
-			}
-
-			private byte[] buffer;
+		ZeroInputStream() {
+			buffer = new byte[0];
 		}
+		
+		/**
+		 * @param actual - NOT the len that the caller passed, but
+		 * a computed maximum byte count from
+		 * {@link MemoryDisk#read(byte[],int,int)}
+		 */
+		@Override
+		protected int readImpl( byte[] b, int off, int actual )
+			throws IOException {
+				
+			if( actual > buffer.length ) {
+				// LOOK: could blow up, what if actual=MaxInt ??
+				buffer = new byte[actual];
+			}
+			System.arraycopy( buffer, 0, b, off, actual );
+			return actual;
+		}
+
+		private byte[] buffer;
 	}
+}
+
+// eof

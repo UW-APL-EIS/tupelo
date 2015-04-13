@@ -8,6 +8,9 @@ import java.io.IOException;
  * An implementation of UnmanagedDisk in which all reads are from
  * local memory.  Has no backing disk at all.  Useful only in testing
  * of course.
+ *
+ * @see RandomDisk
+ * @see ZeroDisk
  */
  
 abstract public class MemoryDisk implements UnmanagedDisk {
@@ -42,7 +45,7 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 			posn = 0;
 		}
 		
-		abstract public int readImpl( byte[] b, int off, int len )
+		abstract protected int readImpl( byte[] b, int off, int len )
 			throws IOException;
 
 		@Override
@@ -78,10 +81,20 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 			if( posn >= size )
 				return -1;
 
-			int n = readImpl( b, off, len );
+			
+			// Do min in long space, since size - posn may overflow int...
+			long actualL = Math.min( size - posn, len );
+			
+			/*
+			  Safe to cast to int, since know len and thus min is at most
+			  maxInt, and cannot be -ve since checked above.
+			*/
+			int actual = (int)actualL;
+			int n = readImpl( b, off, actual );
 			if( n == -1 ) {
 				throw new IOException();
 			}
+			posn += n;
 			return n;
 		}
 
@@ -94,7 +107,7 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 			return min;
 		}
 
-		protected long posn;
+		private long posn;
 	}
 
 	protected final long size;
