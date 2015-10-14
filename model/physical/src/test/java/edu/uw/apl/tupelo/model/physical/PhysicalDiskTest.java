@@ -79,6 +79,7 @@ public class PhysicalDiskTest extends junit.framework.TestCase {
 			return;
 		PhysicalDisk pd = new PhysicalDisk( f );
 
+		/*
 		String vid = pd.vendorID();
 		System.out.println( f + " vendor -> " + vid );
 
@@ -87,6 +88,7 @@ public class PhysicalDiskTest extends junit.framework.TestCase {
 
 		String sn = pd.serialNumber();
 		System.out.println( f + " serialnum -> " + sn );
+		*/
 	}
 }
 

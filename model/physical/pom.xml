@@ -29,14 +29,14 @@
 
   <dependencies>
     <dependency>
-      <groupId>edu.uw.apl.commons</groupId>
-      <artifactId>native-lib-loader</artifactId>
-      <version>2.0.0</version>
-    </dependency>
-    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>tupelo-model-core</artifactId>
       <version>1.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>device-files</artifactId>
+      <version>1.0.0</version>
     </dependency>
   </dependencies>
 
