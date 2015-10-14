@@ -26,8 +26,15 @@ public class MemoryDiskReadTimesTest extends junit.framework.TestCase {
 		test( zd, 16 );
 	}
 
+	public void test_1T() {
+		long sz = (1L << 40);
+		ZeroDisk zd = new ZeroDisk( sz, (100 * 1L << 20));
+		test( zd, 1 << 20 );
+	}
+
 	private void test( ZeroDisk zd, int expectedElapsedSeconds ) {
-		String actual = null;
+		System.out.println( "Size: " + zd.size() );
+		
 		long start = System.currentTimeMillis();
 		try {
 			byte[] bs = new byte[1024*1024];
