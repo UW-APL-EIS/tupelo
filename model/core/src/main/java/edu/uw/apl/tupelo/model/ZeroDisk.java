@@ -3,14 +3,34 @@ package edu.uw.apl.tupelo.model;
 import java.io.InputStream;
 import java.io.IOException;
 
+/**
+ * @author Stuart Maclean
+ *
+ * A fake 'disk' in which all contents are zeros.  Any read just returns zeroes.
+ *
+ * @see RandomDisk
+ * @see MemoryDisk
+ */
+
 public class ZeroDisk extends MemoryDisk {
 
-	public ZeroDisk( long size ) {
-		super( size );
+	/**
+	 * @param speedBytesPerSecond - how many bytes can be
+	 * read per second from this fake disk.  Used to put realistic
+	 * load on read operations.
+	 */
+	public ZeroDisk( long sizeBytes, long speedBytesPerSecond ) {
+		this( sizeBytes, speedBytesPerSecond,
+			  ZeroDisk.class.getSimpleName() + "-" + sizeBytes );
 	}
 	
-	public ZeroDisk( long size, String id ) {
-		super( size, id );
+	/**
+	 * @param speedBytesPerSecond - how many bytes can be read per second
+	 * from this fake disk.  Used to put realistic load on read
+	 * operations.
+	 */
+	public ZeroDisk( long sizeBytes, long speedBytesPerSecond, String id ) {
+		super( sizeBytes, speedBytesPerSecond, id );
 	}
 	
 	@Override

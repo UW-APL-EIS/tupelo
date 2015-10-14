@@ -20,7 +20,7 @@ public class ZeroDisk2ManagedTest extends junit.framework.TestCase {
 
 	public void test_1G_Flat() throws IOException {
 		long sz = 1024L * 1024 * 1024;
-		ZeroDisk zd = new ZeroDisk( sz );
+		ZeroDisk zd = new ZeroDisk( sz, 1024 );
 
 		FlatDisk fd = new FlatDisk( zd, Session.CANNED );
 		File out = new File( "flat." + zd.getID() );
@@ -31,7 +31,7 @@ public class ZeroDisk2ManagedTest extends junit.framework.TestCase {
 
 	public void test_1G_StreamOptimized() throws IOException {
 		long sz = 1024L * 1024 * 1024;
-		ZeroDisk zd = new ZeroDisk( sz );
+		ZeroDisk zd = new ZeroDisk( sz, 1024 );
 
 		StreamOptimizedDisk sod = new StreamOptimizedDisk( zd, Session.CANNED );
 		File out = new File( "streamoptimized." + zd.getID() );

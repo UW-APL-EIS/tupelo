@@ -5,9 +5,11 @@ import java.io.InputStream;
 import java.io.IOException;
 
 /**
+ * @author Stuart Maclean
+ *
  * An implementation of UnmanagedDisk in which all reads are from
- * local memory.  Has no backing disk at all.  Useful only in testing
- * of course.
+ * local memory.  Has no backing disk at all.  Useful only in
+ * testing/demonstration of course.
  *
  * @see RandomDisk
  * @see ZeroDisk
@@ -15,12 +17,14 @@ import java.io.IOException;
  
 abstract public class MemoryDisk implements UnmanagedDisk {
 
-	protected MemoryDisk( long size ) {
-		this( size, "memdisk-" + size );
+	protected MemoryDisk( long sizeBytes, long speedBytesPerSecond ) {
+		this( sizeBytes, speedBytesPerSecond,
+			  MemoryDisk.class.getSimpleName() + "-" + sizeBytes );
 	}
 
-	protected MemoryDisk( long size, String id ) {
-		this.size = size;
+	protected MemoryDisk( long sizeBytes, long speedBytesPerSecond, String id ) {
+		this.size = sizeBytes;
+		this.speedBytesPerSecond = speedBytesPerSecond;
 		this.id = id;
 	}
 
@@ -38,7 +42,6 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 	public File getSource() {
 		return new File( id );
 	}
-	
 	
 	abstract class MemoryDiskInputStream extends InputStream {
 		MemoryDiskInputStream() {
@@ -90,6 +93,13 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 			  maxInt, and cannot be -ve since checked above.
 			*/
 			int actual = (int)actualL;
+
+			double delaySecs = actual / (double)speedBytesPerSecond;
+			try {
+				Thread.sleep( (long)(delaySecs * 1000) );
+			} catch( InterruptedException ie ) {
+			}
+				
 			int n = readImpl( b, off, actual );
 			if( n == -1 ) {
 				throw new IOException();
@@ -111,6 +121,7 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 	}
 
 	protected final long size;
+	protected final long speedBytesPerSecond;
 	protected final String id;
 	
 }

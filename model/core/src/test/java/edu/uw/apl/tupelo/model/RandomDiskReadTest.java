@@ -14,7 +14,7 @@ public class RandomDiskReadTest extends junit.framework.TestCase {
 
 	public void test_1G() {
 		long sz = 1024L * 1024 * 1024;
-		RandomDisk rd = new RandomDisk( sz );
+		RandomDisk rd = new RandomDisk( sz, 1024 );
 
 		test( rd, sz );
 	}
@@ -22,7 +22,7 @@ public class RandomDiskReadTest extends junit.framework.TestCase {
 	// A typical real disk size, 128GB
 	public void _test_128G() {
 		long sz = 1024L * 1024 * 1024 * 128;
-		RandomDisk rd = new RandomDisk( sz );
+		RandomDisk rd = new RandomDisk( sz, 1024 );
 
 		/*
 		  Expected: dd if=/dev/zero bs=1M count=128K | md5sum
