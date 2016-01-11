@@ -28,9 +28,9 @@ public class VirtualDisk implements UnmanagedDisk {
 			return true;
 		if( f.getName().endsWith( VMDKDisk.FILESUFFIX ) )
 			return true;
-		if( VBoxVM.isVBox( f ) )
+		if( VBoxVM.isVBoxVM( f ) )
 			return true;
-		if( VMwareVM.isVMware( f ) )
+		if( VMwareVM.isVMwareVM( f ) )
 			return true;
 		return false;
 	}

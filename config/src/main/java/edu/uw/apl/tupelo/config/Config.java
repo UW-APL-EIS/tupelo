@@ -29,6 +29,16 @@ public class Config {
 		devices = new ArrayList();
 	}
 
+	public Store removeStore( String name ) {
+		for( int i = 0; i < stores.size(); i++ ) {
+			Store s = stores.get(i);
+			if( s.name.equals( name ) ) {
+				return stores.remove(i);
+			}
+		}
+		return null;
+	}
+
 	public boolean addStore( String name, String url ) {
 		if( haveStore( name ) )
 			return false;
@@ -47,6 +57,16 @@ public class Config {
 		return true;
 	}
 	
+	public Device removeDevice( String name ) {
+		for( int i = 0; i < devices.size(); i++ ) {
+			Device d = devices.get(i);
+			if( d.name.equals( name ) ) {
+				return devices.remove(i);
+			}
+		}
+		return null;
+	}
+
 	public void load( String s ) throws IOException {
 		load( new StringReader( s ) );
 	}
@@ -152,6 +172,21 @@ public class Config {
 		void setUrl( String s ) {
 			url = s;
 		}
+
+		@Override
+		public int hashCode() {
+			return name.hashCode();
+		}
+
+		@Override
+		public boolean equals( Object o ) {
+			if( o == this )
+				return true;
+			if( !( o instanceof Store ) )
+				return false;
+			Store that = (Store)o;
+			return this.name.equals( that.name );
+		}
 		
 		final String name;
 		String url;
@@ -169,6 +204,21 @@ public class Config {
 		}
 		void setType( String s ) {
 			type = s;
+		}
+
+		@Override
+		public int hashCode() {
+			return name.hashCode();
+		}
+
+		@Override
+		public boolean equals( Object o ) {
+			if( o == this )
+				return true;
+			if( !( o instanceof Store ) )
+				return false;
+			Store that = (Store)o;
+			return this.name.equals( that.name );
 		}
 		
 		final String name;
@@ -188,6 +238,16 @@ public class Config {
 	static private final  Pattern DEVICEPATH =
 		Pattern.compile( "path = (.+)" );
 
+	static public File DEFAULT;
+	static {
+		String s = System.getProperty( "user.home" );
+		File f = new File( s );
+		f = new File( f, ".tupelo" );
+		f.mkdirs();
+		f = new File( f, "config" );
+		DEFAULT = f;
+		System.err.println( DEFAULT );
+	}
 }
 
 // eof
