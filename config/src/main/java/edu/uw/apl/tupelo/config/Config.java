@@ -29,6 +29,10 @@ public class Config {
 		devices = new ArrayList();
 	}
 
+	public List<Device> devices() {
+		return devices;
+	}
+	
 	public Store removeStore( String name ) {
 		for( int i = 0; i < stores.size(); i++ ) {
 			Store s = stores.get(i);
@@ -205,7 +209,10 @@ public class Config {
 		void setType( String s ) {
 			type = s;
 		}
-
+		public String getName() {
+			return name;
+		}
+		
 		@Override
 		public int hashCode() {
 			return name.hashCode();

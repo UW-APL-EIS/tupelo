@@ -27,24 +27,23 @@ public class Main {
 			System.out.println( USAGE );
 			System.exit(1);
 		}
-		String cmd = args[1];
+		String cmd = args[0];
+		Command c = Command.locate( cmd );
 		String[] subArgs = new String[args.length-1];
 		System.arraycopy( args, 1, subArgs, 0, subArgs.length );
-		switch( cmd ) {
-			case "config":
-				Config.main( subArgs );
-				break;
+		try {
+			c.invoke( subArgs );
+		} catch( Exception e ) {
+			System.err.println( e );
+			e.printStackTrace();
 		}
 	}
 
-	static class Config {
-		static public void main( String[] args ) {
-			File f = edu.uw.apl.tupelo.config.Config.DEFAULT;
-			if( args.length  ) {
-				System.out.println( USAGE );
-			System.exit(1);
-		}
-		
+	static {
+		new Commands.Config();
+		new Commands.Device();
+	}
+	
 	static private String USAGE = "help TODO";
 }
 
