@@ -1,11 +1,16 @@
 package edu.uw.apl.tupelo.cli;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.cli.*;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import edu.uw.apl.tupelo.config.Config;
 import edu.uw.apl.tupelo.store.Store;
@@ -82,13 +87,55 @@ public class PushCmd extends Command {
 		Session session = store.newSession();
 		System.out.println( session );
 
+		boolean verbose = true;
+		Log log = LogFactory.getLog( PushCmd.class );
+		
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
 															   session );
 		System.out.println( "Storing: " + ud.getSource() +
 							" (" + ud.size() + " bytes) to " + mdd );
 		
+		Collection<ManagedDiskDescriptor> existing = store.enumerate();
+		if( verbose )
+			System.out.println( "Stored data: " + existing );
+		
+		List<ManagedDiskDescriptor> matching =
+			new ArrayList<ManagedDiskDescriptor>();
+		for( ManagedDiskDescriptor el : existing ) {
+			if( el.getDiskID().equals( ud.getID() ) ) {
+				matching.add( el );
+			}
+		}
+		Collections.sort( matching, ManagedDiskDescriptor.DEFAULTCOMPARATOR );
+		System.out.println( "Matching managed disks:" );
+		for( ManagedDiskDescriptor el : matching ) {
+			System.out.println( " " + el.getSession() );
+		}
+
 		ManagedDiskDigest digest = null;
 		UUID uuid = null;
+		if( !matching.isEmpty() ) {
+			ManagedDiskDescriptor recent = matching.get( matching.size()-1 );
+			log.info( "Retrieving uuid for: "+ recent );
+			uuid = store.uuid( recent );
+			if( verbose )
+				System.out.println( "UUID: " + uuid );
+			log.info( "Requesting digest for: "+ recent );
+			digest = store.digest( recent );
+			if( digest == null ) {
+				System.out.println( "No digest, continuing with full disk put" );
+				log.warn( "No digest, continuing with full disk put" );
+			} else {
+				System.out.println( "Retrieved digest for " +
+						  recent.getSession() + ": " +
+						  digest.size() );
+				log.info( "Retrieved digest for " +
+						  recent.getSession() + ": " +
+						  digest.size() );
+			}
+			
+		}
+
 		ManagedDisk md = null;
 		boolean useFlatDisk = ud.size() < 1024L * 1024 * 1024;
 		if( useFlatDisk ) {
