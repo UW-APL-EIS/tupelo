@@ -42,12 +42,16 @@
       <artifactId>tupelo-http-client</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
+
       <!-- For logging to rabbitmq -->
+<!--
+    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>tupelo-logging</artifactId>
       <version>${project.version}</version>
     </dependency>
+-->
+
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>tupelo-fuse</artifactId>
@@ -72,6 +76,15 @@
       <groupId>edu.uw.apl.commons</groupId>
       <artifactId>tsk4j-core</artifactId>
       <version>413.0.2</version>
+    </dependency>
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>tsk4j-digests</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>device-files</artifactId>
+      <version>1.0.0</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>

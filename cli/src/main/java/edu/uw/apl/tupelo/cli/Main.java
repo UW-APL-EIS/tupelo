@@ -2,6 +2,8 @@ package edu.uw.apl.tupelo.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.PrintWriter;
 import java.util.Collection;
 
 import org.apache.commons.cli.*;
@@ -24,11 +26,18 @@ public class Main {
 
 	static public void main( String[] args ) {
 		if( args.length < 1 ) {
-			System.out.println( USAGE );
-			System.exit(1);
+			String help = buildHelp();
+			System.out.println( help );
+			return;
 		}
 		String cmd = args[0];
 		Command c = Command.locate( cmd );
+		if( c == null ) {
+			String help = buildHelp();
+			System.out.println( help );
+			return;
+		}
+		
 		String[] subArgs = new String[args.length-1];
 		System.arraycopy( args, 1, subArgs, 0, subArgs.length );
 		try {
@@ -39,12 +48,29 @@ public class Main {
 		}
 	}
 
-	static {
-		new Commands.Config();
-		new Commands.Device();
+	static String buildHelp() {
+		StringWriter sw = new StringWriter();
+		PrintWriter pw = new PrintWriter( sw );
+		pw.println();
+		for( Command c : Command.COMMANDS ) 
+			pw.printf( "%-15s %s\n", c.name(), c.summary() );
+		return sw.toString();
 	}
-	
-	static private String USAGE = "help TODO";
-}
+
+	static {
+		new ConfigCmd();
+		new DeviceCmd();
+		new StoreCmd();
+		new StatusCmd();
+		new InfoCmd();
+		new PushCmd();
+		new DigestCmd();
+		new CatCmd();
+		new MDFSCmd();
+		new HashVSCmd();
+		new BodyfileCmd();
+	}
+}	
+
 
 // eof

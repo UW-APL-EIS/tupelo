@@ -1,0 +1,47 @@
+feb 14 2016:
+
+tup command args
+
+tup device list
+
+tup device add A /dev/sda
+
+tup device add V1 /path/to/vm/
+
+Every cmd will want access to 'config', so load early??
+
+feb 21 2016:
+
+tup push device store  aka 'image'
+
+tup digest -i store - interactive digests?  Also -a for all.
+
+Need to show 2nd push and how optimized it is.
+
+Point out that can process store/managed data IN place.
+Then - tsk ops
+
+hashfs
+hashvs
+
+armour?
+
+Introduce nuga in some VM?
+
+Then
+
+search via an 'indicator'
+
+Feb 22:
+
+ProgressMonitor for digest operation??
+
+
+vmmount at
+
+vmvols/fuse/
+
+vm tools at
+
+vmvols/cli
+
