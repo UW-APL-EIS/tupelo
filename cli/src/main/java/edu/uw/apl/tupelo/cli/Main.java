@@ -68,7 +68,9 @@ public class Main {
 		new CatCmd();
 		new MDFSCmd();
 		new HashVSCmd();
+		new HashFSCmd();
 		new BodyfileCmd();
+		new SearchCmd();
 	}
 }	
 

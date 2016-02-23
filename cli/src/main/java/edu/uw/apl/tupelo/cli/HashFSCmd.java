@@ -3,33 +3,40 @@ package edu.uw.apl.tupelo.cli;
 import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.ConnectException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import org.apache.commons.cli.*;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.commons.codec.binary.Hex;
 
 import edu.uw.apl.tupelo.config.Config;
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
-import edu.uw.apl.tupelo.store.tools.BodyFile;
+import edu.uw.apl.tupelo.store.tools.HashFS;
 import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
 import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 
-public class BodyfileCmd extends Command {
-	BodyfileCmd() {
-		super( "bodyfile", "Traverse filesystems of a store-managed disk" );
+
+public class HashFSCmd extends Command {
+	HashFSCmd() {
+		super( "hashfs", "Hash file content of a store-managed disk" );
 	}
 	
 	@Override
@@ -66,13 +73,13 @@ public class BodyfileCmd extends Command {
 		}
 		Store store = createStore( selectedStore );	
 
-		FilesystemStore fss = (FilesystemStore)store;
+		FilesystemStore fs = (FilesystemStore)store;
 
 		int index = Integer.parseInt( args[1] );
 
 		Collection<ManagedDiskDescriptor> mdds = null;
 		try {
-			mdds = fss.enumerate();
+			mdds = store.enumerate();
 		} catch( ConnectException ce ) {
 			System.err.println
 				( "Network Error. Is the remote Tupelo store up?" );
@@ -84,7 +91,6 @@ public class BodyfileCmd extends Command {
 		}
 
 		final boolean debug = true;
-		final boolean printResult = false;
 		
 		List<ManagedDiskDescriptor> sorted =
 			new ArrayList<ManagedDiskDescriptor>( mdds );
@@ -92,11 +98,11 @@ public class BodyfileCmd extends Command {
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
 
 		ManagedDiskDescriptor mdd = sorted.get(index-1);
+		
+		Log log = LogFactory.getLog( HashFSCmd.class );
+		log.info( "Hashing " + mdd );
 
-		Log log = LogFactory.getLog( BodyfileCmd.class );
-		log.info( "Filesystem traverse " + mdd );
-
-		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( fss );
+		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( fs );
 		
 		final File mountPoint = new File( "mdfs-mount" );
 		if( !mountPoint.exists() ) {
@@ -121,11 +127,12 @@ public class BodyfileCmd extends Command {
 		// LOOK: wait for the fuse mount to finish.  Grr hate arbitrary sleeps!
 		Thread.sleep( 1000 * 2 );
 
-
 		File f = mdfs.pathTo( mdd );
-		System.err.println( f );
-		BodyFile.process( f, mdd, store, printResult );
+		HashFS.process( f, mdd, store );
 	}
+
+	static private final Log log = LogFactory.getLog( HashFSCmd.class );
+
 }
 
 // eof

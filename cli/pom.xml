@@ -39,6 +39,11 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
+      <artifactId>tupelo-store-tools</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
       <artifactId>tupelo-http-client</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -70,6 +75,11 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>tupelo-config</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>tupelo-amqp-objects</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

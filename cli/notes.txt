@@ -45,3 +45,25 @@ vm tools at
 
 vmvols/cli
 
+
+
+Feb 23:
+
+SHOW attrs/hashfs, explain
+
+SLIDES:
+
+sleuthkit + tsk4j, explain/show BodyFile.  some cmds: mmls, fls
+
+github EIS presence
+
+trust model.  Dead/offline fs
+
+Usages: home set up: CD+external drive.
+
+
+Need 2 new features:
+
+1 compare disk over time - armour
+
+2 file hash search, a la STIX IOC
