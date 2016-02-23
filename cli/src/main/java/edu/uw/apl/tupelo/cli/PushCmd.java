@@ -148,6 +148,9 @@ public class PushCmd extends Command {
 			md.setCompression( ManagedDisk.Compressions.SNAPPY );
 		}
 		
+		if( digest != null )
+			md.setParentDigest( digest );
+
 		final long sz = ud.size();
 		ProgressMonitor.Callback cb = new ProgressMonitor.Callback() {
 				@Override
