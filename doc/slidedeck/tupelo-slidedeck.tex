@@ -78,7 +78,7 @@ computer hard drives.  To achieve this
 
 \item Repeated acquisition must be space-efficient.
 
-\item Analysis of disk contents must be automated to the greatest
+\item Content analysis must be automated to the greatest
   extent possible.
 
 \end{itemize}
@@ -129,6 +129,69 @@ Store is essentially a structured (but not relational) database.
 
 \end{frame}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Tupelo System Architecture}
+
+\begin{center}
+\begin{tikzpicture}
+
+%\draw[help lines] (0,0) grid (10,10);
+
+\draw [red] (5,5) -- (5,10);
+\draw [red] (5,5) -- (10,5);
+\node [below] at (2.5,10) {User Disks / Unmanaged};
+\node [below] at (7.5,10) {Tupelo Store / Managed};
+
+%% First putdata, user 1
+\draw [->, green] (2,9) -- (4.5,9);
+\node at (1,9) { $UD_{1},T_{1}$ };
+\node at (7.5,9) { $MD_{1},T_{1}$ };
+\node at (8,8.5) { $MD_{1},T_{1} VSHash$ };
+\node at (8,8) { $MD_{1},T_{1} FSHash$ };
+\node at (8,7.5) { $MD_{1},T_{1} BodyFile$ };
+
+%% First putdata, user 2
+\draw [->, green] (2,7) -- (4.5,7);
+\node at (1,7) { $UD_{2},T_{2}$ };
+\node at (7.5,7) { $MD_{2},T_{2}$ };
+
+%% AMQP
+\draw [<->, green] (7.5,4.5) -- (7.5,2.5);
+\node at (7.5,2) { IOC?};
+
+\end{tikzpicture}
+\end{center}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]{What and When}
+
+Every submission to the Tupelo store is tagged with two
+identifying labels.
+
+\begin{description}
+\item[What]  An identifier for the disk.  We use the disk's vendor
+  plus serial number, not any info stored {\em on} the disk, nor any
+  local user name for the data.  
+
+\item[When] A timestamp, in the form of a sessionID (ticket,token)
+  handed out by the store when the client connects.  Store ensures
+  unique and serialized distribution of sessionIDs.
+\end{description}
+
+Example:
+\begin{verbatim}
+what = ATA-SAMSUNG HD253GJ-S26CJ90B203913
+when = 20150106.0005
+\end{verbatim}
+
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Analysis Products}
@@ -169,31 +232,6 @@ Can acquire three flavors of whole disk content:
 
 Could also boot virtual machines from virtualized Tupelo CD, then 
 a virtual disk is essentially physical.
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[fragile]{What and When}
-
-Everything submitted to the Tupelo store is tagged with two
-identifying labels.
-
-\begin{description}
-\item[What]  An identifier for the disk.  We use the disk's vendor
-  plus serial number, not any info stored {\em on} the disk, nor any
-  local user name for the data.  
-
-\item[When] A timestamp, in the form of a sessionID (ticket,token)
-  handed out by the store when the client connects.  Store ensures
-  unique and serialized distribution of sessionIDs.
-\end{description}
-
-Example:
-\begin{verbatim}
-what = ATA-SAMSUNG HD253GJ-S26CJ90B203913
-when = 20150106.0005
-\end{verbatim}
 
 \end{frame}
 
@@ -277,6 +315,35 @@ real-time identification of malicious artifacts.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\begin{frame}{APL/UW CyberCode}
+
+Some of the code comprising Tupelo is available at GitHub:
+
+\begin{description}
+\item[TSK4J]
+Java bindings to Sleuthkit disk forensics library.
+
+\item[VMVols]
+Make VM drive content available on the host.
+
+\item[DeviceFiles]
+Query ATA drives for serial number, size.
+
+\item[Stix-Java]
+Emerging XML-based standard for IOC sharing, etc.
+
+\end{description}
+
+\vskip 10pt
+
+{\texttt https://github.com/UW-APL-EIS/}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Talk Is Cheap - Show Me The Code!}
+\end{frame}
+
 \begin{frame}{Message Bus Framework}
 
 In addition to accepting unmanaged data, over e.g. http, Tupelo store
@@ -293,43 +360,6 @@ Results relayed to requester, but also to originating Tupelo user.
 Frees Tupelo user from drudgery of IOC handling.
 
 \end{itemize}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}{Tupelo System Architecture}
-
-\begin{center}
-\begin{tikzpicture}
-
-%\draw[help lines] (0,0) grid (10,10);
-
-\draw [red] (5,5) -- (5,10);
-\draw [red] (5,5) -- (10,5);
-\node [below] at (2.5,10) {User Disks / Unmanaged};
-\node [below] at (7.5,10) {Tupelo Store / Managed};
-
-%% First putdata, user 1
-\draw [->, green] (2,9) -- (4.5,9);
-\node at (1,9) { $UD_{1},T_{1}$ };
-\node at (7.5,9) { $MD_{1},T_{1}$ };
-\node at (8,8.5) { $MD_{1},T_{1} VSHash$ };
-\node at (8,8) { $MD_{1},T_{1} FSHash$ };
-\node at (8,7.5) { $MD_{1},T_{1} BodyFile$ };
-
-%% First putdata, user 2
-\draw [->, green] (2,7) -- (4.5,7);
-\node at (1,7) { $UD_{2},T_{2}$ };
-\node at (7.5,7) { $MD_{2},T_{2}$ };
-
-%% AMQP
-\draw [<->, green] (7.5,4.5) -- (7.5,2.5);
-\node at (7.5,2) { IOC?};
-
-\end{tikzpicture}
-\end{center}
 
 \end{frame}
 

@@ -71,6 +71,8 @@ public class Main {
 		new HashFSCmd();
 		new BodyfileCmd();
 		new SearchCmd();
+		new SessionCmd();
+		new MBRCmd();
 	}
 }	
 

@@ -85,15 +85,16 @@ public class PushCmd extends Command {
 		System.out.println( store );
 
 		Session session = store.newSession();
-		System.out.println( session );
 
 		boolean verbose = true;
 		Log log = LogFactory.getLog( PushCmd.class );
 		
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
 															   session );
-		System.out.println( "Storing: " + ud.getSource() +
-							" (" + ud.size() + " bytes) to " + mdd );
+		System.out.println();
+		System.out.println( "WHAT: " + ud.getID() );
+		System.out.println( "WHEN: " + session );
+		System.out.println();
 		
 		Collection<ManagedDiskDescriptor> existing = store.enumerate();
 		if( verbose )

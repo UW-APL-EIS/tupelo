@@ -1,6 +1,7 @@
 package edu.uw.apl.tupelo.cli;
 
 import java.io.File;
+import java.io.IOException;
 
 import edu.uw.apl.tupelo.config.Config;
 
@@ -13,7 +14,10 @@ public class ConfigCmd extends Command {
 	public void invoke( String[] args ) throws Exception {
 		File f = Config.DEFAULT;
 		Config c = new Config();
-		c.load( f );
+		try {
+			c.load( f );
+		} catch( IOException ioe ) {
+		}
 		c.store( System.out );
 	}
 }

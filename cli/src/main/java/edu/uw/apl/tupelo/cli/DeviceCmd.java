@@ -62,12 +62,12 @@ public class DeviceCmd extends Command {
 					try {
 						DeviceFile df = new DeviceFile( f );
 						id = df.getID();
+						System.out.println( id);
 					} catch( Throwable t ) {
 						t.printStackTrace();
 						id = path;
 					}
 				}
-				System.out.println( id);
 				c.addDevice( name, path );
 				c.store( config );
 			}

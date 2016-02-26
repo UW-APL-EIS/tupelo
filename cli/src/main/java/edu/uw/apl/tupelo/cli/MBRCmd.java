@@ -2,6 +2,8 @@ package edu.uw.apl.tupelo.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.BufferedReader;
 import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,9 +20,19 @@ import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 
-public class InfoCmd extends Command {
-	InfoCmd() {
-		super( "info", "Print info on store content" );
+/**
+ * For each managed disk in a store, attempt to retrieve the 'hashvs'
+ * attribute.  If found, locate and print the line containing the
+ * sector sequence '0 1', which is typically the Master Boot Record
+ * (or GUID?)
+ *
+ * Changes over time to this sector might uncover malicious activity
+ */
+  
+public class MBRCmd extends Command {
+	MBRCmd() {
+		super( "mbr",
+			   "View hashvs attribute, sector 0 (typically MasterBootRecord)" );
 	}
 	
 	@Override
@@ -57,15 +69,6 @@ public class InfoCmd extends Command {
 		}
 		Store store = createStore( selectedStore );	
 		
-		System.out.println();
-		System.out.printf( "%-16s: %s\n",
-						   "Store Location", selectedStore.getUrl() );
-		System.out.printf( "%-16s: %s\n",
-						   "Usable Space", store.getUsableSpace() );
-		System.out.printf( "%-16s: %s\n",
-							"UUID", store.getUUID() );
-		System.out.println();
-		
 		Collection<ManagedDiskDescriptor> mdds = null;
 		try {
 			mdds = store.enumerate();
@@ -79,29 +82,31 @@ public class InfoCmd extends Command {
 		Collections.sort( sorted,
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
 		
-		System.out.println( "Contents:" );
-		System.out.println();
-		int i = 1;
 		for( ManagedDiskDescriptor mdd : sorted ) {
-			report( mdd, store, i );
-			i++;
+			byte[] value = store.getAttribute( mdd, "hashvs" );
+			if( value == null )
+				continue;
+			try {
+				process( value, mdd );
+			} catch( IOException ioe ) {
+				System.err.println( ioe );
+			}
 		}
 	}
 
-	private void report( ManagedDiskDescriptor mdd, Store store, int n )
+	static void process( byte[] hashvs, ManagedDiskDescriptor mdd )
 		throws IOException {
-		System.out.println( n + " " + mdd.getDiskID() + ", " +
-							mdd.getSession() +
-							" (" + store.size( mdd ) + ")" );
-		Collection<String> attrNames = store.listAttributes( mdd );
-		List<String> sorted = new ArrayList( attrNames );
-		Collections.sort( sorted );
-		System.out.println( " Attributes: " );
-		for( int j = 0; j < sorted.size(); j++ ) {
-			System.out.println( "  " + (j+1) + " " + sorted.get( j ) );
+		String s = new String( hashvs );
+		StringReader sr = new StringReader( s );
+		BufferedReader br = new BufferedReader( sr );
+		String line;
+		while( (line = br.readLine()) != null ) {
+			if( line.startsWith( "0 1 " ) )
+				System.out.println( mdd.getDiskID() + " " +
+									mdd.getSession() + " " +
+									line.substring( 4 ) );
 		}
-		System.out.println();
-		
+		br.close();
 	}
 }
 

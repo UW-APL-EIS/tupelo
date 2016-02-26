@@ -3,6 +3,7 @@ package edu.uw.apl.tupelo.cli;
 import java.io.File;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
+import java.io.BufferedReader;
 import java.io.LineNumberReader;
 import java.io.InputStreamReader;
 import java.net.ConnectException;
@@ -62,8 +63,8 @@ public class SearchCmd extends Command {
 			//System.exit(1);
 		}
 		args = cl.getArgs();
-		if( args.length < 2 ) {
-			System.err.println( "Need store + hash args" );
+		if( args.length < 1 ) {
+			System.err.println( "Need store args" );
 			return;
 		}
 		Config c = new Config();
@@ -85,17 +86,31 @@ public class SearchCmd extends Command {
 
 		log = LogFactory.getLog( SearchCmd.class );
 
-		String ioc = args[1];
 		List<String> hashes = new ArrayList();
-		hashes.add( ioc );
+
+		if( args.length > 1 ) {
+			// hashes are in cmd line args
+			for( int i = 1; i < args.length; i++ ) {
+				String arg = args[i];
+				arg = arg.trim();
+				if( arg.isEmpty() || arg.startsWith( "#" ) )
+					continue;
+				hashes.add( arg );
+			}
+		} else {
+			// hashes are on stdin
+			InputStreamReader isr = new InputStreamReader( System.in );
+			BufferedReader br = new BufferedReader( isr );
+			String line;
+			while( (line = br.readLine()) != null ) {
+				line = line.trim();
+				if( line.isEmpty() || line.startsWith( "#" ) )
+					continue;
+				hashes.add( line );
+			}
+			br.close();
+		}
 		
-		System.out.println();
-		System.out.printf( "%-16s: %s\n",
-						   "Store Location", selectedStore.getUrl() );
-		System.out.printf( "%-16s: %s\n",
-						   "Usable Space", store.getUsableSpace() );
-		System.out.printf( "%-16s: %s\n",
-							"UUID", store.getUUID() );
 		System.out.println();
 		
 		Collection<ManagedDiskDescriptor> mdds = null;
@@ -128,7 +143,8 @@ public class SearchCmd extends Command {
 			System.out.println( "Search " + mdd );
 			log.info( "Search " + mdd );
 			List<String> ss = loadFileHashes( mdd, store );
-			System.out.println( "Loaded " + ss.size() );
+			if( false && ss.size() > 0 )
+				System.out.println( "Loaded " + ss.size() );
 			
 			log.info( "Loaded " + ss.size() + " hashes from " + mdd );
 			/*
