@@ -33,7 +33,6 @@ import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 
-
 public class HashFSCmd extends Command {
 	HashFSCmd() {
 		super( "hashfs", "Hash file content of a store-managed disk" );
@@ -42,6 +41,7 @@ public class HashFSCmd extends Command {
 	@Override
 	public void invoke( String[] args ) throws Exception {
 		Options os = commonOptions();
+		os.addOption( "p", false, "Print" );
 		CommandLineParser clp = new PosixParser();
 		CommandLine cl = null;
 		try {
@@ -51,9 +51,11 @@ public class HashFSCmd extends Command {
 			//	printUsage( os, usage, HEADER, FOOTER );
 			//System.exit(1);
 		}
+		boolean print = cl.hasOption( "p" );
 		args = cl.getArgs();
+
 		if( args.length < 2 ) {
-			System.err.println( "Need store arg + index" );
+			System.err.println( "Need store arg + md index" );
 			return;
 		}
 		Config c = new Config();
@@ -72,8 +74,6 @@ public class HashFSCmd extends Command {
 			return;
 		}
 		Store store = createStore( selectedStore );	
-
-		FilesystemStore fs = (FilesystemStore)store;
 
 		int index = Integer.parseInt( args[1] );
 
@@ -98,10 +98,21 @@ public class HashFSCmd extends Command {
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
 
 		ManagedDiskDescriptor mdd = sorted.get(index-1);
+
+		if( print ) {
+			report( mdd, store );
+		} else {
+			process( mdd, store );
+		}
+	}
+
+	static void process( ManagedDiskDescriptor mdd, Store s )
+		throws Exception {
 		
 		Log log = LogFactory.getLog( HashFSCmd.class );
 		log.info( "Hashing " + mdd );
-
+		
+		FilesystemStore fs = (FilesystemStore)s;
 		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( fs );
 		
 		final File mountPoint = new File( "mdfs-mount" );
@@ -109,12 +120,12 @@ public class HashFSCmd extends Command {
 			mountPoint.mkdirs();
 			mountPoint.deleteOnExit();
 		}
-		if( debug )
+		if( true )
 			System.out.println( "Mounting '" + mountPoint + "'" );
 		mdfs.mount( mountPoint, true );
 		Runtime.getRuntime().addShutdownHook( new Thread() {
 				public void run() {
-					if( debug )
+					if( true )
 						System.out.println( "Unmounting '" + mountPoint + "'" );
 					try {
 						mdfs.umount();
@@ -128,9 +139,13 @@ public class HashFSCmd extends Command {
 		Thread.sleep( 1000 * 2 );
 
 		File f = mdfs.pathTo( mdd );
-		HashFS.process( f, mdd, store );
+		HashFS.process( f, mdd, fs );
 	}
 
+	static void report( ManagedDiskDescriptor mdd, Store s )
+		throws Exception {
+	}
+	
 	static private final Log log = LogFactory.getLog( HashFSCmd.class );
 
 }

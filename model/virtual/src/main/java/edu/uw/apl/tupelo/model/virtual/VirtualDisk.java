@@ -77,7 +77,7 @@ public class VirtualDisk implements UnmanagedDisk {
 	/*
 	  Pah, tried to avoid the delegate leaking out, but a caller
 	  using a VirtualMachineFileSystem needs the delegate to look
-	  up its pth in the vmfs
+	  up its path in the vmfs
 	*/
 	public edu.uw.apl.vmvols.model.VirtualDisk getDelegate() {
 		return delegate;

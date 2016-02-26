@@ -19,6 +19,8 @@ import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
+import edu.uw.apl.commons.sleuthkit.digests.BodyFile;
+import edu.uw.apl.commons.sleuthkit.digests.BodyFileCodec;
 
 /**
  */
@@ -76,20 +78,22 @@ public class ArmourCmd extends Command {
 		Collections.sort( sorted,
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
 
-		List<BodyFiles> bodyFiles = new ArrayList();
+		List<BodyFile> bodyFiles = new ArrayList();
 		for( ManagedDiskDescriptor mdd : sorted ) {
-			Collection<String> attrNames = store.getAttributeNames( mdd );
+			Collection<String> attrNames = store.listAttributes( mdd );
 			String bfName = null;
 			for( String s : attrNames ) {
-				if( s.startsWith( 
-			if( value == null )
-				continue;
-			try {
-				process( value, mdd );
-			} catch( IOException ioe ) {
-				System.err.println( ioe );
+				if( s.startsWith( "kk" ) )
+					if( null == null )
+						continue;
+				try {
+					process(  null, mdd );
+				} catch( IOException ioe ) {
+					System.err.println( ioe );
+				}
 			}
 		}
+
 	}
 
 	static void process( byte[] hashvs, ManagedDiskDescriptor mdd )

@@ -32,6 +32,10 @@ public class Config {
 	public List<Device> devices() {
 		return devices;
 	}
+
+	public List<Store> stores() {
+		return stores;
+	}
 	
 	public Store removeStore( String name ) {
 		for( int i = 0; i < stores.size(); i++ ) {
@@ -177,6 +181,12 @@ public class Config {
 			url = s;
 		}
 
+		public String getName() {
+			return name;
+		}
+		public String getUrl() {
+			return url;
+		}
 		@Override
 		public int hashCode() {
 			return name.hashCode();
@@ -211,6 +221,9 @@ public class Config {
 		}
 		public String getName() {
 			return name;
+		}
+		public String getPath() {
+			return path;
 		}
 		
 		@Override
