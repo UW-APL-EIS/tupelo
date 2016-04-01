@@ -142,8 +142,15 @@ public class HashFSCmd extends Command {
 		HashFS.process( f, mdd, fs );
 	}
 
-	static void report( ManagedDiskDescriptor mdd, Store s )
+	static void report( ManagedDiskDescriptor mdd, Store store )
 		throws Exception {
+		
+		String key = "hashfs";
+		byte[] value = store.getAttribute( mdd, key );
+		if( value != null ) {
+			String s = new String( value );
+			System.out.println( s );
+		}
 	}
 	
 	static private final Log log = LogFactory.getLog( HashFSCmd.class );

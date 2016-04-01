@@ -25,11 +25,7 @@ import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
-
-import edu.uw.apl.commons.sleuthkit.image.Image;
-import edu.uw.apl.commons.sleuthkit.volsys.VolumeSystem;
-import edu.uw.apl.commons.sleuthkit.digests.VolumeSystemHash;
-import edu.uw.apl.commons.sleuthkit.digests.VolumeSystemHashCodec;
+import edu.uw.apl.tupelo.store.tools.HashVS;
 
 public class HashVSCmd extends Command {
 	HashVSCmd() {
@@ -39,15 +35,19 @@ public class HashVSCmd extends Command {
 	@Override
 	public void invoke( String[] args ) throws Exception {
 		Options os = commonOptions();
+		os.addOption( "p", false, "Print" );
 		CommandLineParser clp = new PosixParser();
 		CommandLine cl = null;
 		try {
 			cl = clp.parse( os, args );
 			commonParse( cl );
 		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
+			//			printUsage( os, usage, HEADER, FOOTER );
 			//System.exit(1);
+			System.err.println( pe );
 		}
+		boolean print = cl.hasOption( "p" );
+		
 		args = cl.getArgs();
 		if( args.length < 2 ) {
 			System.err.println( "Need store arg + index" );
@@ -96,13 +96,32 @@ public class HashVSCmd extends Command {
 
 		ManagedDiskDescriptor mdd = sorted.get(index-1);
 		
-		Log log = LogFactory.getLog( HashVSCmd.class );
-		log.info( "Hashing " + mdd );
+		if( print ) {
+			report( mdd, store );
+		} else {
+			process( mdd, fs );
+		}
+	}
 
+	
+	static void report( ManagedDiskDescriptor mdd, Store store )
+		throws Exception {
+		
 		String key = "hashvs";
 		byte[] value = store.getAttribute( mdd, key );
-		if( value != null )
-			return;
+		if( value != null ) {
+			String s = new String( value );
+			System.out.println( s );
+		}
+	}
+		
+	static void process( ManagedDiskDescriptor mdd, FilesystemStore fs )
+		throws Exception {
+
+		final boolean debug = false;
+		
+		Log log = LogFactory.getLog( HashVSCmd.class );
+		log.info( "Hashing " + mdd );
 
 		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( fs );
 		
@@ -129,31 +148,11 @@ public class HashVSCmd extends Command {
 		// LOOK: wait for the fuse mount to finish.  Grr hate arbitrary sleeps!
 		Thread.sleep( 1000 * 2 );
 
-
 		File f = mdfs.pathTo( mdd );
-		Image i = new Image( f );
-		try {
-			VolumeSystem vs = null;
-			try {
-				vs = new VolumeSystem( i );
-			} catch( IllegalStateException noVolSys ) {
-				log.warn( noVolSys );
-				return;
-			}
-			try {
-				VolumeSystemHash vsh = VolumeSystemHash.create( vs );
-				StringWriter sw = new StringWriter();
-				VolumeSystemHashCodec.writeTo( vsh, sw );
-				String s = sw.toString();
-				value = s.getBytes();
-				store.setAttribute( mdd, key, value );
-			} finally {
-				vs.close();
-			}
-		} finally {
-			i.close();
-		}
+		System.err.println( f );
+		HashVS.process( f, mdd, fs );
 	}
+
 }
 
 // eof
