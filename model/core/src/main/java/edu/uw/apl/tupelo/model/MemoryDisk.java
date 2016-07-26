@@ -7,8 +7,8 @@ import java.io.IOException;
 /**
  * @author Stuart Maclean
  *
- * An implementation of UnmanagedDisk in which all reads are from
- * local memory.  Has no backing disk at all.  Useful only in
+ * An implementation of {@link UnmanagedDisk} in which all reads are
+ * from local memory.  Has no backing disk at all.  Useful only in
  * testing/demonstration of course.
  *
  * @see RandomDisk
@@ -17,14 +17,25 @@ import java.io.IOException;
  
 abstract public class MemoryDisk implements UnmanagedDisk {
 
-	protected MemoryDisk( long sizeBytes, long speedBytesPerSecond ) {
-		this( sizeBytes, speedBytesPerSecond,
+	/**
+	 * @param readSpeedBytesPerSecond - how many bytes can be
+	 * read per second from this fake disk.  Used to put realistic
+	 * load on read operations. 200 MBs-1 is reasonable.
+	 */
+	protected MemoryDisk( long sizeBytes, long readSpeedBytesPerSecond ) {
+		this( sizeBytes, readSpeedBytesPerSecond,
 			  MemoryDisk.class.getSimpleName() + "-" + sizeBytes );
 	}
 
-	protected MemoryDisk( long sizeBytes, long speedBytesPerSecond, String id ) {
+	/**
+	 * @param readSeedBytesPerSecond - how many bytes can be
+	 * read per second from this fake disk.  Used to put realistic
+	 * load on read operations.
+	 */
+	protected MemoryDisk( long sizeBytes, long readSpeedBytesPerSecond,
+						  String id ) {
 		this.size = sizeBytes;
-		this.speedBytesPerSecond = speedBytesPerSecond;
+		this.speedBytesPerSecond = readSpeedBytesPerSecond;
 		this.id = id;
 	}
 
@@ -123,7 +134,6 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 	protected final long size;
 	protected final long speedBytesPerSecond;
 	protected final String id;
-	
 }
 
 // eof

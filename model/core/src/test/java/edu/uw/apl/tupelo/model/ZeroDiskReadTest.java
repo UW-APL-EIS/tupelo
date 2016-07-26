@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
+ * @author Stuart Maclean
+ *
  * Testing read operations of {@link ZeroDisk}.  We use standard Unix
  * operations like dd, md5sum for 'expected' values of read
  * operations.
@@ -13,7 +15,7 @@ public class ZeroDiskReadTest extends junit.framework.TestCase {
 
 	public void test_1G() {
 		long sz = 1024L * 1024 * 1024;
-		ZeroDisk zd = new ZeroDisk( sz, 1024 );
+		ZeroDisk zd = new ZeroDisk( sz, 1024*1024*16 );
 
 		// expected: dd if=/dev/zero bs=1M count=1K | md5sum
 		test( zd, sz, "cd573cfaace07e7949bc0c46028904ff" );
@@ -22,7 +24,7 @@ public class ZeroDiskReadTest extends junit.framework.TestCase {
 	// A typical real disk size, 128GB
 	public void test_128G() {
 		long sz = 1024L * 1024 * 1024 * 128;
-		ZeroDisk zd = new ZeroDisk( sz, 1024 );
+		ZeroDisk zd = new ZeroDisk( sz, 1024*1024*128 );
 
 		/*
 		  Expected: dd if=/dev/zero bs=1M count=128K | md5sum

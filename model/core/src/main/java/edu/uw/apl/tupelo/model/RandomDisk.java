@@ -18,16 +18,18 @@ public class RandomDisk extends MemoryDisk {
 	/**
 	 * @param size byte count for this disk
 	 *
-	 * @param speedMBSec - how many megaBytes can be read per second
-	 * from this fake disk.  Used to put realistic load on read
-	 * operations.
+	/**
+	 * @param speedBytesPerSecond - how many bytes can be
+	 * read per second from this fake disk.  Used to put realistic
+	 * load on read operations.
 	 */
-	public RandomDisk( long size, int speedMBSec ) {
-		super( size, speedMBSec, RandomDisk.class.getSimpleName() + "-" + size );
+	public RandomDisk( long size, long speedBytesPerSecond ) {
+		super( size, speedBytesPerSecond,
+			   RandomDisk.class.getSimpleName() + "-" + size );
 	}
 	
-	public RandomDisk( long size, int speedMBSec, String id ) {
-		super( size, speedMBSec, id );
+	public RandomDisk( long size, long speedBytesPerSecond, String id ) {
+		super( size, speedBytesPerSecond, id );
 	}
 	
 	@Override

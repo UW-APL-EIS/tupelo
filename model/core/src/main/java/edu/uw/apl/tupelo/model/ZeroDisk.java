@@ -6,7 +6,9 @@ import java.io.IOException;
 /**
  * @author Stuart Maclean
  *
- * A fake 'disk' in which all contents are zeros.  Any read just returns zeroes.
+ * A fake 'disk' in which all contents are zeros.  Any read just
+ * returns zeroes. A variation of {@link MemoryDisk}, since has no
+ * disk-backed data at all.
  *
  * @see RandomDisk
  * @see MemoryDisk
@@ -15,12 +17,12 @@ import java.io.IOException;
 public class ZeroDisk extends MemoryDisk {
 
 	/**
-	 * @param speedBytesPerSecond - how many bytes can be
+	 * @param readSpeedBytesPerSecond - how many bytes can be
 	 * read per second from this fake disk.  Used to put realistic
-	 * load on read operations.
+	 * load on read operations. 200 MBs-1 is reasonable.
 	 */
-	public ZeroDisk( long sizeBytes, long speedBytesPerSecond ) {
-		this( sizeBytes, speedBytesPerSecond,
+	public ZeroDisk( long sizeBytes, long readSpeedBytesPerSecond ) {
+		this( sizeBytes, readSpeedBytesPerSecond,
 			  ZeroDisk.class.getSimpleName() + "-" + sizeBytes );
 	}
 	
