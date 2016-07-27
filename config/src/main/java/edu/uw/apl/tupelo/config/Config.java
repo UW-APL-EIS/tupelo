@@ -56,13 +56,13 @@ public class Config {
 		return true;
 	}
 
-	public boolean addDevice( String name, String path ) {
+	public Device addDevice( String name, String path ) {
 		if( haveDevice( name ) )
-			return false;
+			return null;
 		Device d = new Device( name );
 		d.setPath( path );
 		devices.add( d );
-		return true;
+		return d;
 	}
 	
 	public Device removeDevice( String name ) {
@@ -132,6 +132,23 @@ public class Config {
 					devices.add( device );
 				}
 			}
+			if( !matches && device != null ) {
+				m = DEVICEID.matcher( line );
+				matches = m.matches();
+				if( matches ) {
+					String id = m.group( 1 ).trim();
+					device.setID( id );
+				}
+			}
+			if( !matches && device != null ) {
+				m = DEVICESIZE.matcher( line );
+				matches = m.matches();
+				if( matches ) {
+					String szS = m.group( 1 ).trim();
+					long sz = Long.parseLong( szS );
+					device.setSize( sz );
+				}
+			}
 		}
 	}
 
@@ -168,6 +185,8 @@ public class Config {
 		for( Device d : devices ) {
 			pw.println( "[device \"" + d.name + "\"]" );
 			pw.println( "\tpath = " + d.path );
+			pw.println( "\tid = " + d.id );
+			pw.println( "\tsize = " + d.size );
 		}
 		pw.close();
 	}
@@ -210,20 +229,29 @@ public class Config {
 		Device( String name ) {
 			this.name = name;
 		}
-		void setPath( String s ) {
-			path = s;
-		}
-		void setID( String s ) {
-			id = s;
-		}
-		void setType( String s ) {
-			type = s;
-		}
 		public String getName() {
 			return name;
 		}
+		public void setPath( String s ) {
+			path = s;
+		}
 		public String getPath() {
 			return path;
+		}
+		public void setID( String s ) {
+			id = s;
+		}
+		public String getID() {
+			return id;
+		}
+		public void setSize( long l ) {
+			size = l;
+		}
+		public long getSize() {
+			return size;
+		}
+		public void setType( String s ) {
+			type = s;
 		}
 		
 		@Override
@@ -235,14 +263,15 @@ public class Config {
 		public boolean equals( Object o ) {
 			if( o == this )
 				return true;
-			if( !( o instanceof Store ) )
+			if( !( o instanceof Device ) )
 				return false;
-			Store that = (Store)o;
+			Device that = (Device)o;
 			return this.name.equals( that.name );
 		}
 		
 		final String name;
 		String path, id, type;
+		long size;
 	}
 
 	private final List<Store> stores;
@@ -257,6 +286,10 @@ public class Config {
 		Pattern.compile( "\\[device \"([^\"]+)\"\\]" );
 	static private final  Pattern DEVICEPATH =
 		Pattern.compile( "path = (.+)" );
+	static private final  Pattern DEVICEID =
+		Pattern.compile( "id = (.+)" );
+	static private final  Pattern DEVICESIZE =
+		Pattern.compile( "size = (\\d+)" );
 
 	static public File DEFAULT;
 	static {
