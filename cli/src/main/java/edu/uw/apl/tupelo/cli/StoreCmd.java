@@ -42,7 +42,8 @@ public class StoreCmd extends Command {
 		switch( sub ) {
 		case "list":
 			for( Config.Store s : c.stores() ) {
-				System.out.println( s.getName() + " " + s.getUrl() );
+				System.out.println( s.getName() );
+				System.out.println( " path = " + s.getUrl() );
 			}
 			break;
 		case "add":
