@@ -24,8 +24,8 @@ public class RandomDisk extends MemoryDisk {
 	 * load on read operations.
 	 */
 	public RandomDisk( long size, long speedBytesPerSecond ) {
-		super( size, speedBytesPerSecond,
-			   RandomDisk.class.getSimpleName() + "-" + size );
+		this( size, speedBytesPerSecond,
+			  RandomDisk.class.getSimpleName() + "-" + size );
 	}
 	
 	public RandomDisk( long size, long speedBytesPerSecond, String id ) {
