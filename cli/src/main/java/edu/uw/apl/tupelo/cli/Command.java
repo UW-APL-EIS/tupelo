@@ -19,6 +19,8 @@ import edu.uw.apl.tupelo.model.UnmanagedDisk;
 import edu.uw.apl.tupelo.model.PhysicalDisk;
 import edu.uw.apl.tupelo.model.VirtualDisk;
 import edu.uw.apl.tupelo.model.DiskImage;
+import edu.uw.apl.tupelo.model.RandomDisk;
+import edu.uw.apl.tupelo.model.ZeroDisk;
 
 /**
  * @author Stuart Maclean
@@ -83,6 +85,12 @@ abstract public class Command {
 		String path = cd.getPath();
 		File f = new File( path );
 		if( false ) {
+		} else if( path.equals( "/dev/random" ) ) {
+			long readSpeed = 100 * (1L << 20);
+			return new RandomDisk( cd.getSize(), readSpeed );
+		} else if( path.equals( "/dev/zero" ) ) {
+			long readSpeed = 100 * (1L << 20);
+			return new ZeroDisk( cd.getSize(), readSpeed );
 		} else if( path.startsWith( "/dev/" ) ) {
 			return new PhysicalDisk( f );
 		} else if( VirtualDisk.likelyVirtualDisk( f ) ) {
