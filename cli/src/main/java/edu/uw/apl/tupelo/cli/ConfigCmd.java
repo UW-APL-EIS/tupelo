@@ -7,7 +7,7 @@ import edu.uw.apl.tupelo.config.Config;
 
 public class ConfigCmd extends Command {
 	ConfigCmd() {
-		super( "config", "Print configuration" );
+		super( "Print configuration" );
 	}
 
 	@Override

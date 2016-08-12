@@ -7,6 +7,9 @@ import java.util.List;
 
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.PosixParser;
+import org.apache.commons.cli.ParseException;
 
 import edu.uw.apl.tupelo.config.Config;
 
@@ -29,20 +32,41 @@ import edu.uw.apl.tupelo.model.ZeroDisk;
 
 abstract public class Command {
 
-	protected Command( String name, String summary ) {
-		this.name = name;
+	protected Command( String summary, String synopsis, String description ) {
 		this.summary = summary;
+		this.synopsis = synopsis;
+		this.description = description;
 		config = Config.DEFAULT;
 		subs = new ArrayList();
 		COMMANDS.add( this );
 	}
+	
+	protected Command( String summary, String synopsis ) {
+		this( summary, synopsis, null );
+	}
+
+	protected Command( String summary ) {
+		this( summary, null, null );
+	}
 
 	String name() {
-		return name;
+		String s = getClass().getSimpleName();
+		if( s.endsWith( "Cmd" ) ) {
+			s = s.substring( 0, s.length() - 3 );
+		}
+		return s.toLowerCase();
 	}
 
 	String summary() {
 		return summary;
+	}
+
+	String synopsis() {
+		return synopsis;
+	}
+
+	String description() {
+		return description;
 	}
 	
 	public void addSub( String name, String usage, int requiredArgs,
@@ -102,11 +126,33 @@ abstract public class Command {
 		return null;
 	}
 	
-	abstract public void invoke( String[] args ) throws Exception;
+	//	abstract public void invoke( String[] args ) throws Exception;
+
+	public void invoke( String[] args ) throws Exception {
+		Options os = commonOptions();
+		CommandLineParser clp = new PosixParser();
+		CommandLine cl = null;
+		try {
+			cl = clp.parse( os, args );
+			commonParse( cl );
+		} catch( ParseException pe ) {
+			//	printUsage( os, usage, HEADER, FOOTER );
+			//System.exit(1);
+		}
+		Config c = new Config();
+		c.load( config );
+		if( args.length == 0 ) {
+			Sub sub = subDefault;
+			if( sub == null ) {
+				HelpCmd.INSTANCE.commandHelp( this );
+				return;
+			}
+		}
+	}
 
 	static Command locate( String s ) {
 		for( Command c : COMMANDS ) {
-			if( c.name.equals( s ) )
+			if( c.name().equals( s ) )
 				return c;
 		}
 		return null;
@@ -124,9 +170,11 @@ abstract public class Command {
 	
 	static final List<Command> COMMANDS = new ArrayList();
 	
-	protected final String name, summary;
-	protected final List<Sub> subs;
 	protected File config;
+
+	protected final String summary, synopsis, description;
+	protected final List<Sub> subs;
+	protected Sub subDefault;
 }
 
 // eof

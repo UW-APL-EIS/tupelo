@@ -299,7 +299,7 @@ public class Config {
 		f.mkdirs();
 		f = new File( f, "config" );
 		DEFAULT = f;
-		System.err.println( DEFAULT );
+		//		System.err.println( DEFAULT );
 	}
 }
 

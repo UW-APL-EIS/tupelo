@@ -20,7 +20,7 @@ import edu.uw.apl.tupelo.model.Session;
 
 public class InfoCmd extends Command {
 	InfoCmd() {
-		super( "info", "Print info on store content" );
+		super( "Print info on store content" );
 	}
 	
 	@Override

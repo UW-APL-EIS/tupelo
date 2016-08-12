@@ -25,16 +25,15 @@ import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 public class Main {
 
 	static public void main( String[] args ) {
-		if( args.length < 1 ) {
-			String help = buildHelp();
+		if( args.length < 1 || args[0].equalsIgnoreCase( "-h" ) ) {
+			String help = HelpCmd.buildHelp();
 			System.out.println( help );
 			return;
 		}
 		String cmd = args[0];
 		Command c = Command.locate( cmd );
 		if( c == null ) {
-			String help = buildHelp();
-			System.out.println( help );
+			HelpCmd.noCommand( cmd );
 			return;
 		}
 		
@@ -48,16 +47,9 @@ public class Main {
 		}
 	}
 
-	static String buildHelp() {
-		StringWriter sw = new StringWriter();
-		PrintWriter pw = new PrintWriter( sw );
-		pw.println();
-		for( Command c : Command.COMMANDS ) 
-			pw.printf( "%-15s %s\n", c.name(), c.summary() );
-		return sw.toString();
-	}
 
 	static {
+		new HelpCmd();
 		new ConfigCmd();
 		new DeviceCmd();
 		new StoreCmd();

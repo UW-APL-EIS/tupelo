@@ -8,8 +8,9 @@ import org.apache.commons.cli.*;
 import edu.uw.apl.tupelo.config.Config;
 	
 public class StoreCmd extends Command {
+
 	StoreCmd() {
-		super( "store", "List, create or delete stores" );
+		super( "List, create or delete stores" );
 		addSub( "list", "", 0, new Lambda() {
 				public void invoke( CommandLine cl ) throws Exception {
 					Config c = new Config();
@@ -63,6 +64,7 @@ public class StoreCmd extends Command {
 			break;
 		}
 	}
+
 }
 
 // eof

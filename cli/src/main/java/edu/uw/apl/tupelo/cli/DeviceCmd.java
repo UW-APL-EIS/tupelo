@@ -13,7 +13,7 @@ import edu.uw.apl.commons.devicefiles.DeviceFile;
 
 public class DeviceCmd extends Command {
 	DeviceCmd() {
-		super( "device", "List, create or delete devices" );
+		super( "List, create or delete devices", "list | add | remove" );
 		addSub( "list", "", 0, new Lambda() {
 				public void invoke( CommandLine cl ) throws Exception {
 					Config c = new Config();
