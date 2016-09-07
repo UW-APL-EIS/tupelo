@@ -32,6 +32,10 @@ import edu.uw.apl.tupelo.model.ZeroDisk;
 
 abstract public class Command {
 
+	/**
+	 * @param synopsis - allowable command line invocations of this
+	 * command, showing options and subcommands
+	 */
 	protected Command( String summary, String synopsis, String description ) {
 		this.summary = summary;
 		this.synopsis = synopsis;
@@ -42,11 +46,11 @@ abstract public class Command {
 	}
 	
 	protected Command( String summary, String synopsis ) {
-		this( summary, synopsis, null );
+		this( summary, synopsis, "DESCRIPTION" );
 	}
 
 	protected Command( String summary ) {
-		this( summary, null, null );
+		this( summary, "SYNOPSIS", "DESCRIPTION" );
 	}
 
 	String name() {
@@ -69,8 +73,11 @@ abstract public class Command {
 		return description;
 	}
 	
-	public void addSub( String name, String usage, int requiredArgs,
-						Lambda l ) {
+	public void addSub( String name, Lambda l ) {
+		Sub s = new Sub( name, l );
+		subs.add( s );
+		if( subs.size() == 1 )
+			subDefault = s;
 	}
 	
 	protected Options commonOptions() {
@@ -86,6 +93,77 @@ abstract public class Command {
 		}
 	}
 
+	public void invoke( String[] args ) throws Exception {
+		Options os = commonOptions();
+		CommandLineParser clp = new PosixParser();
+		CommandLine cl = null;
+		try {
+			cl = clp.parse( os, args );
+			commonParse( cl );
+		} catch( ParseException pe ) {
+			//	printUsage( os, usage, HEADER, FOOTER );
+			//System.exit(1);
+		}
+		args = cl.getArgs();
+		if( args.length == 0 ) {
+			Sub sub = subDefault;
+			if( sub == null ) {
+				HelpCmd.INSTANCE.commandHelp( this );
+				return;
+			}
+			Config c = new Config();
+			c.load( config );
+			sub.invoke( null, args, c );
+			return;
+		}
+		String subName = args[0];
+
+		Sub s = locateSub( subName );
+		if( s == null ) {
+			HelpCmd.INSTANCE.commandHelp( this );
+			return;
+		}
+		Config c = new Config();
+		c.load( config );
+		String[] subArgs = new String[args.length-1];
+		if( args.length > 1 )
+			System.arraycopy( args, 1, subArgs, 0, subArgs.length );
+		s.invoke( null, subArgs, c ); 
+	}
+
+	static Command locate( String s ) {
+		for( Command c : COMMANDS ) {
+			if( c.name().equals( s ) )
+				return c;
+		}
+		return null;
+	}
+
+	private Sub locateSub( String name ) {
+		for( Sub s : subs )
+			if( s.name.equals( name ) )
+				return s;
+		return null;
+	}
+	
+	interface Lambda {
+		public void invoke( CommandLine cl, String[] args,
+							Config c ) throws Exception;
+	}
+	
+	static class Sub {
+		Sub( String name, Lambda l ) {
+			this.name = name;
+			this.l = l;
+		}
+		void invoke( CommandLine cl, String[] args, Config c )
+			throws Exception {
+			l.invoke( cl, args, c );
+		}
+		String name;
+		Lambda l;
+	}
+	
 	Store createStore( Config.Store cs ) {
 		String url = cs.getUrl();
 		Store s = null;
@@ -125,49 +203,7 @@ abstract public class Command {
 		}
 		return null;
 	}
-	
-	//	abstract public void invoke( String[] args ) throws Exception;
 
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
-		}
-		Config c = new Config();
-		c.load( config );
-		if( args.length == 0 ) {
-			Sub sub = subDefault;
-			if( sub == null ) {
-				HelpCmd.INSTANCE.commandHelp( this );
-				return;
-			}
-		}
-	}
-
-	static Command locate( String s ) {
-		for( Command c : COMMANDS ) {
-			if( c.name().equals( s ) )
-				return c;
-		}
-		return null;
-	}
-
-	interface Lambda {
-		public void invoke( CommandLine cl ) throws Exception;
-	}
-	
-	static class Sub {
-		Sub( String name, String usage, int requiredArgs,
-			 Lambda l ) {
-		}
-	}
-	
 	static final List<Command> COMMANDS = new ArrayList();
 	
 	protected File config;

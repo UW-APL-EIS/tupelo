@@ -11,57 +11,37 @@ public class StoreCmd extends Command {
 
 	StoreCmd() {
 		super( "List, create or delete stores" );
-		addSub( "list", "", 0, new Lambda() {
-				public void invoke( CommandLine cl ) throws Exception {
-					Config c = new Config();
-					c.load( StoreCmd.this.config );
-					List<Config.Store> ss = c.stores();
-					for( Config.Store s : ss ) {
-						System.out.println( s.getName() );
-					}
+		addSub( "list", new Lambda() {
+				public void invoke( CommandLine cl, String[] args, Config c )
+					throws Exception {
+					list( c );
 				}
 			} );
 	}
 
-	@Override
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
+	private void list( Config c ) {
+		for( Config.Store s : c.stores() ) {
+			System.out.println( s.getName() );
+			System.out.println( " path = " + s.getUrl() );
 		}
-		Config c = new Config();
-		c.load( config );
-		String sub = "list";
-		if( args.length > 0 )
-			sub = args[0];
-		switch( sub ) {
-		case "list":
-			for( Config.Store s : c.stores() ) {
-				System.out.println( s.getName() );
-				System.out.println( " path = " + s.getUrl() );
-			}
-			break;
-		case "add":
-			if( args.length > 2 ) {
-				String name = args[1];
-				String url = args[2];
-				c.addStore( name, url );
-				c.store( config );
-			}
-			break;
-		case "remove":
-			if( args.length > 1 ) {
-				String name = args[1];
-				c.removeStore( name );
-				c.store( config );
-			}
-			break;
+	}
+
+	private void add( CommandLine cl, String[] args, Config c )
+		throws Exception {
+		if( args.length >= 2 ) {
+			String name = args[0];
+			String url = args[1];
+			c.addStore( name, url );
+			c.store( config );
+		}
+	}
+	
+	private void remove( CommandLine cl, String[] args, Config c )
+		throws Exception {
+		if( args.length >= 1 ) {
+			String name = args[0];
+			c.removeStore( name );
+			c.store( config );
 		}
 	}
 

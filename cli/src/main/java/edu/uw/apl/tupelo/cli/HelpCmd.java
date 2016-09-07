@@ -64,6 +64,9 @@ public class HelpCmd extends Command {
 		return sw.toString();
 	}
 
+	/*
+	  So that other commands may use the Help command, give it a name
+	*/
 	static HelpCmd INSTANCE;
 	
 	static final String COMMANDNAME = "tup";
