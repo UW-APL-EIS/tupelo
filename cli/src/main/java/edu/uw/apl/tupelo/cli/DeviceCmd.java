@@ -26,6 +26,12 @@ public class DeviceCmd extends Command {
 					add( cl, args, c );
 				}
 			} );
+		addSub( "remove", new Lambda() {
+				public void invoke( CommandLine cl, String[] args,
+									Config c ) throws Exception {
+					remove( cl, args, c );
+				}
+			} );
 	}
 
 	private void list( Config c ) {
@@ -40,7 +46,7 @@ public class DeviceCmd extends Command {
 
 	private void add( CommandLine cl, String[] args, Config c )
 		throws Exception {
-		
+
 		if( args.length < 2 ) {
 			HelpCmd.INSTANCE.commandHelp( this );
 			return;
@@ -58,9 +64,9 @@ public class DeviceCmd extends Command {
 		if( false ) {
 		} else if( path.equals( "/dev/random" ) ) {
 			long log2size = 30L;
-			if( args.length > 3 ) {
+			if( args.length > 2 ) {
 				try {
-					log2size = Long.parseLong( args[3] );
+					log2size = Long.parseLong( args[2] );
 				} catch( NumberFormatException nfe ) {
 				}
 			} else {
@@ -72,9 +78,9 @@ public class DeviceCmd extends Command {
 			id = rd.getID();
 		} else if( path.equals( "/dev/zero" ) ) {
 			long log2size = 30L;
-			if( args.length > 3 ) {
+			if( args.length > 2 ) {
 				try {
-					log2size = Long.parseLong( args[3] );
+					log2size = Long.parseLong( args[2] );
 				} catch( NumberFormatException nfe ) {
 				}
 			} else {
