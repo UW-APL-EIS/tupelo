@@ -37,12 +37,12 @@ public class DeviceFileLoadFailTest extends junit.framework.TestCase {
 		// A PhysicalDisk object can be built ok
 		PhysicalDisk pd = new PhysicalDisk( f );
 
-		// but this should fail, since it relies on native code
-		try {
-			long sz = pd.size();
-			fail();
-		} catch( UnsatisfiedLinkError expected ) {
-		}
+		// But size or id access should be defaults..
+		long sz = pd.size();
+		assertTrue( sz == 0 );
+
+		String id = pd.getID();
+		assertEquals( f.getPath(), id );
 	}
 }
 
