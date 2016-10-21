@@ -1,0 +1,13 @@
+# Latex artifacts
+
+*.aux*
+*.fls
+*.out*
+*.log
+*.nav*
+*.toc*
+*.vrb
+*.snm
+*.d
+
+# eof
