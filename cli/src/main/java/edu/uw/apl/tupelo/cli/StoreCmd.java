@@ -17,6 +17,12 @@ public class StoreCmd extends Command {
 					list( c );
 				}
 			} );
+		addSub( "add", new Lambda() {
+				public void invoke( CommandLine cl, String[] args,
+									Config c ) throws Exception {
+					add( cl, args, c );
+				}
+			} );
 	}
 
 	private void list( Config c ) {
