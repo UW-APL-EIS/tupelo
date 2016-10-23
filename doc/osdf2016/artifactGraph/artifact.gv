@@ -1,0 +1,19 @@
+digraph {
+	DeviceFiles -> NativeLibLoader;
+
+	TSK4J -> NativeLibLoader;
+
+	FUSE4J -> NativeLibLoader;
+
+	Tupelo -> DeviceFiles;
+
+	Tupelo -> TSK4J;
+
+	Tupelo -> VMVOLS_JAVA;
+
+	VMVOLS_JAVA -> FUSE4J;
+
+	WINREJ;
+
+	STIX_JAVA;
+}

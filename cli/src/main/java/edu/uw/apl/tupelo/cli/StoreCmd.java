@@ -23,6 +23,12 @@ public class StoreCmd extends Command {
 					add( cl, args, c );
 				}
 			} );
+		addSub( "remove", new Lambda() {
+				public void invoke( CommandLine cl, String[] args,
+									Config c ) throws Exception {
+					remove( cl, args, c );
+				}
+			} );
 	}
 
 	private void list( Config c ) {
@@ -44,11 +50,14 @@ public class StoreCmd extends Command {
 	
 	private void remove( CommandLine cl, String[] args, Config c )
 		throws Exception {
-		if( args.length >= 1 ) {
-			String name = args[0];
-			c.removeStore( name );
-			c.store( config );
+
+		if( args.length < 1 ) {
+			HelpCmd.INSTANCE.commandHelp( this );
+			return;
 		}
+		String name = args[0];
+		c.removeStore( name );
+		c.store( config );
 	}
 
 }

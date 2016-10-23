@@ -26,6 +26,7 @@ public class MDFSCmd extends Command {
 	MDFSCmd() {
 		super( "mdfs",
 			   "Make store-managed disks available under a mount point" );
+		addAlias( "mount" );
 	}
 	
 	@Override
@@ -41,8 +42,8 @@ public class MDFSCmd extends Command {
 			//System.exit(1);
 		}
 		args = cl.getArgs();
-		if( args.length < 2 ) {
-			System.err.println( "Need store arg + index" );
+		if( args.length < 1 ) {
+			System.err.println( "Need store arg" );
 			return;
 		}
 		Config c = new Config();

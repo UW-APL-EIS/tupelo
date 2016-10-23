@@ -64,9 +64,7 @@ public class DigestCmd extends Command {
 		Store s = createStore( selectedStore );
 		FilesystemStore fs = (FilesystemStore)s;
 		Collection<ManagedDiskDescriptor> mdds = fs.enumerate();
-
-		List<ManagedDiskDescriptor> sorted =
-			new ArrayList<ManagedDiskDescriptor>( mdds );
+		List<ManagedDiskDescriptor> sorted = new ArrayList( mdds );
 		Collections.sort( sorted,
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
 		for( ManagedDiskDescriptor mdd : sorted ) {

@@ -92,8 +92,7 @@ public class HashFSCmd extends Command {
 
 		final boolean debug = true;
 		
-		List<ManagedDiskDescriptor> sorted =
-			new ArrayList<ManagedDiskDescriptor>( mdds );
+		List<ManagedDiskDescriptor> sorted = new ArrayList( mdds );
 		Collections.sort( sorted,
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
 
@@ -144,12 +143,17 @@ public class HashFSCmd extends Command {
 
 	static void report( ManagedDiskDescriptor mdd, Store store )
 		throws Exception {
-		
-		String key = "hashfs";
-		byte[] value = store.getAttribute( mdd, key );
-		if( value != null ) {
-			String s = new String( value );
-			System.out.println( s );
+
+		Collection<String> attrNames = store.listAttributes( mdd );
+		for( String name : attrNames ) {
+			if( name.startsWith( "hashfs" ) ) {
+				String key = name;
+				byte[] value = store.getAttribute( mdd, key );
+				if( value != null ) {
+					String s = new String( value );
+					System.out.println( s );
+				}
+			}
 		}
 	}
 	

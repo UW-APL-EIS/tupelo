@@ -35,6 +35,7 @@ public class BodyfileCmd extends Command {
 	@Override
 	public void invoke( String[] args ) throws Exception {
 		Options os = commonOptions();
+		os.addOption( "p", false, "Print" );
 		CommandLineParser clp = new PosixParser();
 		CommandLine cl = null;
 		try {
@@ -44,6 +45,7 @@ public class BodyfileCmd extends Command {
 			//	printUsage( os, usage, HEADER, FOOTER );
 			//System.exit(1);
 		}
+		boolean print = cl.hasOption( "p" );
 		args = cl.getArgs();
 		if( args.length < 2 ) {
 			System.err.println( "Need store arg + index" );
@@ -93,22 +95,33 @@ public class BodyfileCmd extends Command {
 
 		ManagedDiskDescriptor mdd = sorted.get(index-1);
 
+		if( print ) {
+			report( mdd, store );
+		} else {
+			process( mdd, store );
+		}
+	}
+
+	static void process( ManagedDiskDescriptor mdd, Store s )
+		throws Exception {
+
 		Log log = LogFactory.getLog( BodyfileCmd.class );
 		log.info( "Filesystem traverse " + mdd );
 
-		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( fss );
+		FilesystemStore fs = (FilesystemStore)s;
+		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( fs );
 		
 		final File mountPoint = new File( "mdfs-mount" );
 		if( !mountPoint.exists() ) {
 			mountPoint.mkdirs();
 			mountPoint.deleteOnExit();
 		}
-		if( debug )
+		if( true )
 			System.out.println( "Mounting '" + mountPoint + "'" );
 		mdfs.mount( mountPoint, true );
 		Runtime.getRuntime().addShutdownHook( new Thread() {
 				public void run() {
-					if( debug )
+					if( true )
 						System.out.println( "Unmounting '" + mountPoint + "'" );
 					try {
 						mdfs.umount();
@@ -124,8 +137,26 @@ public class BodyfileCmd extends Command {
 
 		File f = mdfs.pathTo( mdd );
 		System.err.println( f );
-		BodyFile.process( f, mdd, store, printResult );
+		boolean printResult = false;
+		BodyFile.process( f, mdd, s, printResult );
 	}
+
+	static void report( ManagedDiskDescriptor mdd, Store store )
+		throws Exception {
+
+		Collection<String> attrNames = store.listAttributes( mdd );
+		for( String name : attrNames ) {
+			if( name.startsWith( "bodyfile" ) ) {
+				String key = name;
+				byte[] value = store.getAttribute( mdd, key );
+				if( value != null ) {
+					String s = new String( value );
+					System.out.println( s );
+				}
+			}
+		}
+	}
+
 }
 
 // eof

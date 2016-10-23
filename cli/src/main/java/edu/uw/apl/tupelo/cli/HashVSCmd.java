@@ -89,13 +89,10 @@ public class HashVSCmd extends Command {
 
 		final boolean debug = true;
 		
-		List<ManagedDiskDescriptor> sorted =
-			new ArrayList<ManagedDiskDescriptor>( mdds );
+		List<ManagedDiskDescriptor> sorted = new ArrayList( mdds );
 		Collections.sort( sorted,
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
-
 		ManagedDiskDescriptor mdd = sorted.get(index-1);
-		
 		if( print ) {
 			report( mdd, store );
 		} else {

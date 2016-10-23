@@ -53,6 +53,7 @@ abstract public class Command {
 		this( summary, "SYNOPSIS", "DESCRIPTION" );
 	}
 
+	
 	String name() {
 		String s = getClass().getSimpleName();
 		if( s.endsWith( "Cmd" ) ) {
@@ -61,6 +62,14 @@ abstract public class Command {
 		return s.toLowerCase();
 	}
 
+	public void addAlias( String s ) {
+		alias = s;
+	}
+
+	String alias() {
+		return alias;
+	}
+	
 	String summary() {
 		return summary;
 	}
@@ -133,8 +142,12 @@ abstract public class Command {
 
 	static Command locate( String s ) {
 		for( Command c : COMMANDS ) {
-			if( c.name().equals( s ) )
+			if( s.equals( c.name() ) )
 				return c;
+			// Aliases can be null, so use s as target
+			if( s.equals( c.alias() ) )
+				return c;
+			
 		}
 		return null;
 	}
@@ -207,7 +220,8 @@ abstract public class Command {
 	static final List<Command> COMMANDS = new ArrayList();
 	
 	protected File config;
-
+	protected String alias;
+	
 	protected final String summary, synopsis, description;
 	protected final List<Sub> subs;
 	protected Sub subDefault;

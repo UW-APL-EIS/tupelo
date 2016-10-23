@@ -81,9 +81,10 @@ public class PushCmd extends Command {
 		}
 		Store store = createStore( selectedStore );
 
-		System.out.println( ud.getID() );
-		System.out.println( store );
-
+		if( false ) {
+			System.out.println( ud.getID() );
+			System.out.println( store );
+		}
 		Session session = store.newSession();
 
 		boolean verbose = true;
@@ -100,8 +101,7 @@ public class PushCmd extends Command {
 		if( verbose )
 			System.out.println( "Stored data: " + existing );
 		
-		List<ManagedDiskDescriptor> matching =
-			new ArrayList<ManagedDiskDescriptor>();
+		List<ManagedDiskDescriptor> matching = new ArrayList();
 		for( ManagedDiskDescriptor el : existing ) {
 			if( el.getDiskID().equals( ud.getID() ) ) {
 				matching.add( el );
@@ -124,8 +124,9 @@ public class PushCmd extends Command {
 			log.info( "Requesting digest for: "+ recent );
 			digest = store.digest( recent );
 			if( digest == null ) {
-				System.out.println( "No digest, continuing with full disk put" );
-				log.warn( "No digest, continuing with full disk put" );
+				System.out.println
+					( "No digest, continuing with full disk push" );
+				log.warn( "No digest, continuing with full disk push" );
 			} else {
 				System.out.println( "Retrieved digest for " +
 						  recent.getSession() + ": " +
