@@ -11,9 +11,11 @@ digraph {
 
 	Tupelo -> VMVOLS_JAVA;
 
+	Tupelo -> FUSE4J;
+
 	VMVOLS_JAVA -> FUSE4J;
 
-	WINREJ;
+	Tupelo -> WINREJ;
 
-	STIX_JAVA;
+	Tupelo -> STIX_JAVA;
 }
