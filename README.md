@@ -85,7 +85,8 @@ which will run all the unit tests.  The unit tests for the http/client
 sub-module will fail unless you first fire up a 'Tupelo web-based
 store', like this (in a different terminal)
 
-```$ cd /path/to/tupelo-git-repo/http/server
+```
+$ cd /path/to/tupelo-git-repo/http/server
 
 $ mvn jetty:run
 ```
