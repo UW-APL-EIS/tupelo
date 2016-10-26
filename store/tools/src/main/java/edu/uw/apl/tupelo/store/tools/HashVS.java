@@ -30,10 +30,10 @@ import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 import edu.uw.apl.tupelo.fuse.ManagedDiskFileSystem;
 
-import edu.uw.apl.commons.sleuthkit.image.Image;
-import edu.uw.apl.commons.sleuthkit.volsys.VolumeSystem;
-import edu.uw.apl.commons.sleuthkit.digests.VolumeSystemHash;
-import edu.uw.apl.commons.sleuthkit.digests.VolumeSystemHashCodec;
+import edu.uw.apl.commons.tsk4j.image.Image;
+import edu.uw.apl.commons.tsk4j.volsys.VolumeSystem;
+import edu.uw.apl.commons.tsk4j.digests.VolumeSystemHash;
+import edu.uw.apl.commons.tsk4j.digests.VolumeSystemHashCodec;
 
 /**
  * Simple Tupelo Utility: Walk some previously added ManagedDisk,
