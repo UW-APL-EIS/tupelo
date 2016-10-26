@@ -1,5 +1,20 @@
-Tupelo - A Disk Management System
-=================================
+Tupelo - Software for Whole Disk Drive Capture
+==============================================
+
+Tupelo is Java software for capturing the state of an entire hard
+drive and saving a copy of that state offline where it can be
+processed using forensics tools such as Sleuthkit.  The capture
+produces a logical rather than physical copy of the original disk, so
+space is saved at the offline site.
+
+Tupelo is designed for a drive (in fact, many drives) to be
+imaged/captured many times.  The space efficiency of the captured
+'snapshots' increases as the capture count increases.  Imaging a 300GB
+drive 5 times will cost you far less than the 1.5TB that would be
+needed for true bit-for-bit copies.  Furthermore, the space-compressed
+offline copy is still fully usable in-place.  There is no need to
+'inflate back to raw' so that e.g. Sleuthkit tools can walk the
+captured drive.
 
 Prerequisites
 -------------
@@ -38,31 +53,28 @@ OS name: "linux", version: "3.11.0-15-generic", arch: "amd64", family: "unix"
 Install
 -------
 
+```
 $ cd /path/to/tupelo-git-repo
 
-$ mvn package
+$ mvn install
+```
 
 will compile and package up all the Java code into what Maven calls
-'artifacts', which are just carefully named Java jar files.  You can
-alternatively execute
+'artifacts', which are just carefully named Java jar files.  The
+artifacts are then copied to your local Maven repo.
 
-$ make package
+```
+$ mvn javadoc:aggregate
+```
 
-which uses the local Makefile to invoke Maven. Then, 
+The Javadoc APIs should then be available at ./target/site/apidocs.
 
-$ make install
+There are unit tests for some modules.  These are only run when the
+'tester' profile is activated.  If you want to run unit tests, try:
 
-will take the jars and copy them to /opt/dims/jars, and copy driver
-shell scripts from ./bin to /opt/dims/bin.
-
-Unit tests
-----------
-
-The above compile/package/install process skips all unit tests.  To
-run them (and some can take minutes to complete), we use a Maven
-profile called 'tester', like this:
-
+```
 $ mvn test -Ptester
+```
 
 which will run all the unit tests.  The unit tests for the http/client
 sub-module will fail unless you first fire up a 'Tupelo web-based
@@ -76,28 +88,58 @@ which spawns the Jetty web container to host the Tupelo web-based
 store.  The http/client unit tests then access this store via
 url base http://localhost:8888/tupelo/
 
-Dependencies (informational only, NOT required setup)
-----------------------------------------------------
+Modules
+-------
 
-Tupelo dependencies (i.e. 3rd party code it builds against) include 
+The Tupelo codebase is organised as several Maven 'modules', with a
+parent pom at the root level.  The important modules are as follows
 
-* fuse4j (Java-enabled fuse filesystems).  Used by fuse module.
+* model
 
-* tsk4j (Java-enabled Sleuthkit disk forensics software).  Used by cli module.
+* store
 
-* native-lib-loader (loads JNI C code from classpath. Used by
-  fuse4j, tsk4j artifacts above.
+* cli
 
-* rabbitmq-log4j-appender (Allow log4j statements to go to RabbitMQ broker).
-  Used by logging module.
+# Command Line Interface (CLI)
 
-These artifacts (jars,poms) are not yet available on public facing
-Maven repositories (i.e. Maven Central), so are bundled into a
-project-local Maven repository at ./repository.  The modules that
-depend on these artifacts (cli, fuse, logging) include this local repository
-in their pom.
-
-That's all folks...
+To use Tupelo, we run the code in the cli module.  Inspired by git,
+Tupelo uses a 'tup' driver program (a shell script invoking the Java
+code) with many sub-commands. After building the code from source (see
+above), we are ready to try it out.
 
 
+```
+$ cd /path/to/tupelo/cli
+
+$ ./tup
+```
+
+
+Local Repository
+----------------
+
+The Tupelo artifacts built here themselves depend on various
+existing Maven artifacts which are not (yet) available on a public
+Maven repository (like Maven Central).  Some of dependencies are
+available in source form on github.  But to save the Tupelo builder
+the effort of building all these dependencies from source, we include a
+'project-local' Maven repository so that the Tupelo artifacts will
+build.  We can inspect this local repository thus:
+
+```
+$ cd /path/to/tupelo
+
+$ tree ./repository
+```
+
+
+# Video/Slides
+
+Ideas related to this work were presented at the [OSDFCon]
+(http://www.osdfcon.org/2016-event/) workshop in October 2016.  A local copy
+of the slides is also included [here](./doc/MacleanTupeloOSDF2016.pdf).
+
+# Contact
+
+stuart at apl dot washington dot edu
 
