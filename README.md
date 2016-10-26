@@ -25,8 +25,9 @@ two very obvious tool prerequisites:
 
 A 1.7+ version of the Java Development Kit (JDK).  For installation on Ubuntu:
 
+```
 $ sudo apt-get install openjdk-7-jdk
-
+```
 will install the OpenJDK toolset.  You may prefer the Sun/Oracle
 toolset, but that takes more work to install. See
 e.g. http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html.
@@ -35,13 +36,17 @@ Apache Maven 3.0.5 or greater (earlier 2.* versions may work fine, but
 3.0.5 is our current reference). See install instructions at
 http://maven.apache.org/download.cgi.  For quick install on Ubuntu:
 
+```
 $ sudo apt-get install maven
+```
 
 After installation of both tools, run 'mvn -v' which shows Maven's
 version and which JDK it has located.  You are hoping to see something
 very close to this:
 
+```
 $ mvn -v
+```
 
 Apache Maven 3.0.4
 Maven home: /usr/share/maven
@@ -59,7 +64,7 @@ $ cd /path/to/tupelo-git-repo
 $ mvn install
 ```
 
-will compile and package up all the Java code into what Maven calls
+will compile and package up all the Tupelo Java code into what Maven calls
 'artifacts', which are just carefully named Java jar files.  The
 artifacts are then copied to your local Maven repo.
 
@@ -80,9 +85,10 @@ which will run all the unit tests.  The unit tests for the http/client
 sub-module will fail unless you first fire up a 'Tupelo web-based
 store', like this (in a different terminal)
 
-$ cd /path/to/tupelo-git-repo/http/server
+```$ cd /path/to/tupelo-git-repo/http/server
 
 $ mvn jetty:run
+```
 
 which spawns the Jetty web container to host the Tupelo web-based
 store.  The http/client unit tests then access this store via
@@ -114,6 +120,7 @@ $ cd /path/to/tupelo/cli
 $ ./tup
 ```
 
+TODO: Add example session highlighting devices, stores, push, digests, etc
 
 Local Repository
 ----------------
@@ -129,7 +136,7 @@ build.  We can inspect this local repository thus:
 ```
 $ cd /path/to/tupelo
 
-$ tree ./repository
+$ tree ./.repository
 ```
 
 
@@ -137,7 +144,7 @@ $ tree ./repository
 
 Ideas related to this work were presented at the [OSDFCon]
 (http://www.osdfcon.org/2016-event/) workshop in October 2016.  A local copy
-of the slides is also included [here](./doc/MacleanTupeloOSDF2016.pdf).
+of the slides is also included [here](./doc/osdf2016/MacleanTupeloOSDF2016.pdf).
 
 # Contact
 
