@@ -30,6 +30,12 @@
     <module>cli</module>
   </modules>
 
+  <description>
+    Tupelo is a Java/C codebase for whole disk capture, analysis and search.
+  </description>
+
+  <inceptionYear>2015</inceptionYear>
+
   <organization>
     <name>Applied Physics Laboratory, University of Washington</name>
     <url>http://www.apl.uw.edu</url>
