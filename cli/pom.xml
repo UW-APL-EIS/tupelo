@@ -84,11 +84,6 @@
     </dependency>
     <dependency>
       <groupId>edu.uw.apl.commons</groupId>
-      <artifactId>tsk4j-core</artifactId>
-      <version>413.0.2</version>
-    </dependency>
-    <dependency>
-      <groupId>edu.uw.apl.commons</groupId>
       <artifactId>tsk4j-digests</artifactId>
     </dependency>
     <dependency>

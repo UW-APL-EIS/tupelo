@@ -19,8 +19,8 @@ import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
-import edu.uw.apl.commons.sleuthkit.digests.BodyFile;
-import edu.uw.apl.commons.sleuthkit.digests.BodyFileCodec;
+import edu.uw.apl.commons.tsk4j.digests.BodyFile;
+import edu.uw.apl.commons.tsk4j.digests.BodyFileCodec;
 
 /**
  */
