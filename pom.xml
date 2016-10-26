@@ -58,15 +58,6 @@
     </license>
   </licenses>
 
-  <profiles>
-    <profile>
-      <id>tester</id>
-      <properties>
-	<skipTests>false</skipTests>
-      </properties>
-    </profile>
-  </profiles>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -190,5 +181,55 @@
       </plugin>
     </plugins>
   </reporting>
+
+
+  <profiles>
+    <profile>
+      <!-- We use the tester profile to NOT skip unit tests -->
+      <id>tester</id>
+      <properties>
+	<skipTests>false</skipTests>
+      </properties>
+    </profile>
+
+    <profile>
+      <!-- We use the assembler profile to add licensing to the sources -->
+      <id>assembler</id>
+      <build>
+	<defaultGoal>process-sources</defaultGoal>
+	<plugins>
+	  <plugin>
+	    <groupId>com.mycila</groupId>
+	    <artifactId>license-maven-plugin</artifactId>
+	    <version>2.5</version>
+	    <configuration>
+	      <header>LICENSE.txt</header>
+	      <quiet>false</quiet>
+	      <strictCheck>true</strictCheck>
+	    </configuration>
+	    <executions>
+	      <execution>
+		<id>main</id>
+		<phase>process-sources</phase>
+		<goals>
+		  <goal>format</goal>
+		</goals>
+		<configuration>
+		  <includes>
+		    <include>src/main/java/**/*.java</include>
+		    <include>src/test/java/**/*.java</include>
+		    <include>src/main/native/**/*.c</include>
+		    <include>src/main/native/**/*.h</include>
+		    <!-- Seems unable to handle poms? -->
+		  </includes>
+		</configuration>
+	      </execution>
+	    </executions>
+	  </plugin>
+	</plugins>
+      </build>
+    </profile>
+
+  </profiles>
 
 </project>
