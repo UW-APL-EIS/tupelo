@@ -19,6 +19,7 @@
   <url>http://eis.apl.uw.edu</url>
   
   <modules>
+    <module>config</module>
     <module>utils</module>
     <module>model</module>
     <module>logging</module>
@@ -26,13 +27,30 @@
     <module>fuse</module> 
     <module>http</module>
     <module>amqp</module>
-    <module>shell</module>
+    <module>cli</module>
   </modules>
 
   <organization>
     <name>Applied Physics Laboratory, University of Washington</name>
     <url>http://www.apl.uw.edu</url>
   </organization>
+
+  <developers>
+    <developer>
+      <id>stuart</id>
+      <name>Stuart Maclean</name>
+      <email>stuart@apl.uw.edu</email>
+    </developer>
+  </developers>
+  
+  <licenses>
+    <license>
+      <name>BSD 3-Clause</name>
+      <url>http://opensource.org/licenses/BSD-3-Clause</url>
+      <comments>See LICENSE.txt</comments>
+      <distribution>manual</distribution>
+    </license>
+  </licenses>
 
   <profiles>
     <profile>
@@ -43,22 +61,12 @@
     </profile>
   </profiles>
 
-
-  <developers>
-    <developer>
-      <id>stuart</id>
-      <name>Stuart Maclean</name>
-      <email>stuart@apl.uw.edu</email>
-    </developer>
-  </developers>
-  
-
   <dependencyManagement>
     <dependencies>
       <dependency>
 	<groupId>edu.uw.apl.commons</groupId>
 	<artifactId>tsk4j-digests</artifactId>
-	<version>413.2.0</version>
+	<version>413.3.0</version>
       </dependency>
       <dependency>
 	<groupId>commons-cli</groupId>

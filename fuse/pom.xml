@@ -16,6 +16,7 @@
   <name>Tupelo Disk Management - Mountable FileSystem via Fuse</name>
   <url>http://maven.apache.org</url>
 
+  <!-- We'll locate fuse4j artifacts in Tupelo project-local repo -->
   <repositories>
     <repository>
       <id>tupelo.local</id>
@@ -47,9 +48,9 @@
     </dependency>
 
     <dependency>
-      <groupId>edu.uw.apl.commons</groupId>
+      <groupId>fuse4j</groupId>
       <artifactId>fuse4j-core</artifactId>
-      <version>2400.0.1</version>
+      <version>3.0.0</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>

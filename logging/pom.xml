@@ -13,6 +13,7 @@
   <name>Tupelo Disk Management - Logging Infrastructure</name>
   <url>http://maven.apache.org</url>
 
+  <!-- We'll locate rabbitmq-log4j-appender in Tupelo project-local repo -->
   <repositories>
     <repository>
       <id>tupelo.local</id>
