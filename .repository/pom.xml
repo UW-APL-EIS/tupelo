@@ -1,0 +1,117 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+			     http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+      This pom is purely a vehicle for copying Tupelo 3rd party
+      dependencies for users that DO have them built/installed (to
+      ~/.m2/repository) into this directory so that they can be added
+      to git for users that do NOT have them built/installed.  This
+      pom is NOT part of the Tupelo codebase build process.  We do NOT
+      have the Tupelo super-pom for a parent.  Conversely, the parent
+      pom does NOT list us as a module.
+  -->
+  <!--
+      This pom uses a profile named 'repo' to copy the dependencies
+      listed below into the current directory (actually, under
+      target/dependency, the default for the dependency plugin).
+
+      Without this profile being activated, this pom acts on behalf of
+      the non-power user, and the package phase installs the required
+      jars+poms into the user's local repo (via use of the install
+      plugin).  Note how in the install plugin configuration, we have
+      to supply exact pomFiles to be installed alongside the jar.
+      Without this, the pom found in the jar itself is NOT correctly
+      copied into the final repos, so dependency info is lost.  This
+      is a known bug for the install plugin 2.5.2, see
+      http://jira.codehaus.org/browse/MINSTALL-110.
+
+      We use the dependency plugin's unpack-dependency goal to put the
+      required poms onto the local filessytem. All very ugly!
+  -->
+
+  <groupId>edu.uw.apl</groupId>
+  <artifactId>tupelo-local-repo-builder</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+
+  <name>
+    Tupelo - Local Repository Construction for Dependent Artifact Resolution
+  </name>
+
+  <dependencies>
+    <!-- Our model/physical module depends on this -->
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>device-files</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+
+    <!-- Our model/virtual module depends on this -->
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>vmvols-model</artifactId>
+      <version>2.1.0</version>
+    </dependency>
+
+    <!-- Our fuse module depends on this -->
+    <dependency>
+      <groupId>fuse4j</groupId>
+      <artifactId>fuse4j-core</artifactId>
+      <version>3.0.0</version>
+    </dependency>
+
+    <!-- Our logging module depends on this -->
+    <dependency>
+      <groupId>uk.ac.ox.it.vle</groupId>
+      <artifactId>rabbitmq-log4j-appender</artifactId>
+      <version>1.1</version>
+    </dependency>
+
+    <!-- Our store/tools module depends on this -->
+    <dependency>
+      <groupId>edu.uw.apl.commons</groupId>
+      <artifactId>tsk4j-digests</artifactId>
+      <version>413.3.0</version>
+    </dependency>
+
+
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>repo</id>
+      <build>
+	<defaultGoal>process-sources</defaultGoal>
+	<plugins>
+	  <plugin>
+	    <groupId>org.apache.maven.plugins</groupId>
+	    <artifactId>maven-dependency-plugin</artifactId>
+	    <version>2.9</version>
+	    <executions>
+	      <execution>
+		<id>copy-dependencies</id>
+		<goals>
+		  <goal>copy-dependencies</goal>
+		</goals>
+		<configuration>
+		  <useRepositoryLayout>true</useRepositoryLayout>
+		  <copyPom>true</copyPom>
+		  <addParentPoms>true</addParentPoms>
+		  <includeGroupIds>
+		    edu.uw.apl.commons,fuse4j,uk.ac.ox.it.vle
+		  </includeGroupIds>
+		  <outputDirectory>${project.basedir}</outputDirectory>
+		</configuration>
+	      </execution>
+	    </executions>
+	  </plugin>
+	</plugins>
+      </build>
+    </profile>
+  </profiles>
+  
+</project>
+

@@ -1,3 +1,38 @@
+<!--
+
+    Copyright © 2016, University of Washington
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+
+        * Redistributions of source code must retain the above copyright
+          notice, this list of conditions and the following disclaimer.
+
+        * Redistributions in binary form must reproduce the above
+          copyright notice, this list of conditions and the following
+          disclaimer in the documentation and/or other materials provided
+          with the distribution.
+
+        * Neither the name of the University of Washington nor the names
+          of its contributors may be used to endorse or promote products
+          derived from this software without specific prior written
+          permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL UNIVERSITY OF
+    WASHINGTON BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" 
 	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
@@ -19,6 +54,7 @@
   <url>http://eis.apl.uw.edu</url>
   
   <modules>
+    <module>config</module>
     <module>utils</module>
     <module>model</module>
     <module>logging</module>
@@ -26,23 +62,19 @@
     <module>fuse</module> 
     <module>http</module>
     <module>amqp</module>
-    <module>shell</module>
+    <module>cli</module>
   </modules>
+
+  <description>
+    Tupelo is a Java/C codebase for whole disk capture, analysis and search.
+  </description>
+
+  <inceptionYear>2015</inceptionYear>
 
   <organization>
     <name>Applied Physics Laboratory, University of Washington</name>
     <url>http://www.apl.uw.edu</url>
   </organization>
-
-  <profiles>
-    <profile>
-      <id>tester</id>
-      <properties>
-	<skipTests>false</skipTests>
-      </properties>
-    </profile>
-  </profiles>
-
 
   <developers>
     <developer>
@@ -52,13 +84,21 @@
     </developer>
   </developers>
   
+  <licenses>
+    <license>
+      <name>BSD 3-Clause</name>
+      <url>http://opensource.org/licenses/BSD-3-Clause</url>
+      <comments>See LICENSE.txt</comments>
+      <distribution>manual</distribution>
+    </license>
+  </licenses>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
 	<groupId>edu.uw.apl.commons</groupId>
 	<artifactId>tsk4j-digests</artifactId>
-	<version>413.2.0</version>
+	<version>413.3.0</version>
       </dependency>
       <dependency>
 	<groupId>commons-cli</groupId>
@@ -174,7 +214,76 @@
 	<artifactId>maven-project-info-reports-plugin</artifactId>
 	<version>2.7</version>
       </plugin>
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-javadoc-plugin</artifactId>
+	<version>2.10.2</version>
+	<reportSets>
+	  <reportSet>
+	    <!-- aggregate reportSet, to define in poms having modules -->
+	    <id>aggregate</id>
+	    <inherited>false</inherited>
+	    <!-- don't run aggregate in child modules -->
+	    <reports>
+	      <report>aggregate</report>
+	    </reports>
+	  </reportSet>
+        </reportSets>
+      </plugin>
     </plugins>
   </reporting>
+
+
+  <profiles>
+    <profile>
+      <!-- We use the tester profile to NOT skip unit tests -->
+      <id>tester</id>
+      <properties>
+	<skipTests>false</skipTests>
+      </properties>
+    </profile>
+
+    <profile>
+      <!-- We use the assembler profile to add licensing to the sources -->
+      <id>assembler</id>
+      <build>
+	<defaultGoal>process-sources</defaultGoal>
+	<plugins>
+	  <plugin>
+	    <groupId>com.mycila</groupId>
+	    <artifactId>license-maven-plugin</artifactId>
+	    <version>2.5</version>
+	    <configuration>
+	      <header>LICENSE.txt</header>
+	      <quiet>false</quiet>
+	      <strictCheck>true</strictCheck>
+	    </configuration>
+	    <executions>
+	      <execution>
+		<id>main</id>
+		<phase>process-sources</phase>
+		<goals>
+		  <goal>format</goal>
+		</goals>
+		<configuration>
+		  <includes>
+<!--
+		    <include>src/main/java/**/*.java</include>
+		    <include>src/test/java/**/*.java</include>
+		    <include>src/main/native/**/*.c</include>
+		    <include>src/main/native/**/*.h</include>
+-->
+		    <include>pom.xml</include>
+		    <!-- Seems unable to handle poms? -->
+		  </includes>
+		</configuration>
+	      </execution>
+	    </executions>
+	  </plugin>
+	</plugins>
+      </build>
+    </profile>
+
+  </profiles>
 
 </project>

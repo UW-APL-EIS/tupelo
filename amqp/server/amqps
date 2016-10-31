@@ -1,13 +1,15 @@
 #!/bin/bash
 
-ARTIFACT=tupelo-amqp-server
-VERSION=0.0.1
+JARPATH=`dirname $0`/target
 
-JAR=target/$ARTIFACT-$VERSION.jar
+ARTIFACT=tupelo-amqp-server
+VERSION=1.1.0
+
+JAR=$ARTIFACT-$VERSION.jar
 PACKAGE=edu.uw.apl.tupelo.amqp.server
 CLAZZ=AMQPServer
 
-exec java -classpath $JAR $PACKAGE.$CLAZZ "$@"
+exec java -classpath $JARPATH/$JAR $PACKAGE.$CLAZZ "$@"
 
 # eof
 
