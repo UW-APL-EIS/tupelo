@@ -1,0 +1,11 @@
+2016-10-31  Stuart Maclean  <stuart@apl.uw.edu>
+
+	* Release 1.0.0.  First tagged commit on github.  Versions in any
+	pom.xml may not yet reflect this tag.
+
+	Basic functionality: device, store definitions. Disk capture
+	(push), digesting, analysis.  Mounting the store.
+
+	The ./cli submodule has a driver shell script 'tup' that is a good
+	entry point for Tupelo usage.
+
