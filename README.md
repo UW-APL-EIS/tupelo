@@ -46,7 +46,6 @@ very close to this:
 
 ```
 $ mvn -v
-```
 
 Apache Maven 3.0.4
 Maven home: /usr/share/maven
@@ -54,6 +53,7 @@ Java version: 1.7.0_65, vendor: Oracle Corporation
 Java home: /usr/lib/jvm/java-7-openjdk-amd64/jre
 Default locale: en_US, platform encoding: UTF-8
 OS name: "linux", version: "3.11.0-15-generic", arch: "amd64", family: "unix"
+```
 
 Install
 -------
@@ -137,7 +137,7 @@ build.  We can inspect this local repository thus:
 ```
 $ cd /path/to/tupelo
 
-$ tree ./.repository
+$ tree .repository
 ```
 
 
