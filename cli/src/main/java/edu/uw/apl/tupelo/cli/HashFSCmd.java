@@ -68,24 +68,20 @@ import edu.uw.apl.tupelo.model.Session;
 
 public class HashFSCmd extends Command {
 	HashFSCmd() {
-		super( "hashfs", "Hash file content of a store-managed disk" );
+		super( "hashfs" );//, "Hash file content of a store-managed disk" );
+	}
+
+	@Override
+	Options options() {
+		Options os = new Options();
+		os.addOption( "p", false, "Print" );
+		return os;
 	}
 	
 	@Override
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
-		os.addOption( "p", false, "Print" );
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
-		}
-		boolean print = cl.hasOption( "p" );
-		args = cl.getArgs();
+	public void invoke( File config, boolean verbose,
+						String[] args, CommandLine cl )
+		throws Exception {
 
 		if( args.length < 2 ) {
 			System.err.println( "Need store arg + md index" );
@@ -93,6 +89,7 @@ public class HashFSCmd extends Command {
 		}
 		Config c = new Config();
 		c.load( config );
+		boolean print = cl.hasOption( "p" );
 		
 		String storeName = args[0];
 		Config.Store selectedStore = null;

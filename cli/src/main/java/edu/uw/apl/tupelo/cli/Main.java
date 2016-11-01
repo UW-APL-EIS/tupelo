@@ -48,6 +48,8 @@ import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 
+import edu.uw.apl.tupelo.config.Config;
+
 /**
  * @author Stuart Maclean
  *
@@ -58,29 +60,96 @@ import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 public class Main {
 
 	static public void main( String[] args ) {
-		if( args.length < 1 || args[0].equalsIgnoreCase( "-h" ) ) {
+		if( args.length < 1 ) {
 			String help = HelpCmd.buildHelp();
 			System.out.println( help );
 			return;
 		}
-		String cmd = args[0];
-		Command c = Command.locate( cmd );
-		if( c == null ) {
-			HelpCmd.noCommand( cmd );
+		CommandLineParser clp = new DefaultParser();
+		CommandLine cl = null;
+		boolean stopAtNonOption = true;
+		try {
+			cl = clp.parse( globalOptions, args, stopAtNonOption );
+		} catch( ParseException neverWithStopAtNonOption ) {
+		}
+		if( cl.hasOption( "h" ) ) {
+			String help = HelpCmd.buildHelp();
+			System.out.println( help );
+			return;
+		}			
+		args = cl.getArgs();
+		if( args.length == 0 ) {
+			String help = HelpCmd.buildHelp();
+			System.out.println( help );
 			return;
 		}
-		
+		String cmdName = args[0];
+		Command cmd = Command.locate( cmdName );
+		if( cmd == null ) {
+			HelpCmd.noCommand( cmdName );
+			return;
+		}
+		File configBacking = Config.DEFAULT;
+		if( cl.hasOption( "c" ) ) {
+			String s = cl.getOptionValue( "c" );
+			File f = new File( s );
+			if( !f.canRead() ) {
+				System.err.println( s + ": no such config file" );
+				return;
+			}
+			configBacking = f;
+		}
+		boolean verbose = cl.hasOption( "v" );
 		String[] subArgs = new String[args.length-1];
 		System.arraycopy( args, 1, subArgs, 0, subArgs.length );
+		Options os = cmd.options();
+		stopAtNonOption = false;
 		try {
-			c.invoke( subArgs );
+			cl = clp.parse( os, subArgs, stopAtNonOption );
+		} catch( ParseException pe ) {
+			HelpCmd.INSTANCE.commandHelp( cmd );
+			return;
+		}
+		args = cl.getArgs();
+		try {
+			Config c = new Config();
+			c.setBacking( configBacking );
+			cmd.invoke( c, verbose, args, cl );
 		} catch( Exception e ) {
 			System.err.println( e );
 			e.printStackTrace();
 		}
 	}
 
+	/**
+	 * @param cResult - a second result, this method returns TWO
+	 * values (one just one if command not found).  cResult[0] is
+	 * populated with the Command located in the args array.
+	 *
+	 * @result Index into the args array at which a valid Command
+	 * name found, or -1 if none.
+	 */
+	static private int locateCommandIndex( String[] args,
+										   Command[] cResult ) {
+		for( int i = 0; i < args.length; i++ ) {
+			String arg = args[i];
+			for( Command c : Command.COMMANDS ) {
+				if( arg.equals( c.name() ) ) {
+					cResult[0] = c;
+					return i;
+				}
+			}
+		}
+		return -1;
+	}
 
+	static Options globalOptions = new Options();
+	static {
+		globalOptions.addOption( "c", true, "Config file (~/.tupelo/config)" );
+		globalOptions.addOption( "h", false, "help" );
+		globalOptions.addOption( "v", false, "verbose" );
+	}
+	
 	static {
 		new HelpCmd();
 		new ConfigCmd();

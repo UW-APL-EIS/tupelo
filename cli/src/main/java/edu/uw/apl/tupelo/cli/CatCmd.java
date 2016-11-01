@@ -55,22 +55,14 @@ import edu.uw.apl.tupelo.model.Session;
 
 public class CatCmd extends Command {
 	CatCmd() {
-		super( "cat", "Cat a store-managed disk" );
+		super( "cat" );//, "Cat a store-managed disk" );
 	}
 	
 	@Override
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
-		}
-		args = cl.getArgs();
+	public void invoke( File config, boolean verbose,
+						String[] args, CommandLine cl )
+		throws Exception {
+
 		if( args.length < 2 ) {
 			System.err.println( "Need store arg + index" );
 			return;

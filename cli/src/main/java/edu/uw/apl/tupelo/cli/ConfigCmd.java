@@ -36,19 +36,29 @@ package edu.uw.apl.tupelo.cli;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.commons.cli.CommandLine;
+
 import edu.uw.apl.tupelo.config.Config;
+
+/**
+ * @author Stuart Maclean
+ *
+ * Print a Config options as loaded from local disk: tup config
+ */
 
 public class ConfigCmd extends Command {
 	ConfigCmd() {
-		super( "Print configuration" );
+		super( "config" );
 	}
 
 	@Override
-	public void invoke( String[] args ) throws Exception {
-		File f = Config.DEFAULT;
+	public void invoke( File config, boolean verbose,
+						String[] args, CommandLine cl )
+		throws Exception {
+
 		Config c = new Config();
 		try {
-			c.load( f );
+			c.load( config );
 		} catch( IOException ioe ) {
 		}
 		c.store( System.out );

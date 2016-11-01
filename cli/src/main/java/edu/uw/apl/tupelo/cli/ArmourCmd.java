@@ -56,27 +56,24 @@ import edu.uw.apl.commons.tsk4j.digests.BodyFile;
 import edu.uw.apl.commons.tsk4j.digests.BodyFileCodec;
 
 /**
+ * @author Stuart Maclean.
+ *
+ * Currently this class not used.  Need to revamp so it opens an
+ * Armour shell/GUI?
  */
   
 public class ArmourCmd extends Command {
 	ArmourCmd() {
-		super( "armour",
-			   "Invoke Armour shell on selected store-held bodyfiles" );
+		super( "armour" );
+		//"Invoke Armour shell on selected store-held bodyfiles" );
 	}
 	
+	
 	@Override
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
-		}
-		args = cl.getArgs();
+	public void invoke( File config, boolean verbose,
+						String[] args, CommandLine cl )
+		throws Exception {
+
 		if( args.length < 2 ) {
 			System.err.println( "Need store + index args" );
 			return;

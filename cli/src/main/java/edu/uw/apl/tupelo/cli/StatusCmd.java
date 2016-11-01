@@ -45,26 +45,24 @@ import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 
 import edu.uw.apl.commons.devicefiles.DeviceFile;
 
+/**
+ * @author Stuart Maclean
+ */
+
 public class StatusCmd extends Command {
 	StatusCmd() {
-		super( "status", "Show local device status with respect to store" );
+		super( "status" );
+		//, "Show local device status with respect to store" );
 	}
-	
+
 	@Override
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
-		}
-		args = cl.getArgs();
+	public void invoke( File config, boolean verbose,
+						String[] args, CommandLine cl )
+		throws Exception {
+	
 		Config c = new Config();
 		c.load( config );
+
 		if( args.length == 0 ) {
 			for( Config.Store cs : c.stores() ) {
 				Store s = createStore( cs );

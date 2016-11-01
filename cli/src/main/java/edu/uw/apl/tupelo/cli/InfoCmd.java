@@ -51,24 +51,21 @@ import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 
+/**
+ * @author Stuart Maclean
+ *
+ * Print a summary of current Store contents: tup info S
+ */
+
 public class InfoCmd extends Command {
 	InfoCmd() {
-		super( "Print info on store content" );
+		super( "info" );
 	}
 	
 	@Override
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
-		}
-		args = cl.getArgs();
+	public void invoke( File config, boolean verbose,
+						String[] args, CommandLine cl ) throws Exception {
+
 		if( args.length < 1 ) {
 			System.err.println( "Need store args" );
 			return;

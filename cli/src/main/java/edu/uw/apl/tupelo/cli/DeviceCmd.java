@@ -46,32 +46,32 @@ import edu.uw.apl.tupelo.model.VirtualDisk;
 import edu.uw.apl.tupelo.model.UnmanagedDisk;
 import edu.uw.apl.tupelo.config.Config;
 
-
 import edu.uw.apl.commons.devicefiles.DeviceFile;
 
 public class DeviceCmd extends Command {
+
 	DeviceCmd() {
-		super( "List, create or delete devices", "list | add | remove" );
-		addSub( "list", new Lambda() {
-				public void invoke( CommandLine cl, String[] args,
-									Config c ) throws Exception {
-					list( c );
-				}
-			} );
-		addSub( "add", new Lambda() {
-				public void invoke( CommandLine cl, String[] args,
-									Config c ) throws Exception {
-					add( cl, args, c );
-				}
-			} );
-		addSub( "remove", new Lambda() {
-				public void invoke( CommandLine cl, String[] args,
-									Config c ) throws Exception {
-					remove( cl, args, c );
-				}
-			} );
+		super( "device" );
 	}
 
+	@Override
+	public void invoke( Config config, boolean verbose,
+						String[] args, CommandLine cl )
+		throws Exception {
+
+		if( args.length < 1 ) {
+			HelpCmd.INSTANCE.commandHelp( this );
+			return;
+		}
+		Config c = new Config();
+		String sub = args[0];
+		switch( sub ) {
+		case "list":
+			list( c );
+			break;
+		}
+	}
+	
 	private void list( Config c ) {
 		List<Config.Device> ds = c.devices();
 		for( Config.Device d : ds ) {

@@ -59,22 +59,14 @@ import edu.uw.apl.tupelo.model.StreamOptimizedDisk;
 
 public class DigestCmd extends Command {
 	DigestCmd() {
-		super( "digest", "Compute md5 hash for store-managed disks" );
+		super( "digest" );//, "Compute md5 hash for store-managed disks" );
 	}
 	
 	@Override
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
-		}
-		args = cl.getArgs();
+	public void invoke( File config, boolean verbose,
+						String[] args, CommandLine cl )
+		throws Exception {
+
 		if( args.length < 1 ) {
 			System.err.println( "Need store args" );
 			return;

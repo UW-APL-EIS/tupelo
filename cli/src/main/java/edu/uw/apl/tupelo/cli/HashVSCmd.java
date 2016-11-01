@@ -62,32 +62,32 @@ import edu.uw.apl.tupelo.store.tools.HashVS;
 
 public class HashVSCmd extends Command {
 	HashVSCmd() {
-		super( "hashvs", "Hash unallocated areas of a store-managed disk" );
+		super( "hashvs" );
+		//, "Hash unallocated areas of a store-managed disk" );
 	}
 	
+
 	@Override
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
+	Options options() {
+		Options os = new Options();
 		os.addOption( "p", false, "Print" );
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//			printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
-			System.err.println( pe );
-		}
-		boolean print = cl.hasOption( "p" );
+		return os;
+	}
+
+	@Override
+	public void invoke( File config, boolean verbose,
+						String[] args, CommandLine cl )
+		throws Exception {
+
 		
-		args = cl.getArgs();
 		if( args.length < 2 ) {
 			System.err.println( "Need store arg + index" );
 			return;
 		}
 		Config c = new Config();
 		c.load( config );
+
+		boolean print = cl.hasOption( "p" );
 		
 		String storeName = args[0];
 		Config.Store selectedStore = null;

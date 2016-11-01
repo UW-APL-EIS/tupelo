@@ -63,28 +63,19 @@ import edu.uw.apl.commons.devicefiles.DeviceFile;
 
 public class PushCmd extends Command {
 	PushCmd() {
-		super( "push", "Push local device content to a Tupelo store" );
+		super( "push" );
+		//, "Push local device content to a Tupelo store" );
 	}
 	
 	@Override
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
-		}
-		args = cl.getArgs();
+	public void invoke( Config config, boolean verbose,
+						String[] args, CommandLine li ) throws Exception {
+
 		if( args.length < 2 ) {
 			System.err.println( "Need device + store args" );
 			return;
 		}
-		Config c = new Config();
-		c.load( config );
+		config.load();
 		
 		String deviceName = args[0];
 		Config.Device selectedDevice = null;
@@ -120,7 +111,6 @@ public class PushCmd extends Command {
 		}
 		Session session = store.newSession();
 
-		boolean verbose = true;
 		Log log = LogFactory.getLog( PushCmd.class );
 		
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),

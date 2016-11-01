@@ -33,74 +33,76 @@
  */
 package edu.uw.apl.tupelo.cli;
 
-import java.io.File;
-import java.util.List;
+import java.io.InputStream;
+import java.io.IOException;
+import java.util.Properties;
 
-import org.apache.commons.cli.*;
+/**
+ * @author Stuart Maclean
+ *
+ */
 
-import edu.uw.apl.tupelo.config.Config;
-	
-public class StoreCmd extends Command {
+public class CommandHelp {
 
-	StoreCmd() {
-		super( "store" );
-		/*
-		addSub( "list", new Lambda() {
-				public void invoke( CommandLine cl, String[] args, Config c )
-					throws Exception {
-					list( c );
-				}
-			} );
-		addSub( "add", new Lambda() {
-				public void invoke( CommandLine cl, String[] args,
-									Config c ) throws Exception {
-					add( cl, args, c );
-				}
-			} );
-		addSub( "remove", new Lambda() {
-				public void invoke( CommandLine cl, String[] args,
-									Config c ) throws Exception {
-					remove( cl, args, c );
-				}
-			} );
-		*/
-	}
-
-	@Override
-	public void invoke( Config config, boolean verbose,
-						String[] args, CommandLine cl )
-		throws Exception {
-	}
-	
-	private void list( Config c ) {
-		for( Config.Store s : c.stores() ) {
-			System.out.println( s.getName() );
-			System.out.println( " path = " + s.getUrl() );
+	static CommandHelp help( String name ) {
+		String path = "/help/" + name + ".prp";
+		InputStream is = CommandHelp.class.getResourceAsStream( path );
+		if( is == null ) {
+			System.err.println( "No help: " + name );
+			return DEFAULTS;
 		}
+		Properties p = new Properties();
+		try {
+			p.load( is );
+			is.close();
+		} catch( IOException ioe ) {
+			System.err.println( ioe );
+			return DEFAULTS;
+		}			
+		String summary = p.getProperty( "summary", "SUMMARY" );
+		String synopsis = p.getProperty( "synopsis", "SYNOPSIS" );
+		String description = p.getProperty( "description", "DESCRIPTION" );
+		String[] examples = null;
+		return new CommandHelp( name, summary, synopsis,
+								description, examples );
 	}
 
-	private void add( CommandLine cl, String[] args, Config c )
-		throws Exception {
-		if( args.length >= 2 ) {
-			String name = args[0];
-			String url = args[1];
-			c.addStore( name, url );
-			c.store();
-		}
+	private CommandHelp( String name, String summary, String synopsis,
+						 String description, String[] examples ) {
+		this.name = name;
+		this.summary = summary;
+		this.synopsis = synopsis;
+		this.description = description;
+		this.examples = examples;
 	}
+
+	public String name() {
+		return name;
+	}
+	public String summary() {
+		return summary;
+	}
+	public String synopsis() {
+		return synopsis;
+	}
+	public String description() {
+		return description;
+	}
+	public String[] examples() {
+		return examples == null ? new String[0] : examples;
+	}
+
+	private final String name, summary, synopsis, description;
+	private final String[] examples;
 	
-	private void remove( CommandLine cl, String[] args, Config c )
-		throws Exception {
-
-		if( args.length < 1 ) {
-			HelpCmd.INSTANCE.commandHelp( this );
-			return;
-		}
-		String name = args[0];
-		c.removeStore( name );
-		c.store();
-	}
-
+	static final CommandHelp DEFAULTS =
+		new CommandHelp( "NAME",
+						 "SUMMARY",
+						 "SYNOPSIS",
+						 "DESCRIPTION",
+						 null );
+	
+	
 }
 
 // eof

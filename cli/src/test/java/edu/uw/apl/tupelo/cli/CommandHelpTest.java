@@ -33,74 +33,31 @@
  */
 package edu.uw.apl.tupelo.cli;
 
-import java.io.File;
-import java.util.List;
+import org.junit.Test;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import org.apache.commons.cli.*;
+/**
+ * @author Stuart Maclean.
+ *
+ * Simple unit tests of the CommandHelp class, which loads command
+ * help strings from prp files on the classpath.
+ */
+public class CommandHelpTest {
 
-import edu.uw.apl.tupelo.config.Config;
-	
-public class StoreCmd extends Command {
-
-	StoreCmd() {
-		super( "store" );
-		/*
-		addSub( "list", new Lambda() {
-				public void invoke( CommandLine cl, String[] args, Config c )
-					throws Exception {
-					list( c );
-				}
-			} );
-		addSub( "add", new Lambda() {
-				public void invoke( CommandLine cl, String[] args,
-									Config c ) throws Exception {
-					add( cl, args, c );
-				}
-			} );
-		addSub( "remove", new Lambda() {
-				public void invoke( CommandLine cl, String[] args,
-									Config c ) throws Exception {
-					remove( cl, args, c );
-				}
-			} );
-		*/
+	@Test
+	public void defaultsTest() {
+		CommandHelp h = CommandHelp.help( "unknown" );
+		assertSame( h, CommandHelp.DEFAULTS );
 	}
 
-	@Override
-	public void invoke( Config config, boolean verbose,
-						String[] args, CommandLine cl )
-		throws Exception {
+	@Test
+	public void loadTest() {
+		CommandHelp h = CommandHelp.help( "test" );
+		assertNotSame( h, CommandHelp.DEFAULTS );
+		
 	}
-	
-	private void list( Config c ) {
-		for( Config.Store s : c.stores() ) {
-			System.out.println( s.getName() );
-			System.out.println( " path = " + s.getUrl() );
-		}
-	}
-
-	private void add( CommandLine cl, String[] args, Config c )
-		throws Exception {
-		if( args.length >= 2 ) {
-			String name = args[0];
-			String url = args[1];
-			c.addStore( name, url );
-			c.store();
-		}
-	}
-	
-	private void remove( CommandLine cl, String[] args, Config c )
-		throws Exception {
-
-		if( args.length < 1 ) {
-			HelpCmd.INSTANCE.commandHelp( this );
-			return;
-		}
-		String name = args[0];
-		c.removeStore( name );
-		c.store();
-	}
-
 }
-
-// eof
