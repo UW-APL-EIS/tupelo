@@ -43,7 +43,7 @@ import edu.uw.apl.tupelo.config.Config;
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 
-import edu.uw.apl.commons.devicefiles.DeviceFile;
+//import edu.uw.apl.commons.devicefiles.DeviceFile;
 
 /**
  * @author Stuart Maclean
@@ -56,18 +56,17 @@ public class StatusCmd extends Command {
 	}
 
 	@Override
-	public void invoke( File config, boolean verbose,
-						String[] args, CommandLine cl )
+	public void invoke( Config config, boolean verbose,
+						CommandLine cl )
 		throws Exception {
-	
-		Config c = new Config();
-		c.load( config );
 
+		String[] args = cl.getArgs();
+	
 		if( args.length == 0 ) {
-			for( Config.Store cs : c.stores() ) {
+			for( Config.Store cs : config.stores() ) {
 				Store s = createStore( cs );
 				Collection<ManagedDiskDescriptor> mdds = s.enumerate();
-				for( Config.Device cd : c.devices() ) {
+				for( Config.Device cd : config.devices() ) {
 					boolean pushed = false;
 					for( ManagedDiskDescriptor mdd : mdds ) {
 						System.out.println( mdd );

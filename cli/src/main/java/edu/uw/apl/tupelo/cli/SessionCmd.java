@@ -54,18 +54,16 @@ import edu.uw.apl.tupelo.model.Session;
 public class SessionCmd extends Command {
 	SessionCmd() {
 		super( "session" );//, "Request a session id from a store" );
+		Options os = new Options();
+		setArgs( os, "storeName" );
 	}
 	
 	@Override
 	public void invoke( Config config, boolean verbose,
-						String[] args, CommandLine cl ) throws Exception {
+						CommandLine cl ) throws Exception {
 		
-		if( args.length < 1 ) {
-			System.err.println( "Need store args" );
-			return;
-		}
-		config.load( );
-		
+		String[] args = cl.getArgs();
+
 		String storeName = args[0];
 		Config.Store selectedStore = null;
 		for( Config.Store cs : config.stores() ) {

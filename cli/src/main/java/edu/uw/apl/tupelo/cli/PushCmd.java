@@ -65,21 +65,20 @@ public class PushCmd extends Command {
 	PushCmd() {
 		super( "push" );
 		//, "Push local device content to a Tupelo store" );
+
+		Options os = new Options();
+		setArgs( os, "deviceName", "storeName" );
 	}
 	
 	@Override
 	public void invoke( Config config, boolean verbose,
-						String[] args, CommandLine li ) throws Exception {
+						CommandLine cl ) throws Exception {
 
-		if( args.length < 2 ) {
-			System.err.println( "Need device + store args" );
-			return;
-		}
-		config.load();
-		
+		String[] args = cl.getArgs();
+
 		String deviceName = args[0];
 		Config.Device selectedDevice = null;
-		for( Config.Device d : c.devices() ) {
+		for( Config.Device d : config.devices() ) {
 			if( d.getName().equals( deviceName ) ) {
 				selectedDevice = d;
 				break;
@@ -93,7 +92,7 @@ public class PushCmd extends Command {
 
 		String storeName = args[1];
 		Config.Store selectedStore = null;
-		for( Config.Store cs : c.stores() ) {
+		for( Config.Store cs : config.stores() ) {
 			if( cs.getName().equals( storeName ) ) {
 				selectedStore = cs;
 				break;

@@ -60,7 +60,14 @@ public class CommandHelp {
 			return DEFAULTS;
 		}			
 		String summary = p.getProperty( "summary", "SUMMARY" );
-		String synopsis = p.getProperty( "synopsis", "SYNOPSIS" );
+		String synopsis = "SYNOPSIS";
+
+		/*
+		  Map<String,String> subSynopses = new HashMap();
+		for( String name : p.stringPropertyNames() ) {
+			if( name.equals( "synopsis" ) ) {
+			synopsis = p.getProperty( "synopsis", "SYNOPSIS" );
+		*/
 		String description = p.getProperty( "description", "DESCRIPTION" );
 		String[] examples = null;
 		return new CommandHelp( name, summary, synopsis,

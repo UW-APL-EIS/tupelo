@@ -65,6 +65,8 @@ public class Main {
 			System.out.println( help );
 			return;
 		}
+
+		// Step 1: global options 
 		CommandLineParser clp = new DefaultParser();
 		CommandLine cl = null;
 		boolean stopAtNonOption = true;
@@ -77,6 +79,26 @@ public class Main {
 			System.out.println( help );
 			return;
 		}			
+		File configBacking = Config.DEFAULT;
+		if( cl.hasOption( "c" ) ) {
+			String s = cl.getOptionValue( "c" );
+			File f = new File( s );
+			if( !f.canRead() ) {
+				System.err.println( s + ": no such config file" );
+				return;
+			}
+			configBacking = f;
+		}
+		Config config = new Config();
+		config.setBacking( configBacking );
+		try {
+			config.load();
+		} catch( IOException ioe ) {
+			System.err.println( ioe );
+		}
+		boolean verbose = cl.hasOption( "v" );
+
+		// Step 2: from remaining cmd line, identify command, subcommand
 		args = cl.getArgs();
 		if( args.length == 0 ) {
 			String help = HelpCmd.buildHelp();
@@ -89,35 +111,59 @@ public class Main {
 			HelpCmd.noCommand( cmdName );
 			return;
 		}
-		File configBacking = Config.DEFAULT;
-		if( cl.hasOption( "c" ) ) {
-			String s = cl.getOptionValue( "c" );
-			File f = new File( s );
-			if( !f.canRead() ) {
-				System.err.println( s + ": no such config file" );
+		if( cmd.hasSubCommands() ) {
+			if( args.length < 2 ) {
+				HelpCmd.INSTANCE.commandHelp( cmd );
 				return;
 			}
-			configBacking = f;
-		}
-		boolean verbose = cl.hasOption( "v" );
-		String[] subArgs = new String[args.length-1];
-		System.arraycopy( args, 1, subArgs, 0, subArgs.length );
-		Options os = cmd.options();
-		stopAtNonOption = false;
-		try {
-			cl = clp.parse( os, subArgs, stopAtNonOption );
-		} catch( ParseException pe ) {
-			HelpCmd.INSTANCE.commandHelp( cmd );
-			return;
-		}
-		args = cl.getArgs();
-		try {
-			Config c = new Config();
-			c.setBacking( configBacking );
-			cmd.invoke( c, verbose, args, cl );
-		} catch( Exception e ) {
-			System.err.println( e );
-			e.printStackTrace();
+			String subCmdName = args[1];
+			Command.Sub sub = cmd.locateSub( subCmdName );
+			if( sub == null ) {
+				HelpCmd.INSTANCE.commandHelp( cmd );
+				return;
+			}
+			Options os = sub.options();
+			String[] subArgs = new String[args.length-2];
+			System.arraycopy( args, 2, subArgs, 0, subArgs.length );
+			stopAtNonOption = false;
+			try {
+				cl = clp.parse( os, subArgs, stopAtNonOption );
+			} catch( ParseException pe ) {
+				HelpCmd.INSTANCE.commandHelp( cmd, sub );
+				return;
+			}
+			args = cl.getArgs();
+			if( args.length < sub.requiredArgs() ) {
+				HelpCmd.INSTANCE.commandHelp( cmd, sub );
+				return;
+			}
+			try {
+				sub.invoke( config, verbose, cl );
+			} catch( Exception e ) {
+				e.printStackTrace();
+			}
+		} else {
+			Options os = cmd.options();
+			String[] subArgs = new String[args.length-1];
+			System.arraycopy( args, 1, subArgs, 0, subArgs.length );
+			stopAtNonOption = false;
+			try {
+				cl = clp.parse( os, subArgs, stopAtNonOption );
+			} catch( ParseException pe ) {
+				HelpCmd.INSTANCE.commandHelp( cmd );
+				return;
+			}
+			args = cl.getArgs();
+			if( args.length < cmd.requiredArgs() ) {
+				HelpCmd.INSTANCE.commandHelp( cmd );
+				return;
+			}
+			try {
+				cmd.invoke( config, verbose, cl );
+			} catch( Exception e ) {
+				System.err.println( e );
+				e.printStackTrace();
+			}
 		}
 	}
 

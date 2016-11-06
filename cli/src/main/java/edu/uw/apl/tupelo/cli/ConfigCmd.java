@@ -52,16 +52,11 @@ public class ConfigCmd extends Command {
 	}
 
 	@Override
-	public void invoke( File config, boolean verbose,
-						String[] args, CommandLine cl )
+	public void invoke( Config config, boolean verbose,
+						CommandLine cl )
 		throws Exception {
 
-		Config c = new Config();
-		try {
-			c.load( config );
-		} catch( IOException ioe ) {
-		}
-		c.store( System.out );
+		config.store( System.out );
 	}
 }
 

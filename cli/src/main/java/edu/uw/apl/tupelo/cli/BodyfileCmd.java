@@ -63,20 +63,18 @@ import edu.uw.apl.tupelo.model.Session;
 public class BodyfileCmd extends Command {
 	BodyfileCmd() {
 		super( "bodyfile" );//, "Traverse filesystems of a store-managed disk" );
+		Options os = new Options();
+		os.addOption( "p", false, "print" );
+		setArgs( os, "storeName", "index" );
 	}
 	
 	@Override
 	public void invoke( Config config, boolean verbose,
-						String[] args, CommandLine cl )
+						CommandLine cl )
 		throws Exception {
 		
-		if( args.length < 2 ) {
-			System.err.println( "Need store arg + index" );
-			return;
-		}
-		config.load( config );
-		
 		boolean print = cl.hasOption( "p" );
+		String[] args = cl.getArgs();
 
 		String storeName = args[0];
 		Config.Store selectedStore = null;

@@ -60,19 +60,18 @@ public class MDFSCmd extends Command {
 		super( "mount" );
 		//		   "Make store-managed disks available under a mount point" );
 		addAlias( "mount" );
+
+		Options os = new Options();
+		setArgs( os, "storeName" );
 	}
 	
 	@Override
 	public void invoke( Config config, boolean verbose,
-						String[] args, CommandLine cl )
+						CommandLine cl )
 		throws Exception {
 
-		if( args.length < 1 ) {
-			System.err.println( "Need store arg" );
-			return;
-		}
-		config.load();
-		
+		String[] args = cl.getArgs();
+
 		String storeName = args[0];
 		Config.Store selectedStore = null;
 		for( Config.Store cs : config.stores() ) {

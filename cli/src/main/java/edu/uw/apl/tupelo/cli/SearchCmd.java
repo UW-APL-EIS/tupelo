@@ -82,18 +82,16 @@ public class SearchCmd extends Command {
 	SearchCmd() {
 		super( "search" );
 		//, "Search a store given file hash (IOCs)" );
+		Options os = new Options();
+		setArgs( os, "storeName" );
 	}
 	
 	@Override
 	public void invoke( Config config, boolean verbose,
-						String[] args, CommandLine cl )
+						CommandLine cl )
 		throws Exception {
-		
-		if( args.length < 1 ) {
-			System.err.println( "Need store args" );
-			return;
-		}
-		config.load();
+
+		String[] args = cl.getArgs();
 		
 		String storeName = args[0];
 		Config.Store selectedStore = null;

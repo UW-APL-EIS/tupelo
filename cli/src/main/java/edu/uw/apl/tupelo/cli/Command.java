@@ -63,7 +63,7 @@ import edu.uw.apl.tupelo.model.ZeroDisk;
  *
  */
 
-abstract public class Command {
+public class Command {
 
 	/**
 	 * @param synopsis - allowable command line invocations of this
@@ -72,7 +72,8 @@ abstract public class Command {
 	protected Command( String name ) {
 		this.name = name;
 		help = CommandHelp.help( name );
-		//config = Config.DEFAULT;
+		options = new Options();
+		argNames = new ArrayList();
 		subs = new ArrayList();
 		COMMANDS.add( this );
 	}
@@ -92,37 +93,33 @@ abstract public class Command {
 		alias = s;
 	}
 
+	protected void setArgs( Options os, String... requiredArgNames ) {
+		options = os;
+		for( String ran : requiredArgNames )
+			argNames.add( ran );
+	}
+	
 	String alias() {
 		return alias;
 	}
 	
 	Options options() {
-		return new Options();
+		return options;
 	}
-	
-	public void addSub( String name, Lambda l ) {
-		Sub s = new Sub( name, l );
+
+	protected void addSub( String name, Lambda l, Options os,
+						   String... requiredArgNames ) {
+		List<String> args = new ArrayList();
+		for( String ran : requiredArgNames )
+			args.add( ran );
+		Sub s = new Sub( name, l, os, args );
 		subs.add( s );
-		if( subs.size() == 1 )
-			subDefault = s;
 	}
 
-	abstract public void invoke( Config config, boolean verbose,
-								 String[] args, CommandLine cl )
-		throws Exception;
-	/*
-
-		if( args.length == 0 ) {
-			Sub sub = subDefault;
-			if( sub == null ) {
-				HelpCmd.INSTANCE.commandHelp( this );
-				return;
-			}
-			sub.invoke( config, verbose, args, cl );
-			
-		}
+	// For Commands that don't have subcommands, override this...
+	public void invoke( Config config, boolean verbose,
+						CommandLine cl ) throws Exception {
 	}
-	*/
 	
 	static Command locate( String s ) {
 		for( Command c : COMMANDS ) {
@@ -136,7 +133,15 @@ abstract public class Command {
 		return null;
 	}
 
-	private Sub locateSub( String name ) {
+	int requiredArgs() {
+		return argNames.size();
+	}
+	
+	boolean hasSubCommands() {
+		return subs.size() > 0;
+	}
+	
+	Sub locateSub( String name ) {
 		for( Sub s : subs )
 			if( s.name.equals( name ) )
 				return s;
@@ -145,19 +150,33 @@ abstract public class Command {
 
 	interface Lambda {
 		public void invoke( Config c, boolean verbose,
-							String[] args, CommandLine cl ) throws Exception;
+							CommandLine cl ) throws Exception;
 	}
 	
 	static class Sub {
-		Sub( String name, Lambda l ) {
+		Sub( String name, Lambda l,
+			 Options os, List<String> argNames ) {
 			this.name = name;
+			this.os = os;
+			this.argNames = argNames;
 			this.l = l;
 		}
-		void invoke( CommandLine cl, String[] args, Config c )
+
+		Options options() {
+			return os;
+		}
+		
+		int requiredArgs() {
+			return argNames.size();
+		}
+		
+		void invoke( Config c, boolean verbose, CommandLine cl )
 			throws Exception {
-			//		l.invoke( cl, args, c );
+			l.invoke( c, verbose, cl );
 		}
 		String name;
+		Options os;
+		List<String> argNames;
 		Lambda l;
 	}
 	
@@ -206,14 +225,13 @@ abstract public class Command {
 	final CommandHelp help;
 	
 	protected Options options;
+	protected List<String> argNames;
 	
-	//	protected File config;
 	protected String alias;
 
 	protected final String name;
 	
-	protected final List<Sub> subs;
-	protected Sub subDefault;
+	final List<Sub> subs;
 }
 
 // eof

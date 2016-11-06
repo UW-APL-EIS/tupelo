@@ -1,1 +1,3 @@
 summary : List, add or remove devices
+
+synopsis.add : <name> <path>

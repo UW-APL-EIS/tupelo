@@ -40,6 +40,8 @@ import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
 
+import edu.uw.apl.tupelo.config.Config;
+
 public class HelpCmd extends Command {
 
 	HelpCmd() {
@@ -53,7 +55,9 @@ public class HelpCmd extends Command {
 
 	@Override
 	public void invoke( Config config, boolean verbose,
-						String[] args, CommandLine cl ) throws Exception {
+						CommandLine cl ) throws Exception {
+		String[] args = cl.getArgs();
+
 		if( args.length == 0 ) {
 			String help = buildHelp();
 			System.out.println( help );
@@ -73,6 +77,17 @@ public class HelpCmd extends Command {
 							"See 'help' command." );
 	}
 	
+	void commandHelp( Command c, Command.Sub sub ) {
+		CommandHelp h = c.help;
+
+		StringWriter sw = new StringWriter();
+		PrintWriter pw = new PrintWriter( sw );
+		pw.println();
+		pw.println( "NAME " + c.name() + " " + sub.name );
+		String s = sw.toString();
+		System.out.println( s );
+	}
+	
 	void commandHelp( Command c ) {
 		CommandHelp h = c.help;
 		StringWriter sw = new StringWriter();
@@ -88,6 +103,16 @@ public class HelpCmd extends Command {
 		pw.println();
 		pw.println( "DESCRIPTION" );
 		pw.println( "  " + h.description() );
+		pw.println();
+		pw.println( "OPTIONS" );
+		pw.println( "  " + "TODO" );
+		String[] examples = h.examples();
+		if( examples.length > 0 ) {
+			pw.println( "EXAMPLES" );
+			for( String s : examples ) {
+				pw.println( "  " + s );
+			}
+		}
 		String s = sw.toString();
 		System.out.println( s );
 	}
