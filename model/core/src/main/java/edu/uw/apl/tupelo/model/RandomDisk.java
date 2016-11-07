@@ -45,6 +45,10 @@ import java.util.Random;
  * way the local buffer is filled with fresh 'random' data is when a
  * larger buffer is needed, due to a larger length being read than we
  * had previously seen.
+ *
+ * The random stream produced is seeded by the Disk size, so Disks of
+ * same size produce identical content.  Such disks cannot 'change
+ * content' over time.
  */
 public class RandomDisk extends MemoryDisk {
 
@@ -73,7 +77,7 @@ public class RandomDisk extends MemoryDisk {
 	class RandomDiskInputStream extends MemoryDiskInputStream {
 		RandomDiskInputStream() {
 			buffer = new byte[0];
-			rng = new Random();
+			rng = new Random( RandomDisk.this.size );
 		}
 		
 		/**
