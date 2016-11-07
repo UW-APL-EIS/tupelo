@@ -113,46 +113,35 @@ public class DeviceCmd extends Command {
 
 		UnmanagedDisk ud = null;
 		if( false ) {
-		} else if( path.equals( "random" ) ) {
+		} else if( path.equals( "random" ) ||
+				   path.equals( "zero" ) ) {
 			long log2size = 30L;
 			if( args.length > 2 ) {
 				try {
 					log2size = Long.parseLong( args[2] );
 				} catch( NumberFormatException nfe ) {
 				}
-			} else {
-				System.out.println( "Using log2size: " + log2size );
 			}
+			System.out.println( "Using log2size: " + log2size );
+			// 100MB.s-1
 			long readSpeed = 100 * (1L << 20);
 			long size = 1 << log2size;
-			RandomDisk rd = new RandomDisk( size, readSpeed );
-			ud = rd;
-		} else if( path.equals( "zero" ) ) {
-			long log2size = 30L;
-			if( args.length > 2 ) {
-				try {
-					log2size = Long.parseLong( args[2] );
-				} catch( NumberFormatException nfe ) {
-				}
-			} else {
-				System.out.println( "Using log2size: " + log2size );
-			}
-			long readSpeed = 100 * (1L << 20);
-			long size = 1 << log2size;
-			ZeroDisk zd = new ZeroDisk( size, readSpeed );
-			ud = zd;
+			ud = path.equals( "zero" ) ?
+				new ZeroDisk( size, readSpeed ) :
+				new RandomDisk( size, readSpeed );
 		} else if( path.startsWith( "/dev/" ) ) {
 			File f = new File( path );
 			PhysicalDisk pd = new PhysicalDisk( f );
 			ud = pd;
-		} else if( path.endsWith( ".dd" ) ) {
-			File f = new File( path );
-			DiskImage di = new DiskImage( f );
-			ud = di;
 		} else if( VirtualDisk.likelyVirtualDisk( new File(path) ) ) {
 			File f = new File( path );
 			VirtualDisk vd = new VirtualDisk( f );
 			ud = vd;
+		} else {
+			// If nothing else matches, assume a disk image file
+			File f = new File( path );
+			DiskImage di = new DiskImage( f );
+			ud = di;
 		}
 		Config.Device d = c.addDevice( name, path );
 		if( ud != null ) {
@@ -167,8 +156,10 @@ public class DeviceCmd extends Command {
 	private void remove( Config c, boolean verbose, CommandLine cl )
 		throws Exception {
 
+		// Known we have 1 arg, no need to check (see Main)
 		String[] args = cl.getArgs();
 		String name = args[0];
+
 		c.removeDevice( name );
 		c.store();
 	}

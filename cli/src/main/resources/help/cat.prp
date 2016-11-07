@@ -1,1 +1,6 @@
-summary : Cat a store-managed disk
+summary : Print the contents of a store-managed disk
+
+example.1 : cat S 1
+
+example.2 : cat S 3 | md5sum
+

@@ -1,1 +1,9 @@
-summary: Make store-managed disks available under a mount point
+summary: Expose store-managed disk content under a mount point
+
+example.1 : !mkdir mnt
+
+example.2 : mount S mnt
+
+example.3 : !tree mnt
+
+example.4 : !mmls mnt/WHAT/WHEN

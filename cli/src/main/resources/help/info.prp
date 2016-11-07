@@ -1,1 +1,5 @@
 summary : Print info on store content
+
+example.1 : store add S ./testStore
+example.2 : push D S
+example.3 : info S

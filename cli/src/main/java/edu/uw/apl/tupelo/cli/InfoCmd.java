@@ -60,7 +60,6 @@ import edu.uw.apl.tupelo.model.Session;
 public class InfoCmd extends Command {
 	InfoCmd() {
 		super( "info" );
-
 		requiredArgs( "storeName" );
 	}
 	
@@ -99,10 +98,9 @@ public class InfoCmd extends Command {
 		} catch( ConnectException ce ) {
 			System.err.println
 				( "Network Error. Is the remote Tupelo store up?" );
-			System.exit(0);
+			return;
 		}
-		List<ManagedDiskDescriptor> sorted =
-			new ArrayList<ManagedDiskDescriptor>( mdds );
+		List<ManagedDiskDescriptor> sorted = new ArrayList( mdds );
 		Collections.sort( sorted,
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
 		
@@ -128,7 +126,6 @@ public class InfoCmd extends Command {
 			System.out.println( "  " + (j+1) + " " + sorted.get( j ) );
 		}
 		System.out.println();
-		
 	}
 }
 

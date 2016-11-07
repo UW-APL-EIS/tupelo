@@ -97,6 +97,10 @@ public class Command {
 			requiredArgs.add( ran );
 	}
 
+	protected void optionalArg( String optionalArg ) {
+		this.optionalArg = optionalArg;
+	}
+	
 	protected void options( Options os ) {
 		options = os;
 	}
@@ -205,10 +209,10 @@ public class Command {
 		String path = cd.getPath();
 		File f = new File( path );
 		if( false ) {
-		} else if( path.equals( "/dev/random" ) ) {
+		} else if( path.equals( "random" ) ) {
 			long readSpeed = 100 * (1L << 20);
 			return new RandomDisk( cd.getSize(), readSpeed );
-		} else if( path.equals( "/dev/zero" ) ) {
+		} else if( path.equals( "zero" ) ) {
 			long readSpeed = 100 * (1L << 20);
 			return new ZeroDisk( cd.getSize(), readSpeed );
 		} else if( path.startsWith( "/dev/" ) ) {
@@ -229,6 +233,7 @@ public class Command {
 	protected Options options;
 	
 	protected List<String> requiredArgs;
+	protected String optionalArg;
 	
 	protected String alias;
 

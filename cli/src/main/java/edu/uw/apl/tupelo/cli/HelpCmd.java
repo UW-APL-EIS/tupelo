@@ -121,8 +121,23 @@ public class HelpCmd extends Command {
 				pw.println();
 			}
 		} else {
-			pw.println( "  " + COMMANDNAME + " " + c.name() + " " +
-						h.synopsis() );
+			pw.print( "  " + COMMANDNAME + " " + c.name() );
+			Options os = c.options();
+			Collection<Option> ops = os.getOptions();
+			for( Option o : ops ) {
+				pw.print( " [-" + o.getOpt() );
+				if( o.hasArg() )
+					pw.print( " " + o.getArgName() );
+				pw.print( "]" );
+			}
+			List<String> requiredArgs = c.requiredArgs;
+			for( String ra : requiredArgs ) {
+				pw.print( " <" + ra + ">" );
+			}
+			if( c.optionalArg != null )
+				pw.print( " <" + c.optionalArg + "?>" );
+				
+			pw.println();
 		}
 		pw.println();
 		pw.println( "DESCRIPTION" );
@@ -136,7 +151,11 @@ public class HelpCmd extends Command {
 			pw.println();
 			pw.println( "EXAMPLES" );
 			for( String s : examples ) {
-				pw.println( "  $ " + COMMANDNAME + " " + s );
+				// Suppress COMMANDNAME if want to print a shell command
+				if( s.startsWith( "!" ) )
+					pw.println( "  $ " + s.substring(1) );
+				else
+					pw.println( "  $ " + COMMANDNAME + " " + s );
 				//				pw.println();
 			}
 		}

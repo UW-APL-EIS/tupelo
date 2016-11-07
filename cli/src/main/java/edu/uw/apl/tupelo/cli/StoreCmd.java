@@ -42,12 +42,6 @@ import edu.uw.apl.tupelo.config.Config;
 	
 public class StoreCmd extends Command {
 
-	Command.Lambda LIST = new Command.Lambda() {
-			public void invoke( Config c, boolean verbose,
-								CommandLine cl ) throws Exception {
-				list( c, verbose, cl );
-			}
-		};
 	Command.Lambda ADD = new Command.Lambda() {
 			public void invoke( Config c, boolean verbose,
 								CommandLine cl ) throws Exception {
@@ -58,6 +52,12 @@ public class StoreCmd extends Command {
 			public void invoke( Config c, boolean verbose,
 								CommandLine cl ) throws Exception {
 				remove( c, verbose, cl );
+			}
+		};
+	Command.Lambda LIST = new Command.Lambda() {
+			public void invoke( Config c, boolean verbose,
+								CommandLine cl ) throws Exception {
+				list( c, verbose, cl );
 			}
 		};
 
@@ -75,12 +75,6 @@ public class StoreCmd extends Command {
 		addSub( "remove", REMOVE, osRemove, "name" );
 	}
 
-	private void list( Config c, boolean verbose, CommandLine cl ) {
-		for( Config.Store s : c.stores() ) {
-			System.out.println( s.getName() );
-			System.out.println( " path = " + s.getUrl() );
-		}
-	}
 
 	private void add( Config c, boolean verbose, CommandLine cl )
 		throws Exception {
@@ -101,6 +95,12 @@ public class StoreCmd extends Command {
 		c.store();
 	}
 
+	private void list( Config c, boolean verbose, CommandLine cl ) {
+		for( Config.Store s : c.stores() ) {
+			System.out.println( s.getName() );
+			System.out.println( " path = " + s.getUrl() );
+		}
+	}
 }
 
 // eof

@@ -55,13 +55,21 @@ import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 
+/**
+ * @author Stuart Maclean
+ *
+ * Using FUSE, expose the named store's content under a local mount point.
+ * Then, arbitrary system software can walk our stored disks, e.g. Sleuthkit.
+ *
+ * LOOK: This command called MDFS = ManagedDiskFileSystem.  Better to
+ * re-name to MountCmd ??
+ */
+
 public class MDFSCmd extends Command {
 	MDFSCmd() {
 		super( "mount" );
-		//		   "Make store-managed disks available under a mount point" );
 		addAlias( "mount" );
-
-		requiredArgs( "storeName" );
+		requiredArgs( "storeName", "dir" );
 	}
 	
 	@Override
@@ -70,8 +78,15 @@ public class MDFSCmd extends Command {
 		throws Exception {
 
 		String[] args = cl.getArgs();
-
 		String storeName = args[0];
+		String mountPointName = args[1];
+
+		File mountPoint = new File( mountPointName );
+		if( !mountPoint.isDirectory() ) {
+			System.err.println( "Mount point not a directory: " + mountPoint );
+			return;
+		}
+		
 		Config.Store selectedStore = null;
 		for( Config.Store cs : config.stores() ) {
 			if( cs.getName().equals( storeName ) ) {
@@ -89,15 +104,7 @@ public class MDFSCmd extends Command {
 
 		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( fs );
 
-		final boolean debug = true;
-
-		final File mountPoint = new File( "mdfs-mount" );
-		if( !mountPoint.exists() ) {
-			mountPoint.mkdirs();
-			mountPoint.deleteOnExit();
-		}
-
-		if( debug )
+		if( verbose )
 			System.out.println( "Mounting '" + mountPoint + "'" );
 
 		/*

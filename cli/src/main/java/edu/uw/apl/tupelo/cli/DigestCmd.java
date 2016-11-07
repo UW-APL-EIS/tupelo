@@ -62,6 +62,7 @@ public class DigestCmd extends Command {
 		super( "digest" );//, "Compute md5 hash for store-managed disks" );
 
 		requiredArgs( "storeName" );
+		optionalArg( "index" );
 	}
 	
 	@Override
@@ -70,8 +71,14 @@ public class DigestCmd extends Command {
 		throws Exception {
 
 		String[] args = cl.getArgs();
-		
 		String storeName = args[0];
+		int index = -1;
+		if( args.length > 1 ) {
+			try {
+				index = Integer.parseInt( args[1] );
+			} catch( NumberFormatException nfe ) {
+			}
+		}
 		Config.Store selectedStore = null;
 		for( Config.Store cs : config.stores() ) {
 			if( cs.getName().equals( storeName ) ) {
@@ -84,19 +91,35 @@ public class DigestCmd extends Command {
 			return;
 		}
 		Store s = createStore( selectedStore );
+		if( !( s instanceof FilesystemStore ) ) {
+			System.err.println( "Can only digest on a filesystemStore" );
+			return;
+		}
 		FilesystemStore fs = (FilesystemStore)s;
 		Collection<ManagedDiskDescriptor> mdds = fs.enumerate();
 		List<ManagedDiskDescriptor> sorted = new ArrayList( mdds );
 		Collections.sort( sorted,
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
-		for( ManagedDiskDescriptor mdd : sorted ) {
+		if( index > -1 ) {
+			if( index < 1 || index > sorted.size() ) {
+				System.err.println( "Selected index out-of-bounds: " + index );
+				return;
+			}
+			ManagedDiskDescriptor mdd = sorted.get(index-1);
 			long sz = fs.size( mdd );
-			boolean proceed = proceedTest( mdd );
-			if( !proceed )
-				continue;
 			System.out.println( "Digesting: " + mdd +
 								" (" + sz + " bytes)" );
 			fs.computeDigest( mdd );
+		} else {
+			for( ManagedDiskDescriptor mdd : sorted ) {
+				boolean proceed = proceedTest( mdd );
+				if( !proceed )
+					continue;
+				long sz = fs.size( mdd );
+				System.out.println( "Digesting: " + mdd +
+									" (" + sz + " bytes)" );
+				fs.computeDigest( mdd );
+			}
 		}
 	}
 
