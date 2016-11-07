@@ -116,7 +116,7 @@ above), we are ready to try it out.
 
 
 ```
-$ cd /path/to/tupelo/cli
+$ cd /path/to/tupelo-git-repo/cli
 
 $ ./tup
 ```
@@ -128,14 +128,14 @@ Local Repository
 
 The Tupelo artifacts built here themselves depend on various
 existing Maven artifacts which are not (yet) available on a public
-Maven repository (like Maven Central).  Some of dependencies are
+Maven repository (like Maven Central).  Some of these dependencies are
 available in source form on github.  But to save the Tupelo builder
 the effort of building all these dependencies from source, we include a
 'project-local' Maven repository so that the Tupelo artifacts will
 build.  We can inspect this local repository thus:
 
 ```
-$ cd /path/to/tupelo
+$ cd /path/to/tupelo-git-repo
 
 $ tree .repository
 ```
