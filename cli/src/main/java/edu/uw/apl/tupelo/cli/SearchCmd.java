@@ -80,32 +80,21 @@ import edu.uw.apl.tupelo.amqp.objects.Utils;
 
 public class SearchCmd extends Command {
 	SearchCmd() {
-		super( "search", "Search a store given file hash (IOCs)" );
+		super( "search" );
+		//, "Search a store given file hash (IOCs)" );
+		requiredArgs( "storeName" );
 	}
 	
 	@Override
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
-		}
-		args = cl.getArgs();
-		if( args.length < 1 ) {
-			System.err.println( "Need store args" );
-			return;
-		}
-		Config c = new Config();
-		c.load( config );
+	public void invoke( Config config, boolean verbose,
+						CommandLine cl )
+		throws Exception {
+
+		String[] args = cl.getArgs();
 		
 		String storeName = args[0];
 		Config.Store selectedStore = null;
-		for( Config.Store cs : c.stores() ) {
+		for( Config.Store cs : config.stores() ) {
 			if( cs.getName().equals( storeName ) ) {
 				selectedStore = cs;
 				break;

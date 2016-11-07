@@ -63,32 +63,21 @@ import edu.uw.apl.commons.devicefiles.DeviceFile;
 
 public class PushCmd extends Command {
 	PushCmd() {
-		super( "push", "Push local device content to a Tupelo store" );
+		super( "push" );
+		//, "Push local device content to a Tupelo store" );
+
+		requiredArgs( "deviceName", "storeName" );
 	}
 	
 	@Override
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
-		}
-		args = cl.getArgs();
-		if( args.length < 2 ) {
-			System.err.println( "Need device + store args" );
-			return;
-		}
-		Config c = new Config();
-		c.load( config );
-		
+	public void invoke( Config config, boolean verbose,
+						CommandLine cl ) throws Exception {
+
+		String[] args = cl.getArgs();
+
 		String deviceName = args[0];
 		Config.Device selectedDevice = null;
-		for( Config.Device d : c.devices() ) {
+		for( Config.Device d : config.devices() ) {
 			if( d.getName().equals( deviceName ) ) {
 				selectedDevice = d;
 				break;
@@ -102,7 +91,7 @@ public class PushCmd extends Command {
 
 		String storeName = args[1];
 		Config.Store selectedStore = null;
-		for( Config.Store cs : c.stores() ) {
+		for( Config.Store cs : config.stores() ) {
 			if( cs.getName().equals( storeName ) ) {
 				selectedStore = cs;
 				break;
@@ -120,7 +109,6 @@ public class PushCmd extends Command {
 		}
 		Session session = store.newSession();
 
-		boolean verbose = true;
 		Log log = LogFactory.getLog( PushCmd.class );
 		
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),

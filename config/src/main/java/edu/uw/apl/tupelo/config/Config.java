@@ -53,6 +53,10 @@ import java.util.regex.Pattern;
  * @author Stuart Maclean
  *
  * Configuration info for Tupelo, based on git's config format.
+ *
+ * Used typically by the cli module's Main class.  But could be used
+ * also by some new GUI front-end, hence the Config object gets its
+ * own class AND sub-module.
  */
 
 public class Config {
@@ -62,6 +66,10 @@ public class Config {
 		devices = new ArrayList();
 	}
 
+	public void setBacking( File f ) {
+		backing = f;
+	}
+	
 	public List<Device> devices() {
 		return devices;
 	}
@@ -106,6 +114,12 @@ public class Config {
 			}
 		}
 		return null;
+	}
+
+	public void load() throws IOException {
+		if( backing == null )
+			throw new IllegalStateException( "Config.load: no backing file" );
+		load( backing );
 	}
 
 	public void load( String s ) throws IOException {
@@ -201,6 +215,12 @@ public class Config {
 		return false;
 	}
 				   
+	public void store() throws IOException {
+		if( backing == null )
+			throw new IllegalStateException( "Config.store: no backing file" );
+		store( backing );
+	}
+
 	public void store( OutputStream os ) throws IOException {
 		store( new OutputStreamWriter( os ) );
 	}
@@ -307,6 +327,7 @@ public class Config {
 		long size;
 	}
 
+	private File backing;
 	private final List<Store> stores;
 	private final List<Device> devices;
 	

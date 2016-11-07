@@ -42,55 +42,63 @@ import edu.uw.apl.tupelo.config.Config;
 	
 public class StoreCmd extends Command {
 
+	Command.Lambda LIST = new Command.Lambda() {
+			public void invoke( Config c, boolean verbose,
+								CommandLine cl ) throws Exception {
+				list( c, verbose, cl );
+			}
+		};
+	Command.Lambda ADD = new Command.Lambda() {
+			public void invoke( Config c, boolean verbose,
+								CommandLine cl ) throws Exception {
+				add( c, verbose, cl );
+			}
+		};
+	Command.Lambda REMOVE = new Command.Lambda() {
+			public void invoke( Config c, boolean verbose,
+								CommandLine cl ) throws Exception {
+				remove( c, verbose, cl );
+			}
+		};
+
 	StoreCmd() {
-		super( "List, create or delete stores" );
-		addSub( "list", new Lambda() {
-				public void invoke( CommandLine cl, String[] args, Config c )
-					throws Exception {
-					list( c );
-				}
-			} );
-		addSub( "add", new Lambda() {
-				public void invoke( CommandLine cl, String[] args,
-									Config c ) throws Exception {
-					add( cl, args, c );
-				}
-			} );
-		addSub( "remove", new Lambda() {
-				public void invoke( CommandLine cl, String[] args,
-									Config c ) throws Exception {
-					remove( cl, args, c );
-				}
-			} );
+		super( "store" );
+
+		Options osList = new Options();
+		addSub( "list", LIST, osList );
+
+		Options osAdd = new Options();
+		osAdd.addOption( "n", true, "AlternativeID" );
+		addSub( "add", ADD, osAdd, "name", "path" );
+
+		Options osRemove = new Options();
+		addSub( "remove", REMOVE, osRemove, "name" );
 	}
 
-	private void list( Config c ) {
+	private void list( Config c, boolean verbose, CommandLine cl ) {
 		for( Config.Store s : c.stores() ) {
 			System.out.println( s.getName() );
 			System.out.println( " path = " + s.getUrl() );
 		}
 	}
 
-	private void add( CommandLine cl, String[] args, Config c )
-		throws Exception {
-		if( args.length >= 2 ) {
-			String name = args[0];
-			String url = args[1];
-			c.addStore( name, url );
-			c.store( config );
-		}
-	}
-	
-	private void remove( CommandLine cl, String[] args, Config c )
+	private void add( Config c, boolean verbose, CommandLine cl )
 		throws Exception {
 
-		if( args.length < 1 ) {
-			HelpCmd.INSTANCE.commandHelp( this );
-			return;
-		}
+		String[] args = cl.getArgs();
+		String name = args[0];
+		String url = args[1];
+		c.addStore( name, url );
+		c.store();
+	}
+	
+	private void remove( Config c, boolean verbose, CommandLine cl )
+		throws Exception {
+
+		String[] args = cl.getArgs();
 		String name = args[0];
 		c.removeStore( name );
-		c.store( config );
+		c.store();
 	}
 
 }

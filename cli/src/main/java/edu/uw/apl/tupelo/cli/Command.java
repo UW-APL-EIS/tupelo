@@ -41,7 +41,7 @@ import java.util.List;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.PosixParser;
+import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.ParseException;
 
 import edu.uw.apl.tupelo.config.Config;
@@ -63,121 +63,71 @@ import edu.uw.apl.tupelo.model.ZeroDisk;
  *
  */
 
-abstract public class Command {
+public class Command {
 
 	/**
 	 * @param synopsis - allowable command line invocations of this
 	 * command, showing options and subcommands
 	 */
-	protected Command( String summary, String synopsis, String description ) {
-		this.summary = summary;
-		this.synopsis = synopsis;
-		this.description = description;
-		config = Config.DEFAULT;
+	protected Command( String name ) {
+		this.name = name;
+		help = CommandHelp.help( name );
 		subs = new ArrayList();
 		COMMANDS.add( this );
 	}
 	
-	protected Command( String summary, String synopsis ) {
-		this( summary, synopsis, "DESCRIPTION" );
-	}
-
-	protected Command( String summary ) {
-		this( summary, "SYNOPSIS", "DESCRIPTION" );
-	}
-
-	
 	String name() {
+		return name;
+		/*
 		String s = getClass().getSimpleName();
 		if( s.endsWith( "Cmd" ) ) {
 			s = s.substring( 0, s.length() - 3 );
 		}
 		return s.toLowerCase();
+		*/
 	}
 
 	public void addAlias( String s ) {
 		alias = s;
 	}
 
+	protected void requiredArgs( String... requiredArgNames ) {
+		requiredArgs = new ArrayList();
+		for( String ran : requiredArgNames )
+			requiredArgs.add( ran );
+	}
+
+	protected void options( Options os ) {
+		options = os;
+	}
+	
 	String alias() {
 		return alias;
 	}
 	
-	String summary() {
-		return summary;
+	Options options() {
+		return options == null ? new Options() : options;
 	}
 
-	String synopsis() {
-		return synopsis;
-	}
-
-	String description() {
-		return description;
-	}
-	
-	public void addSub( String name, Lambda l ) {
-		Sub s = new Sub( name, l );
+	protected void addSub( String name, Lambda l, Options os,
+						   String... requiredArgNames ) {
+		List<String> args = new ArrayList();
+		for( String ran : requiredArgNames )
+			args.add( ran );
+		Sub s = new Sub( name, l, os, args );
 		subs.add( s );
-		if( subs.size() == 1 )
-			subDefault = s;
+	}
+
+	// For Commands that don't have subcommands, override this...
+	public void invoke( Config config, boolean verbose,
+						CommandLine cl ) throws Exception {
 	}
 	
-	protected Options commonOptions() {
-		Options os = new Options();
-		os.addOption( "c", true, "Config" );
-		return os;
-	}
-	
-	protected void commonParse( CommandLine cl ) {
-		if( cl.hasOption( "c" ) ) {
-			String s = cl.getOptionValue( "c" );
-			config = new File( s );
-		}
-	}
-
-	public void invoke( String[] args ) throws Exception {
-		Options os = commonOptions();
-		CommandLineParser clp = new PosixParser();
-		CommandLine cl = null;
-		try {
-			cl = clp.parse( os, args );
-			commonParse( cl );
-		} catch( ParseException pe ) {
-			//	printUsage( os, usage, HEADER, FOOTER );
-			//System.exit(1);
-		}
-		args = cl.getArgs();
-		if( args.length == 0 ) {
-			Sub sub = subDefault;
-			if( sub == null ) {
-				HelpCmd.INSTANCE.commandHelp( this );
-				return;
-			}
-			Config c = new Config();
-			c.load( config );
-			sub.invoke( null, args, c );
-			return;
-		}
-		String subName = args[0];
-
-		Sub s = locateSub( subName );
-		if( s == null ) {
-			HelpCmd.INSTANCE.commandHelp( this );
-			return;
-		}
-		Config c = new Config();
-		c.load( config );
-		String[] subArgs = new String[args.length-1];
-		if( args.length > 1 )
-			System.arraycopy( args, 1, subArgs, 0, subArgs.length );
-		s.invoke( null, subArgs, c ); 
-	}
-
 	static Command locate( String s ) {
 		for( Command c : COMMANDS ) {
 			if( s.equals( c.name() ) )
 				return c;
-			// Aliases can be null, so use s as target
+			// Aliases can be null, so use as target
 			if( s.equals( c.alias() ) )
 				return c;
 			
@@ -185,28 +135,50 @@ abstract public class Command {
 		return null;
 	}
 
-	private Sub locateSub( String name ) {
+	int requiredArgs() {
+		return requiredArgs == null ? 0 : requiredArgs.size();
+	}
+	
+	boolean hasSubCommands() {
+		return subs.size() > 0;
+	}
+	
+	Sub locateSub( String name ) {
 		for( Sub s : subs )
 			if( s.name.equals( name ) )
 				return s;
 		return null;
 	}
-	
+
 	interface Lambda {
-		public void invoke( CommandLine cl, String[] args,
-							Config c ) throws Exception;
+		public void invoke( Config c, boolean verbose,
+							CommandLine cl ) throws Exception;
 	}
 	
 	static class Sub {
-		Sub( String name, Lambda l ) {
+		Sub( String name, Lambda l,
+			 Options os, List<String> argNames ) {
 			this.name = name;
+			this.os = os;
+			this.requiredArgs = argNames;
 			this.l = l;
 		}
-		void invoke( CommandLine cl, String[] args, Config c )
+
+		Options options() {
+			return os;
+		}
+		
+		int requiredArgs() {
+			return requiredArgs.size();
+		}
+		
+		void invoke( Config c, boolean verbose, CommandLine cl )
 			throws Exception {
-			l.invoke( cl, args, c );
+			l.invoke( c, verbose, cl );
 		}
 		String name;
+		Options os;
+		List<String> requiredArgs;
 		Lambda l;
 	}
 	
@@ -251,13 +223,18 @@ abstract public class Command {
 	}
 
 	static final List<Command> COMMANDS = new ArrayList();
+
+	final CommandHelp help;
 	
-	protected File config;
+	protected Options options;
+	
+	protected List<String> requiredArgs;
+	
 	protected String alias;
+
+	protected final String name;
 	
-	protected final String summary, synopsis, description;
-	protected final List<Sub> subs;
-	protected Sub subDefault;
+	final List<Sub> subs;
 }
 
 // eof

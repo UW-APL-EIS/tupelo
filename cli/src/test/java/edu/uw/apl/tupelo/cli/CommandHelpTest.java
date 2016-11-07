@@ -33,52 +33,31 @@
  */
 package edu.uw.apl.tupelo.cli;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import org.junit.Test;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import org.apache.commons.cli.*;
+/**
+ * @author Stuart Maclean.
+ *
+ * Simple unit tests of the CommandHelp class, which loads command
+ * help strings from prp files on the classpath.
+ */
+public class CommandHelpTest {
 
-import edu.uw.apl.tupelo.config.Config;
-import edu.uw.apl.tupelo.store.Store;
-import edu.uw.apl.tupelo.model.ManagedDisk;
-import edu.uw.apl.tupelo.model.ManagedDiskDigest;
-import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
-import edu.uw.apl.tupelo.model.Session;
-
-public class SessionCmd extends Command {
-	SessionCmd() {
-		super( "session" );//, "Request a session id from a store" );
-		requiredArgs( "storeName" );
+	@Test
+	public void defaultsTest() {
+		CommandHelp h = CommandHelp.help( "unknown" );
+		assertSame( h, CommandHelp.DEFAULTS );
 	}
-	
-	@Override
-	public void invoke( Config config, boolean verbose,
-						CommandLine cl ) throws Exception {
-		
-		String[] args = cl.getArgs();
 
-		String storeName = args[0];
-		Config.Store selectedStore = null;
-		for( Config.Store cs : config.stores() ) {
-			if( cs.getName().equals( storeName ) ) {
-				selectedStore = cs;
-				break;
-			}
-		}
-		if( selectedStore == null ) {
-			System.err.println( "'" + storeName + "' is not a store" );
-			return;
-		}
-		Store store = createStore( selectedStore );
-		Session s = store.newSession();
-		System.out.println( s );
+	@Test
+	public void loadTest() {
+		CommandHelp h = CommandHelp.help( "test" );
+		assertNotSame( h, CommandHelp.DEFAULTS );
+		
 	}
 }
-
-// eof

@@ -48,6 +48,8 @@ import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 
+import edu.uw.apl.tupelo.config.Config;
+
 /**
  * @author Stuart Maclean
  *
@@ -58,29 +60,142 @@ import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 public class Main {
 
 	static public void main( String[] args ) {
-		if( args.length < 1 || args[0].equalsIgnoreCase( "-h" ) ) {
+		if( args.length < 1 ) {
 			String help = HelpCmd.buildHelp();
 			System.out.println( help );
 			return;
 		}
-		String cmd = args[0];
-		Command c = Command.locate( cmd );
-		if( c == null ) {
-			HelpCmd.noCommand( cmd );
+
+		// Step 1: global options 
+		CommandLineParser clp = new DefaultParser();
+		CommandLine cl = null;
+		boolean stopAtNonOption = true;
+		try {
+			cl = clp.parse( globalOptions, args, stopAtNonOption );
+		} catch( ParseException neverWithStopAtNonOption ) {
+		}
+		if( cl.hasOption( "h" ) ) {
+			String help = HelpCmd.buildHelp();
+			System.out.println( help );
+			return;
+		}			
+		File configBacking = Config.DEFAULT;
+		if( cl.hasOption( "c" ) ) {
+			String s = cl.getOptionValue( "c" );
+			File f = new File( s );
+			if( !f.canRead() ) {
+				System.err.println( s + ": no such config file" );
+				return;
+			}
+			configBacking = f;
+		}
+		Config config = new Config();
+		config.setBacking( configBacking );
+		try {
+			config.load();
+		} catch( IOException ioe ) {
+			System.err.println( ioe );
+		}
+		boolean verbose = cl.hasOption( "v" );
+
+		// Step 2: from remaining cmd line, identify command, subcommand
+		args = cl.getArgs();
+		if( args.length == 0 ) {
+			String help = HelpCmd.buildHelp();
+			System.out.println( help );
 			return;
 		}
-		
-		String[] subArgs = new String[args.length-1];
-		System.arraycopy( args, 1, subArgs, 0, subArgs.length );
-		try {
-			c.invoke( subArgs );
-		} catch( Exception e ) {
-			System.err.println( e );
-			e.printStackTrace();
+		String cmdName = args[0];
+		Command cmd = Command.locate( cmdName );
+		if( cmd == null ) {
+			HelpCmd.noCommand( cmdName );
+			return;
+		}
+		if( cmd.hasSubCommands() ) {
+			if( args.length < 2 ) {
+				HelpCmd.INSTANCE.commandHelp( cmd );
+				return;
+			}
+			String subCmdName = args[1];
+			Command.Sub sub = cmd.locateSub( subCmdName );
+			if( sub == null ) {
+				HelpCmd.INSTANCE.commandHelp( cmd );
+				return;
+			}
+			Options os = sub.options();
+			String[] subArgs = new String[args.length-2];
+			System.arraycopy( args, 2, subArgs, 0, subArgs.length );
+			stopAtNonOption = false;
+			try {
+				cl = clp.parse( os, subArgs, stopAtNonOption );
+			} catch( ParseException pe ) {
+				HelpCmd.INSTANCE.commandHelp( cmd, sub );
+				return;
+			}
+			args = cl.getArgs();
+			if( args.length < sub.requiredArgs() ) {
+				HelpCmd.INSTANCE.commandHelp( cmd, sub );
+				return;
+			}
+			try {
+				sub.invoke( config, verbose, cl );
+			} catch( Exception e ) {
+				e.printStackTrace();
+			}
+		} else {
+			Options os = cmd.options();
+			String[] subArgs = new String[args.length-1];
+			System.arraycopy( args, 1, subArgs, 0, subArgs.length );
+			stopAtNonOption = false;
+			try {
+				cl = clp.parse( os, subArgs, stopAtNonOption );
+			} catch( ParseException pe ) {
+				HelpCmd.INSTANCE.commandHelp( cmd );
+				return;
+			}
+			args = cl.getArgs();
+			if( args.length < cmd.requiredArgs() ) {
+				HelpCmd.INSTANCE.commandHelp( cmd );
+				return;
+			}
+			try {
+				cmd.invoke( config, verbose, cl );
+			} catch( Exception e ) {
+				System.err.println( e );
+				e.printStackTrace();
+			}
 		}
 	}
 
+	/**
+	 * @param cResult - a second result, this method returns TWO
+	 * values (one just one if command not found).  cResult[0] is
+	 * populated with the Command located in the args array.
+	 *
+	 * @result Index into the args array at which a valid Command
+	 * name found, or -1 if none.
+	 */
+	static private int locateCommandIndex( String[] args,
+										   Command[] cResult ) {
+		for( int i = 0; i < args.length; i++ ) {
+			String arg = args[i];
+			for( Command c : Command.COMMANDS ) {
+				if( arg.equals( c.name() ) ) {
+					cResult[0] = c;
+					return i;
+				}
+			}
+		}
+		return -1;
+	}
 
+	static Options globalOptions = new Options();
+	static {
+		globalOptions.addOption( "c", true, "Config file (~/.tupelo/config)" );
+		globalOptions.addOption( "h", false, "help" );
+		globalOptions.addOption( "v", false, "verbose" );
+	}
+	
 	static {
 		new HelpCmd();
 		new ConfigCmd();

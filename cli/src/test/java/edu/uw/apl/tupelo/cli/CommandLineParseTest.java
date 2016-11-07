@@ -35,10 +35,23 @@ package edu.uw.apl.tupelo.cli;
 
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.apache.commons.cli.*;
 
+/**
+ * @author Stuart Maclean.
+ *
+ * Simple unit tests of the commons.cli classes.  Reason for this is
+ * we are interested in tup cmd line options like git, where can have
+ * globalOptions AND subCommand option too, like this:
+ *
+ * tup -c configFile -v device add -X ...
+ *
+ * Global options are those found before the subCommand, 'device' in this case.
+ */
 public class CommandLineParseTest {
 
 	@Test
@@ -80,9 +93,63 @@ public class CommandLineParseTest {
 		CommandLineParser clp = new DefaultParser();
 		String[] args = { "-p", "P", "cmd", "-a" };
 		try {
-			CommandLine cl = clp.parse( os, args, true );
+			boolean stopAtNonOption = true;
+			CommandLine cl = clp.parse( os, args, stopAtNonOption );
 			args = cl.getArgs();
+			assertTrue( cl.hasOption( "p" ) );
+			assertFalse( cl.hasOption( "q" ) );
 			assertEquals( args.length, 2 );
+		} catch( ParseException pe ) {
+			fail( "" + pe );
+		}
+	}
+
+	@Test
+	public void cmdLine1() {
+		Options os = new Options();
+		os.addOption( "c", "longC", true, "config file" );
+		os.addOption( "v", "", false, "verbose" );
+		CommandLineParser clp = new DefaultParser();
+		String[] args = { "-c", "FILE", "-v", "sub", "subArg", "-X" };
+		try {
+			boolean stopAtNonOption = true;
+			CommandLine cl = clp.parse( os, args, stopAtNonOption );
+			args = cl.getArgs();
+			assertTrue( cl.hasOption( "c" ) );
+			assertTrue( cl.hasOption( "v" ) );
+			assertEquals( args.length, 3 );
+			assertEquals( args[0], "sub" );
+		} catch( ParseException pe ) {
+			fail( "" + pe );
+		}
+	}
+
+	@Test
+	public void cmdLine2() {
+		Options os = new Options();
+		os.addOption( "c", "longC", true, "config file" );
+		os.addOption( "v", "", false, "verbose" );
+		CommandLineParser clp = new DefaultParser();
+		String[] args = { "-c", "FILE", "-v", "sub", "subArg", "-X" };
+		try {
+			boolean stopAtNonOption = true;
+			CommandLine cl = clp.parse( os, args, stopAtNonOption );
+			args = cl.getArgs();
+			assertTrue( cl.hasOption( "c" ) );
+			assertTrue( cl.hasOption( "v" ) );
+			assertEquals( args.length, 3 );
+			assertEquals( args[0], "sub" );
+
+			String cmd = args[0];
+			String[] subArgs = new String[args.length-1];
+			System.arraycopy( args, 1, subArgs, 0, subArgs.length );
+
+			os = new Options();
+			os.addOption( "X", "", false, "X" );
+			stopAtNonOption = false;
+			cl = clp.parse( os, subArgs, stopAtNonOption );
+			args = cl.getArgs();
+			assertTrue( args.length == 1 );
 		} catch( ParseException pe ) {
 			fail( "" + pe );
 		}
