@@ -72,7 +72,8 @@ public class HashFSCmd extends Command {
 
 		Options os = new Options();
 		os.addOption( "p", false, "print" );
-		setArgs( os, "storeName", "index" );
+		options( os );
+		requiredArgs( "storeName", "index" );
 	}
 
 	@Override

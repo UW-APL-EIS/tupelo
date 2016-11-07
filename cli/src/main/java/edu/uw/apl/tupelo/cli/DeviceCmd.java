@@ -72,39 +72,20 @@ public class DeviceCmd extends Command {
 	DeviceCmd() {
 		super( "device" );
 
-		Options osList = new Options();
-		addSub( "list", LIST, osList );
-
 		Options osAdd = new Options();
-		osAdd.addOption( "n", true, "AlternativeID" );
+		Option oa1 = new Option( "i", true,
+								 "AlternativeID (device name unavailable)" );
+		oa1.setArgName( "alternateID" );
+		osAdd.addOption( oa1 );
 		addSub( "add", ADD, osAdd, "name", "path" );
 
 		Options osRemove = new Options();
 		addSub( "remove", REMOVE, osRemove, "name" );
+
+		Options osList = new Options();
+		addSub( "list", LIST, osList );
 	}
 
-	/*
-	  @Override
-	public void invoke( Config config, boolean verbose,
-						String[] args, CommandLine cl )
-		throws Exception {
-
-		if( args.length < 1 ) {
-			HelpCmd.INSTANCE.commandHelp( this );
-			return;
-		}
-		String sub = args[0];
-		switch( sub ) {
-		case "list":
-			list( config );
-			break;
-		case "add":
-			add( config, args, cl );
-			break;
-		}
-	}
-	*/
-	
 	private void list( Config c, boolean verbose, CommandLine cl ) {
 		List<Config.Device> ds = c.devices();
 		for( Config.Device d : ds ) {
@@ -118,22 +99,21 @@ public class DeviceCmd extends Command {
 	private void add( Config c, boolean verbose, CommandLine cl )
 		throws Exception {
 
+		// Known we have 2 args, no need to check (see Main)
 		String[] args = cl.getArgs();
 		String name = args[0];
 		String path = args[1];
 
-		System.out.println( name + " " + path );
 
-		if( cl.hasOption( "n" ) ) {
-			String id = cl.getOptionValue( "n" );
-			System.out.println( id );
+		if( cl.hasOption( "i" ) ) {
+			name = cl.getOptionValue( "i" );
 		}
 
-		if( true )
-			return;
+		System.out.println( name + " => " + path );
+
 		UnmanagedDisk ud = null;
 		if( false ) {
-		} else if( path.equals( "/dev/random" ) ) {
+		} else if( path.equals( "random" ) ) {
 			long log2size = 30L;
 			if( args.length > 2 ) {
 				try {
@@ -147,7 +127,7 @@ public class DeviceCmd extends Command {
 			long size = 1 << log2size;
 			RandomDisk rd = new RandomDisk( size, readSpeed );
 			ud = rd;
-		} else if( path.equals( "/dev/zero" ) ) {
+		} else if( path.equals( "zero" ) ) {
 			long log2size = 30L;
 			if( args.length > 2 ) {
 				try {

@@ -61,8 +61,7 @@ public class DigestCmd extends Command {
 	DigestCmd() {
 		super( "digest" );//, "Compute md5 hash for store-managed disks" );
 
-		Options os = new Options();
-		setArgs( os, "storeName" );
+		requiredArgs( "storeName" );
 	}
 	
 	@Override

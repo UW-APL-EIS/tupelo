@@ -72,8 +72,6 @@ public class Command {
 	protected Command( String name ) {
 		this.name = name;
 		help = CommandHelp.help( name );
-		options = new Options();
-		argNames = new ArrayList();
 		subs = new ArrayList();
 		COMMANDS.add( this );
 	}
@@ -93,10 +91,14 @@ public class Command {
 		alias = s;
 	}
 
-	protected void setArgs( Options os, String... requiredArgNames ) {
-		options = os;
+	protected void requiredArgs( String... requiredArgNames ) {
+		requiredArgs = new ArrayList();
 		for( String ran : requiredArgNames )
-			argNames.add( ran );
+			requiredArgs.add( ran );
+	}
+
+	protected void options( Options os ) {
+		options = os;
 	}
 	
 	String alias() {
@@ -104,7 +106,7 @@ public class Command {
 	}
 	
 	Options options() {
-		return options;
+		return options == null ? new Options() : options;
 	}
 
 	protected void addSub( String name, Lambda l, Options os,
@@ -134,7 +136,7 @@ public class Command {
 	}
 
 	int requiredArgs() {
-		return argNames.size();
+		return requiredArgs == null ? 0 : requiredArgs.size();
 	}
 	
 	boolean hasSubCommands() {
@@ -158,7 +160,7 @@ public class Command {
 			 Options os, List<String> argNames ) {
 			this.name = name;
 			this.os = os;
-			this.argNames = argNames;
+			this.requiredArgs = argNames;
 			this.l = l;
 		}
 
@@ -167,7 +169,7 @@ public class Command {
 		}
 		
 		int requiredArgs() {
-			return argNames.size();
+			return requiredArgs.size();
 		}
 		
 		void invoke( Config c, boolean verbose, CommandLine cl )
@@ -176,7 +178,7 @@ public class Command {
 		}
 		String name;
 		Options os;
-		List<String> argNames;
+		List<String> requiredArgs;
 		Lambda l;
 	}
 	
@@ -225,7 +227,8 @@ public class Command {
 	final CommandHelp help;
 	
 	protected Options options;
-	protected List<String> argNames;
+	
+	protected List<String> requiredArgs;
 	
 	protected String alias;
 

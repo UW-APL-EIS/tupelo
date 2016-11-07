@@ -36,6 +36,9 @@ package edu.uw.apl.tupelo.cli;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Stuart Maclean
@@ -69,13 +72,19 @@ public class CommandHelp {
 			synopsis = p.getProperty( "synopsis", "SYNOPSIS" );
 		*/
 		String description = p.getProperty( "description", "DESCRIPTION" );
-		String[] examples = null;
+		List<String> examples = new ArrayList();
+		for( int i = 1; i <= 16; i++ ) {
+			String ex = p.getProperty( "example." + i );
+			if( ex == null )
+				continue;
+			examples.add( ex );
+		}
 		return new CommandHelp( name, summary, synopsis,
 								description, examples );
 	}
 
 	private CommandHelp( String name, String summary, String synopsis,
-						 String description, String[] examples ) {
+						 String description, List<String> examples ) {
 		this.name = name;
 		this.summary = summary;
 		this.synopsis = synopsis;
@@ -95,12 +104,12 @@ public class CommandHelp {
 	public String description() {
 		return description;
 	}
-	public String[] examples() {
-		return examples == null ? new String[0] : examples;
+	public List<String> examples() {
+		return examples == null ? Collections.<String>emptyList() : examples;
 	}
 
 	private final String name, summary, synopsis, description;
-	private final String[] examples;
+	private final List<String> examples;
 	
 	static final CommandHelp DEFAULTS =
 		new CommandHelp( "NAME",

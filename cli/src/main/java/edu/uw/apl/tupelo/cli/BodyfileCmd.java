@@ -65,7 +65,8 @@ public class BodyfileCmd extends Command {
 		super( "bodyfile" );//, "Traverse filesystems of a store-managed disk" );
 		Options os = new Options();
 		os.addOption( "p", false, "print" );
-		setArgs( os, "storeName", "index" );
+		options( os );
+		requiredArgs( "storeName", "index" );
 	}
 	
 	@Override

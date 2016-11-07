@@ -82,8 +82,7 @@ public class SearchCmd extends Command {
 	SearchCmd() {
 		super( "search" );
 		//, "Search a store given file hash (IOCs)" );
-		Options os = new Options();
-		setArgs( os, "storeName" );
+		requiredArgs( "storeName" );
 	}
 	
 	@Override

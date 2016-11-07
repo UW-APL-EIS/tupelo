@@ -66,8 +66,7 @@ public class PushCmd extends Command {
 		super( "push" );
 		//, "Push local device content to a Tupelo store" );
 
-		Options os = new Options();
-		setArgs( os, "deviceName", "storeName" );
+		requiredArgs( "deviceName", "storeName" );
 	}
 	
 	@Override

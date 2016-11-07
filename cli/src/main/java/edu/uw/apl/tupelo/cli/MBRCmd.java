@@ -69,8 +69,7 @@ public class MBRCmd extends Command {
 		super( "mbr" );
 		//"View hashvs attribute, sector 0 (typically MasterBootRecord)" );
 
-		Options os = new Options();
-		setArgs( os, "storeName" );
+		requiredArgs( "storeName" );
 	}
 	
 	@Override

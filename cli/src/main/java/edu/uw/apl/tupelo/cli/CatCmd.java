@@ -57,8 +57,7 @@ public class CatCmd extends Command {
 	CatCmd() {
 		super( "cat" );//, "Cat a store-managed disk" );
 
-		Options os = new Options();
-		setArgs( os, "storeName", "index" );
+		requiredArgs( "storeName", "index" );
 	}
 	
 	@Override

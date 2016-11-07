@@ -61,8 +61,7 @@ public class MDFSCmd extends Command {
 		//		   "Make store-managed disks available under a mount point" );
 		addAlias( "mount" );
 
-		Options os = new Options();
-		setArgs( os, "storeName" );
+		requiredArgs( "storeName" );
 	}
 	
 	@Override

@@ -66,8 +66,7 @@ public class ArmourCmd extends Command {
 	ArmourCmd() {
 		super( "armour" );
 		//"Invoke Armour shell on selected store-held bodyfiles" );
-		Options os = new Options();
-		setArgs( os, "storeName", "index" );
+		requiredArgs( "storeName", "index" );
 	}
 	
 	

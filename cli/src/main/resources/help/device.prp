@@ -1,3 +1,34 @@
-summary : List, add or remove devices
+summary : List, add or remove device associations
 
 synopsis.add : <name> <path>
+
+description: 'Add' associates a local name with an available device \
+identified by its path. The device can be physical (e.g. /dev/sda) \
+or virtual (a virtual machine's virtual disk file) or a disk image file \
+(image.dd). For testing, random content and all-zero content are also \
+available via special path names. See EXAMPLES. \
+'Remove' removes the association created by add. \
+ 'List' shows current associations.  Associations persist in ~/.tupelo/config.
+
+example.1 : device add HARDDRIVE /dev/sda
+
+example.2 : device add HARDDRIVE -i ALTID /dev/sda
+
+example.3 : device add WINXP /path/to/VBox/WinXP
+
+example.4 : device add WIN7C /path/to/VBox/Win7/Win7.vdi
+
+example.5 : device add MINT /path/to/VmWare/LinuxMint
+
+example.6 : device add OLDIMAGE /path/to/rawImage.dd
+
+example.7 : device add ZEROS1GB zero
+
+example.8 : device add ZEROS1MB zero 20
+
+example.9 : device add RANDOM16GB random 34
+
+example.10 : device list
+
+example.11 : device remove WINXP
+

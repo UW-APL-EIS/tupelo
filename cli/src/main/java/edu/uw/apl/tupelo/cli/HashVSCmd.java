@@ -66,7 +66,8 @@ public class HashVSCmd extends Command {
 		//, "Hash unallocated areas of a store-managed disk" );
 		Options os = new Options();
 		os.addOption( "p", false, "print" );
-		setArgs( os, "storeName", "index" );
+		options( os );
+		requiredArgs( "storeName", "index" );
 	}
 	
 	@Override

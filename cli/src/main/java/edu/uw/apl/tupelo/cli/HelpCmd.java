@@ -36,9 +36,13 @@ package edu.uw.apl.tupelo.cli;
 import java.io.File;
 import java.io.StringWriter;
 import java.io.PrintWriter;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.lang.WordUtils;
 
 import edu.uw.apl.tupelo.config.Config;
 
@@ -98,23 +102,56 @@ public class HelpCmd extends Command {
 					h.summary() );
 		pw.println();
 		pw.println( "SYNOPSIS" );
-		pw.println( "  " + COMMANDNAME + " " + c.name() + " " +
-					h.synopsis() );
+		if( c.hasSubCommands() ) {
+			for( Command.Sub s : c.subs ) {
+				pw.print( "  " + COMMANDNAME + " " + c.name() + " " +
+							s.name );
+				Options os = s.options();
+				Collection<Option> ops = os.getOptions();
+				for( Option o : ops ) {
+					pw.print( " [-" + o.getOpt() );
+					if( o.hasArg() )
+						pw.print( " " + o.getArgName() );
+					pw.print( "]" );
+				}
+				List<String> requiredArgs = s.requiredArgs;
+				for( String ra : requiredArgs ) {
+					pw.print( " <" + ra + ">" );
+				}
+				pw.println();
+			}
+		} else {
+			pw.println( "  " + COMMANDNAME + " " + c.name() + " " +
+						h.synopsis() );
+		}
 		pw.println();
 		pw.println( "DESCRIPTION" );
-		pw.println( "  " + h.description() );
-		pw.println();
+		String descFmt = format( h.description(), 2 );
+		pw.println( descFmt );
+		//		pw.println();
 		pw.println( "OPTIONS" );
 		pw.println( "  " + "TODO" );
-		String[] examples = h.examples();
-		if( examples.length > 0 ) {
+		List<String> examples = h.examples();
+		if( !examples.isEmpty() ) {
+			pw.println();
 			pw.println( "EXAMPLES" );
 			for( String s : examples ) {
-				pw.println( "  " + s );
+				pw.println( "  $ " + COMMANDNAME + " " + s );
+				//				pw.println();
 			}
 		}
 		String s = sw.toString();
 		System.out.println( s );
+	}
+
+	
+	static String format( String s, int indent ) {
+		String wrapped = WordUtils.wrap( s, 70 );
+		String[] lines = wrapped.split( LS );
+		StringBuilder sb = new StringBuilder();
+		for( int i = 0; i < lines.length; i++ )
+			sb.append( INDENTS[indent] + lines[i] + LS );
+		return sb.toString();
 	}
 	
 	static String buildHelp() {
@@ -137,6 +174,10 @@ public class HelpCmd extends Command {
 	static final String COMMANDNAME = "tup";
 
 	static final String GLOBALARGS = "[-c configFile] [-v]" ;
+
+	static final private String LS = System.getProperty( "line.separator" );
+
+	static String[] INDENTS = { "", " ", "  ", "   " };
 }
 
 // eof

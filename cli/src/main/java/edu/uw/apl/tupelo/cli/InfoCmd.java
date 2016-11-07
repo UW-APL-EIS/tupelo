@@ -61,8 +61,7 @@ public class InfoCmd extends Command {
 	InfoCmd() {
 		super( "info" );
 
-		Options os = new Options();
-		setArgs( os, "storeName" );
+		requiredArgs( "storeName" );
 	}
 	
 	@Override
