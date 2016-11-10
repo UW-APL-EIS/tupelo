@@ -342,6 +342,11 @@ public class Config {
 			return url;
 		}
 		@Override
+		public String toString() {
+			// Useful for debug
+			return name + " = " + url;
+		}
+		@Override
 		public int hashCode() {
 			return name.hashCode();
 		}
@@ -387,6 +392,11 @@ public class Config {
 		}
 		public void setType( String s ) {
 			type = s;
+		}
+		@Override
+		public String toString() {
+			// Useful for debug
+			return name + " = " + path + " = " + id;
 		}
 		
 		@Override
