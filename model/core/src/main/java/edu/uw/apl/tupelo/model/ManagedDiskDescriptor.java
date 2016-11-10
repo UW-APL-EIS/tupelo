@@ -37,14 +37,17 @@ import java.util.Comparator;
 import java.util.regex.Pattern;
 
 /**
-   A ManagedDiskDescriptor (bad name but what is better?) is essentially a pair:
+   @author Stuart Maclean
+   
+   A ManagedDiskDescriptor (bad name but what is better?) is essentially
+   a pair:
 
    1 volume id - a string
 
    2 session id
 
-   so captures 'what' and 'when'
-
+   so captures the 'what' and 'when' facets of a Tupelo acquire of a
+   whole disk into a store.
    
    When embedded in a filesystem directory within e.g. a
    FilesystemStore, an MDM becomes
