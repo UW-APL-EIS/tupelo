@@ -71,10 +71,19 @@ import edu.uw.apl.tupelo.model.Utils;
 import edu.uw.apl.tupelo.store.Store;
 
 /**
+   @author Stuart Maclean
+   
    An implementation of the Tupelo Store interface which uses a flat
    file system for Store component management.  Uses a local directory
    heirarchy for managed disks and attributes.
 
+   * So by implication this store implementation needs access to disk.
+   Such a disk may or may <em>not</em> be availeble.  If the store url
+   defined a temporarily inserted external hard drive,
+   e.g. /media/EXTERNAL/ and that drive not attached, the mount point
+   would reside within the root filesystem, unlikely writable.
+
+   
    Note that the Store interface has no description of any
    synchronisation constraints.  That is left to us here.  Given that
    this FSStore object may be used by a webapp/server war, we need to
@@ -90,18 +99,20 @@ import edu.uw.apl.tupelo.store.Store;
 
 public class FilesystemStore implements Store {
 
-	public FilesystemStore( File root ) {
+	public FilesystemStore( File root ) throws IOException {
 		this( root, true );
 	}
 
 	/**
 	 * @param root - root directory for the Store. ALL data is held
-	 * under this single root.
+	 * under this single root.  Such a disk file may or may not be
+	 * writable (or even present!).
 	 *
 	 * @param loadManagedDisks - normally true, but for test cases useful to
 	 * pass false so a FilesystemStore has known empty status initially
 	 */
-	public FilesystemStore( File root, boolean loadManagedDisks ) {
+	public FilesystemStore( File root, boolean loadManagedDisks )
+		throws IOException {
 		log = LogFactory.getLog( getClass() );
 		this.root = root;
 		log.info( "Store.root = " + root );
@@ -274,7 +285,10 @@ public class FilesystemStore implements Store {
 
 			// Access controls in place to guard against file system screw ups..
 			outFile.setWritable( writable );
-			// Since only ever supposed to be a single file in the dir, protect the dir
+			/*
+			  Since only ever supposed to be a single file in the dir,
+			  protect the dir
+			*/
 			outDir.setWritable( writable );
 			
 			link( md );
@@ -478,7 +492,7 @@ public class FilesystemStore implements Store {
 	
 	/*********************** Private Implementation *********************/
 	
-	private UUID loadUUID() {
+	private UUID loadUUID() throws IOException {
 		UUID result = null;
 		File f = new File( root, "uuid.txt" );
 		if( f.exists() ) {
@@ -489,13 +503,13 @@ public class FilesystemStore implements Store {
 				br.close();
 			} catch( IOException ioe ) {
 				log.warn( ioe );
-				throw new IllegalStateException( "UUID read error!" );
+				throw new IOException( f + ": UUID read error" );
 			}
 			try {
 				result = UUID.fromString( line );
 			} catch( IllegalArgumentException iae ) {
 				log.warn( iae );
-				throw new IllegalStateException( "UUID parse error!" );
+				throw new IOException( f + ": UUID parse error" );
 			}
 		} else {
 			result = UUID.randomUUID();
@@ -505,7 +519,7 @@ public class FilesystemStore implements Store {
 				pw.close();
 			} catch( IOException ioe ) {
 				log.warn( ioe );
-				throw new IllegalStateException( "UUID write error!" );
+				throw new IOException( f + ":UUID write error" );
 			}
 		}
 		return result;

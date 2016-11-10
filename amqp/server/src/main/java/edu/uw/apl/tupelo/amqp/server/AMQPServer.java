@@ -150,7 +150,8 @@ public class AMQPServer {
 		fhs.start();
 	}
 	
-	static public Store buildStore( String storeLocation ) {
+	static public Store buildStore( String storeLocation )
+		throws IOException {
 		Store s = null;
 		if( storeLocation.startsWith( "http" ) ) {
 			s = new HttpStoreProxy( storeLocation );

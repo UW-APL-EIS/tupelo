@@ -50,7 +50,12 @@ public class DigestComputeTest extends junit.framework.TestCase {
 	FilesystemStore store;
 	
 	protected void setUp() {
-		store = new FilesystemStore( new File( "test-store" ) );
+		try {
+			store = new FilesystemStore( new File( "test-store" ) );
+		} catch( IOException ioe ) {
+			System.err.println( ioe );
+			fail();
+		}
 	}
 	
 	public void testNull() {

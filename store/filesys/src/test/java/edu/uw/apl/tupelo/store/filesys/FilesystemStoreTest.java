@@ -49,7 +49,12 @@ public class FilesystemStoreTest extends junit.framework.TestCase {
 	FilesystemStore store;
 	
 	protected void setUp() {
-		store = new FilesystemStore( new File( "test-store" ), false );
+		try {
+			store = new FilesystemStore( new File( "test-store" ), false );
+		} catch( IOException ioe ) {
+			System.err.println( ioe );
+			fail();
+		}
 	}
 	
 	public void testNull() {
