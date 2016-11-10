@@ -52,11 +52,24 @@ import java.util.regex.Pattern;
 /**
  * @author Stuart Maclean
  *
- * Configuration info for Tupelo, based on git's config format.
+ * Configuration info for Tupelo, based on git's config format. A
+ * configuration simply associates easy-to-use names with hard-to-use
+ * names, much like git's use of 'remotes'.  We add Devices and Stores
+ * in this manner.
  *
  * Used typically by the cli module's Main class.  But could be used
  * also by some new GUI front-end, hence the Config object gets its
- * own class AND sub-module.
+ * own class AND package (and Maven sub-module).
+ *
+ * The job of the Config object is to store persistent state across
+ * Tupelo sessions.  It does this by using local disk storage,
+ * typically ~USER/.tupconfig.  There may be times when no such
+ * storage is available.  Booting off e.g.  a live Linux/Caine CD will
+ * result in no long-term storage.  While some form of RAM-fs may
+ * provide persistent storage for many Tupelo sessions, once the
+ * machine is powered off, any such stored configuration would be
+ * lost.  Thumb-drive boots may be better and provide long term
+ * storage on the tumb drive??
  */
 
 public class Config {
@@ -66,18 +79,56 @@ public class Config {
 		devices = new ArrayList();
 	}
 
+	/**
+	 * Set a backing file so the config can be persisted to some disk
+	 * file.  Note: This disk storage may or may not be truly
+	 * persistent across boots, depending on our current boot
+	 * situation: Live CD boots likely have no persistent storage
+	 * location.
+	 */
 	public void setBacking( File f ) {
 		backing = f;
 	}
-	
+
+	/**
+	 * @return A list of all device objects in the current
+	 * configuration.  Devices are added to that configuration via the
+	 * addDevice method.
+	 *
+	 * @see addDevice
+	 * @see removeDevice
+	 */
 	public List<Device> devices() {
 		return devices;
 	}
 
+	/**
+	 * @return A list of all store objects in the current
+	 * configuration.  Stores are added to that configuration via the
+	 * addStore method.
+	 *
+	 * @see addStore
+	 * @see removeStore
+	 */
 	public List<Store> stores() {
 		return stores;
 	}
-	
+
+	/**
+	 * Add a store to this configuration.  If a store with same name
+	 * as to-be-added store already exists, the add is a no-op.
+	 *
+	 * @return true if the new store is added, false otherwise
+	 */
+	public boolean addStore( String name, String url ) {
+		if( haveStore( name ) )
+			return false;
+		Store s = new Store( name );
+		s.setUrl( url );
+		stores.add( s );
+		return true;
+	}
+
 	public Store removeStore( String name ) {
 		for( int i = 0; i < stores.size(); i++ ) {
 			Store s = stores.get(i);
@@ -88,15 +139,12 @@ public class Config {
 		return null;
 	}
 
-	public boolean addStore( String name, String url ) {
-		if( haveStore( name ) )
-			return false;
-		Store s = new Store( name );
-		s.setUrl( url );
-		stores.add( s );
-		return true;
-	}
-
+	/**
+	 * Add a device to this configuration.  If a device with same name
+	 * as to-be-added store already exists, the add is a no-op.
+	 *
+	 * @return true if the new device is added, false otherwise
+	 */
 	public Device addDevice( String name, String path ) {
 		if( haveDevice( name ) )
 			return null;
@@ -116,6 +164,12 @@ public class Config {
 		return null;
 	}
 
+	/**
+	 * Load a configuration from its backing/persistent disk file.
+	 * A backing file must have been set prior to this call.
+	 *
+	 * @see setBacking
+	 */
 	public void load() throws IOException {
 		if( backing == null )
 			throw new IllegalStateException( "Config.load: no backing file" );
@@ -130,6 +184,12 @@ public class Config {
 		load( new FileReader( path ) );
 	}
 
+	/**
+	 * Load a configuration from any reader, that is, any object from
+	 * which we can retrieve lines of text.  The Tupelo configuration
+	 * stored syntax is a text style, based on git's config style
+	 * (~/.gitconfig).
+	 */
 	public void load( Reader r ) throws IOException {
 		BufferedReader br = new BufferedReader( r );
 		String line;
@@ -139,6 +199,8 @@ public class Config {
 			line = line.trim();
 			boolean matches = false;
 			Matcher m = null;
+
+			// Test this line is a store 'header' i.e. [store NAME]
 			if( !matches ) {
 				m = STORESECTION.matcher( line );
 				matches = m.matches();
@@ -150,6 +212,8 @@ public class Config {
 					}
 				}
 			}
+			
+			// Test this line is a store attribute
 			if( !matches && store != null ) {
 				m = STOREURL.matcher( line );
 				matches = m.matches();
@@ -159,6 +223,8 @@ public class Config {
 					stores.add( store );
 				}
 			}
+			
+			// Test this line is a device 'header' i.e. [device NAME]
 			if( !matches ) {
 				m = DEVICESECTION.matcher( line );
 				matches = m.matches();
@@ -170,6 +236,8 @@ public class Config {
 					}
 				}
 			}
+
+			// Test this line is a device path attribute
 			if( !matches && device != null ) {
 				m = DEVICEPATH.matcher( line );
 				matches = m.matches();
@@ -179,6 +247,8 @@ public class Config {
 					devices.add( device );
 				}
 			}
+			
+			// Test this line is a device id attribute
 			if( !matches && device != null ) {
 				m = DEVICEID.matcher( line );
 				matches = m.matches();
@@ -187,6 +257,8 @@ public class Config {
 					device.setID( id );
 				}
 			}
+
+			// Test this line is a device size attribute
 			if( !matches && device != null ) {
 				m = DEVICESIZE.matcher( line );
 				matches = m.matches();
@@ -215,6 +287,12 @@ public class Config {
 		return false;
 	}
 				   
+	/**
+	 * Store/save a configuration to its backing/persistent disk file.
+	 * A backing file must have been set prior to this call.
+	 *
+	 * @see setBacking
+	 */
 	public void store() throws IOException {
 		if( backing == null )
 			throw new IllegalStateException( "Config.store: no backing file" );
@@ -243,8 +321,12 @@ public class Config {
 		}
 		pw.close();
 	}
-	
 
+	/**
+	 * A Config.Store class associates a friendly name, e.g. S1
+	 * with a url, e.g. https://webAccessibleTupStore', much
+	 * like git's remotes.
+	 */
 	static public class Store {
 		Store( String name ) {
 			this.name = name;
@@ -330,7 +412,11 @@ public class Config {
 	private File backing;
 	private final List<Store> stores;
 	private final List<Device> devices;
-	
+
+	/*
+	  The 'language' of the Config object when persisted to
+	  backing file: a set of regular expressions.
+	*/
 	static private final Pattern STORESECTION  =
 		Pattern.compile( "\\[store \"([^\"]+)\"\\]" );
 	static private final Pattern STOREURL =
@@ -345,13 +431,12 @@ public class Config {
 	static private final  Pattern DEVICESIZE =
 		Pattern.compile( "size = (\\d+)" );
 
+	// git uses ~/.gitconfig, we follow that idea with ~/.tupconfig...
 	static public File DEFAULT;
 	static {
 		String s = System.getProperty( "user.home" );
 		File f = new File( s );
-		f = new File( f, ".tupelo" );
-		f.mkdirs();
-		f = new File( f, "config" );
+		f = new File( f, ".tupconfig" );
 		DEFAULT = f;
 		//		System.err.println( DEFAULT );
 	}
