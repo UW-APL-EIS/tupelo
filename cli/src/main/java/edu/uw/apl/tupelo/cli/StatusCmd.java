@@ -34,7 +34,9 @@
 package edu.uw.apl.tupelo.cli;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.cli.*;
@@ -43,10 +45,18 @@ import edu.uw.apl.tupelo.config.Config;
 import edu.uw.apl.tupelo.store.Store;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 
-//import edu.uw.apl.commons.devicefiles.DeviceFile;
-
 /**
  * @author Stuart Maclean
+ *
+ * The Status command takes a list of device names Di (possibly empty)
+ * from the local configuration.  It then checks to all stores S in
+ * the location configuration to see if Di has ever been pushed any
+ * Sj.
+ *
+ * This answers the question 'Has this disk ever been acquired by
+ * Tupelo?'
+ *
+ *
  */
 
 public class StatusCmd extends Command {
@@ -60,22 +70,43 @@ public class StatusCmd extends Command {
 						CommandLine cl )
 		throws Exception {
 
+		List<Config.Device> cds = config.devices();
+		List<Config.Store> css = config.stores();
+
+		List<Store> ss = new ArrayList( css.size() );
+		for( Config.Store cs : css ) {
+			Store s = null;
+			try {
+				s = createStore( cs );
+				ss.add( s );
+				if( verbose )
+					System.out.println( cs + " -> " + s );
+			} catch( IOException ioe ) {
+				System.err.println( ioe.getMessage() );
+				continue;
+			}
+		}
+		
 		String[] args = cl.getArgs();
-	
 		if( args.length == 0 ) {
-			for( Config.Store cs : config.stores() ) {
-				Store s = createStore( cs );
-				Collection<ManagedDiskDescriptor> mdds = s.enumerate();
-				for( Config.Device cd : config.devices() ) {
-					boolean pushed = false;
+			for( Config.Device cd : cds ) {
+				for( Store s : ss ) {
+					Collection<ManagedDiskDescriptor> mdds = s.enumerate();
 					for( ManagedDiskDescriptor mdd : mdds ) {
-						System.out.println( mdd );
+						if( cd.getID().equals( mdd.getDiskID() ) )
+							reportHit( cd, mdd, s );
 					}
 				}
 			}
 		}
-		
 	}
+
+	private void reportHit( Config.Device cd, ManagedDiskDescriptor mdd,
+							Store s ) {
+		System.out.println( cd.getName() + ": " + cd.getID() +
+							" stored " + mdd );
+	}
+						   
 }
 
 // eof

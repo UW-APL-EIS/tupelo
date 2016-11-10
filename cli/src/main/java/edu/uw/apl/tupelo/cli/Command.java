@@ -186,11 +186,11 @@ public class Command {
 		Lambda l;
 	}
 	
-	Store createStore( Config.Store cs ) {
+	Store createStore( Config.Store cs ) throws IOException {
 		String url = cs.getUrl();
 		Store s = null;
 		if( false ) {
-		} else if( url.equals( "/dev/null" ) ) {
+		} else if( url.equals( "null" ) ) {
 			s = new NullStore();
 		} else if( url.startsWith( "http" ) ) {
 			s = new HttpStoreProxy( url );

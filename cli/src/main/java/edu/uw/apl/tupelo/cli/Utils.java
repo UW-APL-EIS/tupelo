@@ -76,10 +76,11 @@ public class Utils {
 		return null;
 	}
 
-	static public Store buildStore( String storeLocation ) {
+	static public Store buildStore( String storeLocation )
+		throws IOException {
 		Store s = null;
 		if( false ) {
-		} else if( storeLocation.equals( "/dev/null" ) ) {
+		} else if( storeLocation.equals( "null" ) ) {
 			s = new NullStore();
 		} else if( storeLocation.startsWith( "http" ) ) {
 			s = new HttpStoreProxy( storeLocation );
