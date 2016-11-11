@@ -60,6 +60,15 @@ import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.tools.HashVS;
 
+/**
+ * @author Stuart Maclean
+ *
+ * Perform a 'hash volume system' on an identified managed disk in a
+ * Tupelo store.  This 'hashvs' command entails locating all sector
+ * sequences representing 'unallocated areas' of the disk, i.e. sector
+ * sequences not holding partitions/filesystems.
+ */
+
 public class HashVSCmd extends Command {
 	HashVSCmd() {
 		super( "hashvs" );
@@ -144,7 +153,7 @@ public class HashVSCmd extends Command {
 
 		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( fs );
 		
-		final File mountPoint = new File( "mdfs-mount" );
+		final File mountPoint = new File( "mount-hashvs" );
 		if( !mountPoint.exists() ) {
 			mountPoint.mkdirs();
 			mountPoint.deleteOnExit();

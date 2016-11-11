@@ -39,7 +39,7 @@ import java.util.Collection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
 
 import edu.uw.apl.tupelo.config.Config;
 import edu.uw.apl.tupelo.store.Store;
@@ -62,7 +62,6 @@ import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 public class StatusCmd extends Command {
 	StatusCmd() {
 		super( "status" );
-		//, "Show local device status with respect to store" );
 	}
 
 	@Override
@@ -71,14 +70,29 @@ public class StatusCmd extends Command {
 		throws Exception {
 
 		List<Config.Device> cds = config.devices();
-		List<Config.Store> css = config.stores();
+		List<Config.Store>  css = config.stores();
 
-		List<Store> ss = new ArrayList( css.size() );
+		/*
+		  Need a simple 'Pair' class that zips together a Store and a
+		  Config.Store, since both needed to report a 'device was pushed
+		  to store hit'
+		*/
+		class StorePair {
+			StorePair( Store s, Config.Store c ) {
+				store = s;
+				config = c;
+			}
+			final Store store;
+			final Config.Store config;
+		}
+		
+		List<StorePair> sps = new ArrayList( css.size() );
 		for( Config.Store cs : css ) {
 			Store s = null;
 			try {
 				s = createStore( cs );
-				ss.add( s );
+				StorePair sp = new StorePair( s, cs );
+				sps.add( sp );
 				if( verbose )
 					System.out.println( cs + " -> " + s );
 			} catch( IOException ioe ) {
@@ -86,27 +100,37 @@ public class StatusCmd extends Command {
 				continue;
 			}
 		}
-		
-		String[] args = cl.getArgs();
-		if( args.length == 0 ) {
-			for( Config.Device cd : cds ) {
-				for( Store s : ss ) {
-					Collection<ManagedDiskDescriptor> mdds = s.enumerate();
-					for( ManagedDiskDescriptor mdd : mdds ) {
-						if( cd.getID().equals( mdd.getDiskID() ) )
-							reportHit( cd, mdd, s );
+
+		String header = String.format( HITREPORTFORMAT,
+									   "Device", "ID", "Store",
+									   "Path", "Session" );
+		System.out.println( header );
+		System.out.println();
+
+		for( Config.Device cd : cds ) {
+			for( StorePair sp : sps ) {
+				Store s = sp.store;
+				Collection<ManagedDiskDescriptor> mdds = s.enumerate();
+				for( ManagedDiskDescriptor mdd : mdds ) {
+					if( cd.getID().equals( mdd.getDiskID() ) ) {
+						Config.Store cs = sp.config;
+						reportHit( cd, cs, mdd );
 					}
 				}
 			}
 		}
 	}
 
-	private void reportHit( Config.Device cd, ManagedDiskDescriptor mdd,
-							Store s ) {
-		System.out.println( cd.getName() + ": " + cd.getID() +
-							" stored " + mdd );
+	private void reportHit( Config.Device cd, Config.Store cs,
+							ManagedDiskDescriptor mdd ) {
+		String hit = String.format( HITREPORTFORMAT,
+									cd.getName(), cd.getID(),
+									cs.getName(), cs.getUrl(),
+									mdd.getSession() );
+		System.out.println( hit );
 	}
 						   
+	static final String HITREPORTFORMAT = "%8s %24s %8s %16s %16s";
 }
 
 // eof

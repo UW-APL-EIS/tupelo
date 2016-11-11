@@ -39,23 +39,25 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
 
 import edu.uw.apl.tupelo.config.Config;
 import edu.uw.apl.tupelo.store.Store;
-import edu.uw.apl.tupelo.http.client.HttpStoreProxy;
-import edu.uw.apl.tupelo.store.null_.NullStore;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
-import edu.uw.apl.tupelo.model.FlatDisk;
-import edu.uw.apl.tupelo.model.ManagedDisk;
-import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
-import edu.uw.apl.tupelo.model.ProgressMonitor;
-import edu.uw.apl.tupelo.model.UnmanagedDisk;
-import edu.uw.apl.tupelo.model.Session;
-import edu.uw.apl.tupelo.model.StreamOptimizedDisk;
+
+/**
+ * @author Stuart Maclean
+ *
+ * Digest an identified managed disk in a Tupelo store, or apply to
+ * all such disks.  A digest associated with a managed disk provides a
+ * big optimization in the subsequent repeated acquisition of
+ * unmanaged data.
+ *
+ * In the store, a digest lives as X.md5 alongside the
+ * Tupelo-managed-disk file X.tmd.
+ */
 
 public class DigestCmd extends Command {
 	DigestCmd() {

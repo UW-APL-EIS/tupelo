@@ -1,1 +1,6 @@
-summary : Show local device status with respect to store
+summary : List device-to-store acquisitions (push operations)
+
+example.1 : device add D1 /dev/sda
+example.2 : store  add S1 /mnt/external/store
+example.3 : push   D1 S1
+example.4 : status

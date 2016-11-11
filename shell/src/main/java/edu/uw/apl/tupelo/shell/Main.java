@@ -78,8 +78,13 @@ import edu.uw.apl.tupelo.store.null_.NullStore;
 import edu.uw.apl.tupelo.store.filesys.FilesystemStore;
 
 /**
+ * @author Stuart Maclean
+ 
    A cmd line shell for the Tupelo system. Works along the lines of
    bash...
+
+   NB: This class no longer used.  We have moved to the 'git-style' of
+   UI, see the cli module.
 */
 
 public class Main extends Shell {

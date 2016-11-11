@@ -44,6 +44,11 @@ import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.ProgressMonitor;
 import edu.uw.apl.tupelo.model.Session;
 
+/**
+ * @author Stuart Maclean
+ *
+ */
+
 public interface Store {
 
 	public UUID getUUID() throws IOException;

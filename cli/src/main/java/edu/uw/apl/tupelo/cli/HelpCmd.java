@@ -131,8 +131,10 @@ public class HelpCmd extends Command {
 				pw.print( "]" );
 			}
 			List<String> requiredArgs = c.requiredArgs;
-			for( String ra : requiredArgs ) {
-				pw.print( " <" + ra + ">" );
+			if( requiredArgs != null ) {
+				for( String ra : requiredArgs ) {
+					pw.print( " <" + ra + ">" );
+				}
 			}
 			if( c.optionalArg != null )
 				pw.print( " <" + c.optionalArg + "?>" );

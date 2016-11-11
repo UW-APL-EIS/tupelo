@@ -40,7 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -59,9 +59,9 @@ import edu.uw.apl.tupelo.model.UnmanagedDisk;
 import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.model.StreamOptimizedDisk;
 
-import edu.uw.apl.commons.devicefiles.DeviceFile;
 
 public class PushCmd extends Command {
+
 	PushCmd() {
 		super( "push" );
 		//, "Push local device content to a Tupelo store" );
