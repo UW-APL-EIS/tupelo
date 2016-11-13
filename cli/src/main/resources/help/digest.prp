@@ -1,2 +1,13 @@
 summary : Compute MD5 hash for store-managed disks
 
+description: Digest queries the identified store to see if any \
+ acquired disk content has an associated digest file.  For all those \
+ that do not, it computes a digest of that disk by MD5 hashing each \
+ 64K grain and storing the result into a digest file alongside the \
+ original data.  Alternatively, a single acquired disk identified by \
+ index-in-store can be digested.
+
+
+example.1: push D S
+example.2: digest S
+example.3: digest S 2

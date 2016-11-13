@@ -1,1 +1,11 @@
 summary : Push local device content to a Tupelo store
+
+description: Push reads the entire content of an identified local \
+device (result of a device add) and writes that content to an \
+identified store (result of a store add).  The push may use existing \
+digests available in the store to reduce the actual byte length \
+transferred to the store.
+
+example.1: device add D /dev/sda
+example.2: store add S  /media/externalStore
+example.3: push D S

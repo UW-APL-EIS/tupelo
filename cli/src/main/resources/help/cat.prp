@@ -1,5 +1,9 @@
 summary : Print the contents of a store-managed disk
 
+description: Print the entire contents of a store-held disk \
+acquisition to stdout.  Requires store identifier and index-in-store \
+parameters to locate the exact disk to be read.
+
 example.1 : info S 
 example.2 : cat S 1
 example.3 : cat S 3 | md5sum

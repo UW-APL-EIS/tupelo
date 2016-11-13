@@ -1,5 +1,10 @@
 summary: Expose store-managed disk content under a mount point
 
+description: Uses FUSE to expose all disks acquired to a store as \
+randomly accessible devices.  The filesystem under the mountpoint \
+identifies the WHAT (disk serial number) and WHEN (store sessionID = \
+timestamp) of each acquisition.
+
 example.1 : !mkdir mnt
 
 example.2 : mount S mnt

@@ -203,6 +203,7 @@ public class Main {
 		new StoreCmd();
 		new StatusCmd();
 		new InfoCmd();
+		new SessionCmd();
 		new PushCmd();
 		new DigestCmd();
 		new CatCmd();
@@ -211,7 +212,6 @@ public class Main {
 		new HashFSCmd();
 		new BodyfileCmd();
 		new SearchCmd();
-		new SessionCmd();
 		new MBRCmd();
 	}
 }	
