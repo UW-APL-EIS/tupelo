@@ -16,6 +16,20 @@ offline copy is still fully usable in-place.  There is no need to
 'inflate back to raw' so that e.g. Sleuthkit tools can walk the
 captured drive.
 
+## Versioning
+
+This git repository follows [Driessen's]
+(http://nvie.com/posts/a-successful-git-branching-model/) strategies
+for branching and release management.  The latest tagged release is
+[1.0.1] (https://github.com/UW-APL-EIS/tupelo/tree/1.0.0), which is
+also the head of the [master]
+(https://github.com/UW-APL-EIS/tupelo/tree/master) branch. The
+[ChangeLog]
+(https://github.com/UW-APL-EIS/tupelo/blob/master/ChangeLog) gives a
+release history. The [develop]
+(https://github.com/UW-APL-EIS/tupelo/tree/develop) branch likely
+contains ideas/code newer than that most recent tag.
+
 Prerequisites
 -------------
 
