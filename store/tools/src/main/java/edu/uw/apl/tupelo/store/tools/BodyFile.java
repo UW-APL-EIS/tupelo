@@ -69,6 +69,8 @@ import edu.uw.apl.commons.tsk4j.digests.BodyFileBuilder;
 import edu.uw.apl.commons.tsk4j.digests.BodyFileCodec;
 
 /**
+ * @author Stuart Maclean
+ *
  * Given the identified ManagedDiskDescriptors (either one supplied on
  * cmd line, or by enumerating over a store), locate all filesystems
  * of each managed disk and produce a 'BodyFile', using

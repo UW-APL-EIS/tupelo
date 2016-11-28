@@ -122,7 +122,7 @@ public class PushCmd extends Command {
 		if( verbose )
 			System.out.println( "Stored data: " + existing );
 		
-		List<ManagedDiskDescriptor> matching = new ArrayList();
+		List<ManagedDiskDescriptor> matching = new ArrayList<>();
 		for( ManagedDiskDescriptor el : existing ) {
 			if( el.getDiskID().equals( ud.getID() ) ) {
 				matching.add( el );

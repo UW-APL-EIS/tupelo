@@ -3,5 +3,6 @@ target
 *.tmd
 maven-metadata-local.xml
 pom.xml.versionsBackup
+notes.txt
 
 # eof

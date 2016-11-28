@@ -1,1 +1,11 @@
 summary : Hash file systems of a store-managed disk
+
+description : The hashfs command uses Sleuthkit (think fls) to first \
+locate all filesystems of the specified store-managed disk.  It then \
+finds all allocated files in all those filesystems, and computes the \
+MD5 hash over the file content for each file.  The results are then \
+stored alongside the disk data (the .tmd file).  The results are \
+pairs (MD5,fileName).
+
+example.1 : hashfs S 1
+example.2 : hashvs -p S 2

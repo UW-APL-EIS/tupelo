@@ -42,6 +42,23 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * @author Stuart Maclean
+ *
+ * A session object provides the 'WHEN' in the 'WHAT+WHEN' coordinate
+ * space of disk images stored in a Tupelo store.  Session objects
+ * are triples:
+ *
+ * 1: a UUID that identifies each store.
+ * 2: a Calendar object, representing a date
+ * 3: an auto-incrementing index within the date
+ *
+ * The string formatting of a Session then looks like this (short
+ * version, without the uuid): 2016032101, which denotes a first
+ * Session object created and handed out by a Tupelo store on Mar 21
+ * 2016.  Sessions are created <em>only</em> by stores (plus a CANNED
+ * one for unit tests).
+ */
 public class Session implements java.io.Serializable,
 								Comparable<Session> {
 
@@ -52,6 +69,7 @@ public class Session implements java.io.Serializable,
 		index = i;
 	}
 
+	@Override
 	public boolean equals( Object o ) {
 		if( this == o )
 			return true;
@@ -63,19 +81,24 @@ public class Session implements java.io.Serializable,
 			this.index == that.index;
 	}
 
-	// maintain the general contract for equal Objects, though Map usage unlikely
+	/*
+	  Maintain the general contract for equal Objects,
+	  though Map usage unlikely
+	*/
+	@Override
 	public int hashCode() {
 		return date.hashCode() + index;
 	}
-		
+
+	@Override
 	public int compareTo( Session that ) {
 		// comparing apples to oranges??
 		if( ! this.source.equals( that.source ) )
 			return 0;
 		int calCmp = this.date.compareTo( that.date );
-		if( calCmp == 0 )
-			return this.index - that.index;
-		return calCmp;
+		if( calCmp != 0 )
+			return calCmp;
+		return this.index - that.index;
 	}
 	
 	static private void cropTime( Calendar c ) {
@@ -141,16 +164,6 @@ public class Session implements java.io.Serializable,
 		return new Session( source, c, i );
 	}
 
-	/*
-	  public int getIndex() {
-		return index;
-	}
-
-	public Calendar getDate() {
-		return date;
-	}
-	*/
-
 	public UUID uuid() {
 		return source;
 	}
@@ -168,14 +181,13 @@ public class Session implements java.io.Serializable,
 		return "" + source + "/" + toString();
 	}
 
-
 	static public Session testSession() {
 		return new Session( UUID.randomUUID(), Calendar.getInstance(), 16 );
 	}
 	
 	static final String UUIDRE =
 		"\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}";
-	static final String DATERE = "\\d{8}";
+	static final String DATERE  = "\\d{8}";
 	static final String INDEXRE = "\\d{4}";
 	
 	static public final Pattern FULLREGEX = Pattern.compile

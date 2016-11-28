@@ -50,6 +50,21 @@ import java.util.UUID;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+/**
+ * @author Stuart Maclean
+ *
+ * A ManagedDisk is what a Tupelo store holds for 'whole disk images
+ * captured'.  A ManagedDisk has a Header, at offset 0.  The
+ * StreamOptimizedDisk variant also has a Header at end.  The
+ * Header(s) include copies of the UnmanagedDisk diskID that
+ * identifies the unmanaged data, plus a Session, and also a UUID for
+ * create and parent.  The parent UUID is how we link one ManagedDisk
+ * object to a previous capture of the same data.
+ *
+ * @see FlatDisk
+ * @see StreamOptimizedDisk
+ */
+
 abstract public class ManagedDisk {
 
 	/**
@@ -111,7 +126,6 @@ abstract public class ManagedDisk {
 	abstract public void reportMetaData() throws IOException;
 
 	abstract public void writeTo( OutputStream os ) throws IOException;
-
 
 	abstract public void readFromWriteTo( InputStream is, OutputStream os )
 		throws IOException;

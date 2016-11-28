@@ -1,1 +1,13 @@
-summary : Traverse filesystems of a store-managed disk
+summary : Produce a bodyfile for each filesystem of a store-managed disk
+
+description : The bodyfile command uses Sleuthkit (think fls -m) to \
+first locate all filesystems of the specified store-managed disk. \
+It then finds all allocated files in all those filesystems, and \
+produces for each a bodyfile record, a summary of various file \
+properties (including MD5 content hash).  The resultant bodyfile(s) \
+are then stored alongside the disk data (the .tmd file).
+
+example.1 : info S
+example.2 : bodyfile S 1
+example.3 : info S
+example.4 : bodyfile -p S 2

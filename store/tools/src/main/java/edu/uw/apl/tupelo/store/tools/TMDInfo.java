@@ -42,6 +42,8 @@ import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 
 /**
+ * @author Stuart Maclean
+ *
  * Print a summary of the properties of a .tmd (Tupelo Managed Disk)
  * file supplied in args[0].  Goes straight to the file, 'bypassing'
  * any store logic or layout.  NOT a user-oriented tool in the Tupelo

@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -72,6 +73,7 @@ public class Command {
 	protected Command( String name ) {
 		this.name = name;
 		help = CommandHelp.help( name );
+		options = new Options();
 		subs = new ArrayList();
 		COMMANDS.add( this );
 	}
@@ -101,8 +103,15 @@ public class Command {
 		this.optionalArg = optionalArg;
 	}
 	
-	protected void options( Options os ) {
-		options = os;
+	protected void option( String opt, String description ) {
+		Option o = new Option( opt, false, description );
+		options.addOption( o );
+	}
+
+	protected void option( String opt, String argName, String description ) {
+		Option o = new Option( opt, true, description );
+		o.setArgName( argName );
+		options.addOption( o );
 	}
 	
 	String alias() {
@@ -110,7 +119,7 @@ public class Command {
 	}
 	
 	Options options() {
-		return options == null ? new Options() : options;
+		return options;
 	}
 
 	protected void addSub( String name, Lambda l, Options os,

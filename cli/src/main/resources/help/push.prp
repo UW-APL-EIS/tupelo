@@ -4,7 +4,8 @@ description: Push reads the entire content of an identified local \
 device (result of a device add) and writes that content to an \
 identified store (result of a store add).  The push may use existing \
 digests available in the store to reduce the actual byte length \
-transferred to the store.
+transferred to the store. The result is a new .tmd (TupeloManagedDisk)
+in the store.
 
 example.1: device add D /dev/sda
 example.2: store add S  /media/externalStore

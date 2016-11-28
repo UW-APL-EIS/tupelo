@@ -43,6 +43,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.DigestInputStream;
 
 /**
+ * @author Stuart Maclean
+ *
  * Given a ManagedDisk, as would be stored on disk in a Tupelo store,
  * we read all its data, in grains, and md5 each grain.  We see how
  * long all the md5 'grain hashing' takes.  It seems to be

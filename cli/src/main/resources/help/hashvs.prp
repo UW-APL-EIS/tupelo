@@ -1,1 +1,12 @@
 summary : Hash unallocated areas of a store-managed disk
+
+description : The hashvs command uses Sleuthkit (think mmls) to identify any \
+unallocated areas of the specified store-managed disk.  Unallocated \
+areas are sector sequences not contained in any partition/filesystem. \
+For each sequence, an MD5 hash is computed over all sectors in the \
+sequence, and the results stored alongside the disk data (the .tmd \
+file).
+
+example.1 : hashvs S 1
+example.2 : hashvs -p S 2
+

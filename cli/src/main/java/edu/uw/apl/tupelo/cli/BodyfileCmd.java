@@ -62,10 +62,10 @@ import edu.uw.apl.tupelo.model.Session;
 
 public class BodyfileCmd extends Command {
 	BodyfileCmd() {
-		super( "bodyfile" );//, "Traverse filesystems of a store-managed disk" );
-		Options os = new Options();
-		os.addOption( "p", false, "print" );
-		options( os );
+		//"Traverse filesystems of a store-managed disk" );
+		super( "bodyfile" );
+		option( "p", 
+				"Print existing bodyfile result(s) for the identified disk." );
 		requiredArgs( "storeName", "index" );
 	}
 	
@@ -76,8 +76,15 @@ public class BodyfileCmd extends Command {
 		
 		boolean print = cl.hasOption( "p" );
 		String[] args = cl.getArgs();
-
 		String storeName = args[0];
+		int index = -1;
+		try {
+			index = Integer.parseInt( args[1] );
+		} catch( NumberFormatException nfe ) {
+			HelpCmd.INSTANCE.commandHelp( this );
+			return;
+		}
+
 		Config.Store selectedStore = null;
 		for( Config.Store cs : config.stores() ) {
 			if( cs.getName().equals( storeName ) ) {
@@ -91,50 +98,47 @@ public class BodyfileCmd extends Command {
 		}
 		Store store = createStore( selectedStore );	
 
-		FilesystemStore fss = (FilesystemStore)store;
-
-		int index = Integer.parseInt( args[1] );
-
 		Collection<ManagedDiskDescriptor> mdds = null;
 		try {
-			mdds = fss.enumerate();
+			mdds = store.enumerate();
 		} catch( ConnectException ce ) {
 			System.err.println
 				( "Network Error. Is the remote Tupelo store up?" );
-			System.exit(0);
+			return;
 		}
 		if( index < 1 || index > mdds.size() ) {
 			System.err.println( "Index out-of-range" );
 			return;
 		}
-
-		final boolean debug = true;
-		final boolean printResult = false;
 		
-		List<ManagedDiskDescriptor> sorted =
-			new ArrayList<ManagedDiskDescriptor>( mdds );
+		List<ManagedDiskDescriptor> sorted = new ArrayList( mdds );
 		Collections.sort( sorted,
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
-
 		ManagedDiskDescriptor mdd = sorted.get(index-1);
 
 		if( print ) {
 			report( mdd, store );
 		} else {
-			process( mdd, store );
+			process( mdd, store, storeName );
 		}
 	}
 
-	static void process( ManagedDiskDescriptor mdd, Store s )
+	static void process( ManagedDiskDescriptor mdd, Store s,
+						 String storeName )
 		throws Exception {
+
+		if( !( s instanceof FilesystemStore ) ) {
+			System.err.println( "Not a FileSystemStore: " + storeName );
+			return;
+		}
+		FilesystemStore fs = (FilesystemStore)s;
 
 		Log log = LogFactory.getLog( BodyfileCmd.class );
 		log.info( "Filesystem traverse " + mdd );
 
-		FilesystemStore fs = (FilesystemStore)s;
 		final ManagedDiskFileSystem mdfs = new ManagedDiskFileSystem( fs );
 		
-		final File mountPoint = new File( "mdfs-mount" );
+		final File mountPoint = new File( "mount-bodyfile" );
 		if( !mountPoint.exists() ) {
 			mountPoint.mkdirs();
 			mountPoint.deleteOnExit();
@@ -156,7 +160,6 @@ public class BodyfileCmd extends Command {
 		
 		// LOOK: wait for the fuse mount to finish.  Grr hate arbitrary sleeps!
 		Thread.sleep( 1000 * 2 );
-
 
 		File f = mdfs.pathTo( mdd );
 		System.err.println( f );

@@ -34,6 +34,7 @@
 package edu.uw.apl.tupelo.model;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -50,14 +51,18 @@ import org.apache.commons.codec.binary.Hex;
 
 public class ManagedDiskDigest {
 
+	public ManagedDiskDigest( int bins ) {
+		grainHashes = new ArrayList<byte[]>( bins );
+	}
+
 	public ManagedDiskDigest() {
-		grainHashes = new ArrayList<byte[]>();
+		this( 1024 );
 	}
 
 	public void add( byte[] ba ) {
-		byte[] copy = new byte[ba.length];
-		System.arraycopy( ba, 0, copy, 0, ba.length );
-		grainHashes.add( copy );
+		//byte[] copy = new byte[ba.length];
+		//System.arraycopy( ba, 0, copy, 0, ba.length );
+		grainHashes.add( ba );
 	}
 
 	public byte[] get( int i ) {
@@ -69,7 +74,8 @@ public class ManagedDiskDigest {
 	}
 	
 	public void writeTo( Writer w ) throws IOException {
-		PrintWriter pw = new PrintWriter( w );
+		BufferedWriter bw = new BufferedWriter( w, 1 << 20 );
+		PrintWriter pw = new PrintWriter( bw );
 		for( byte[] gh : grainHashes ) {
 			String hashHex = new String( Hex.encodeHex( gh ) );
 			pw.println( hashHex );
@@ -78,7 +84,7 @@ public class ManagedDiskDigest {
 	}
 
 	static public ManagedDiskDigest readFrom( Reader r ) throws IOException {
-		ManagedDiskDigest result = new ManagedDiskDigest();
+		ManagedDiskDigest result = new ManagedDiskDigest( 1024 );
 		BufferedReader br = new BufferedReader( r );
 		String line = null;
 		while( (line = br.readLine()) != null ) {

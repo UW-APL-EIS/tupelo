@@ -101,8 +101,7 @@ public class MBRCmd extends Command {
 				( "Network Error. Is the remote Tupelo store up?" );
 			System.exit(0);
 		}
-		List<ManagedDiskDescriptor> sorted =
-			new ArrayList<ManagedDiskDescriptor>( mdds );
+		List<ManagedDiskDescriptor> sorted = new ArrayList( mdds );
 		Collections.sort( sorted,
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
 		

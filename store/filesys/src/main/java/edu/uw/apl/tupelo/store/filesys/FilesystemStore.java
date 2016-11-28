@@ -38,6 +38,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -109,7 +110,8 @@ public class FilesystemStore implements Store {
 	 * writable (or even present!).
 	 *
 	 * @param loadManagedDisks - normally true, but for test cases useful to
-	 * pass false so a FilesystemStore has known empty status initially
+	 * pass false so a FilesystemStore has known empty status initially,
+	 * in terms of 'managed disk details loaded into memory'.
 	 */
 	public FilesystemStore( File root, boolean loadManagedDisks )
 		throws IOException {
@@ -146,7 +148,7 @@ public class FilesystemStore implements Store {
 	}
 
 	/**
-	   a new session is derived from an earlier one persisted to disk,
+	   A new session is derived from an earlier one persisted to disk,
 	   or entirely new if no persistent one available.  We persist the
 	   result back to disk for future usage.  So the disk file
 	   'session.txt' is part of the Store state.
@@ -159,6 +161,7 @@ public class FilesystemStore implements Store {
 		if( f.exists() ) {
 			BufferedReader br = new BufferedReader( new FileReader( f ) );
 			String line = br.readLine();
+			br.close();
 			try {
 				Session saved = Session.parse( line );
 				result = saved.successor( now );
@@ -229,7 +232,10 @@ public class FilesystemStore implements Store {
 
 			// Access controls in place to guard against file system screw ups..
 			outFile.setWritable( writable );
-			// Since only ever supposed to be a single file in the dir, protect the dir
+			/*
+			  Since only ever supposed to be a single file in the dir,
+			  protect the dir
+			*/
 			outDir.setWritable( writable );
 			
 			link( md );
@@ -400,10 +406,11 @@ public class FilesystemStore implements Store {
 		InputStream is = md.getInputStream();
 		//		DigestInputStream dis = new DigestInputStream( is, sha1 );
 		//		List<byte[]> digest = new ArrayList<byte[]>( grainCount );
-		ManagedDiskDigest digest = new ManagedDiskDigest();
+		ManagedDiskDigest digest = new ManagedDiskDigest( grainCount );
+		BufferedInputStream bis = new BufferedInputStream( is, 1 << 20 );
 		for( int g = 1; g <= grainCount; g++ ) {
 			//	int nin = dis.read( grain );
-			int nin = is.read( grain );
+			int nin = bis.read( grain );
 			/*
 			  Only the last read could/should return a partial grain,
 			  and that would be if the data size not a multiple of
@@ -595,7 +602,7 @@ public class FilesystemStore implements Store {
 	}
 
 	/*
-	  The file sys layout here is
+	  The file system layout here is
 
 	  disks/
 	  disks/DISKID/SESSIONID

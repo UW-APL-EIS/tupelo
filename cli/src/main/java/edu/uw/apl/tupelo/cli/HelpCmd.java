@@ -146,8 +146,18 @@ public class HelpCmd extends Command {
 		String descFmt = format( h.description(), 2 );
 		pw.println( descFmt );
 		//		pw.println();
-		pw.println( "OPTIONS" );
-		pw.println( "  " + "TODO" );
+		if( c.hasSubCommands() ) {
+		} else {
+			Options os = c.options();
+			Collection<Option> ops = os.getOptions();
+			if( !ops.isEmpty() ) {
+				pw.println( "OPTIONS" );
+				for( Option op : ops ) {
+					pw.println( "  -" + op.getOpt() );
+					pw.println( "     " + op.getDescription() );
+				}
+			}
+		}
 		List<String> examples = h.examples();
 		if( !examples.isEmpty() ) {
 			pw.println();

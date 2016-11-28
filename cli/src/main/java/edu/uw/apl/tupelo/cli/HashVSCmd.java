@@ -45,7 +45,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -72,10 +74,8 @@ import edu.uw.apl.tupelo.store.tools.HashVS;
 public class HashVSCmd extends Command {
 	HashVSCmd() {
 		super( "hashvs" );
-		//, "Hash unallocated areas of a store-managed disk" );
-		Options os = new Options();
-		os.addOption( "p", false, "print" );
-		options( os );
+		option( "p",
+				 "Print existing hashvs result for the identified disk." );
 		requiredArgs( "storeName", "index" );
 	}
 	
@@ -86,8 +86,15 @@ public class HashVSCmd extends Command {
 
 		boolean print = cl.hasOption( "p" );
 		String[] args = cl.getArgs();
-		
 		String storeName = args[0];
+		int index = -1;
+		try {
+			index = Integer.parseInt( args[1] );
+		} catch( NumberFormatException nfe ) {
+			HelpCmd.INSTANCE.commandHelp( this );
+			return;
+		}
+
 		Config.Store selectedStore = null;
 		for( Config.Store cs : config.stores() ) {
 			if( cs.getName().equals( storeName ) ) {
@@ -101,25 +108,19 @@ public class HashVSCmd extends Command {
 		}
 		Store store = createStore( selectedStore );	
 
-		FilesystemStore fs = (FilesystemStore)store;
-
-		int index = Integer.parseInt( args[1] );
-
 		Collection<ManagedDiskDescriptor> mdds = null;
 		try {
 			mdds = store.enumerate();
 		} catch( ConnectException ce ) {
 			System.err.println
 				( "Network Error. Is the remote Tupelo store up?" );
-			System.exit(0);
+			return;
 		}
 		if( index < 1 || index > mdds.size() ) {
-			System.err.println( "Index out-of-range" );
+			System.err.println( "Index out-of-range: " + index );
 			return;
 		}
 
-		final boolean debug = true;
-		
 		List<ManagedDiskDescriptor> sorted = new ArrayList( mdds );
 		Collections.sort( sorted,
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
@@ -127,7 +128,7 @@ public class HashVSCmd extends Command {
 		if( print ) {
 			report( mdd, store );
 		} else {
-			process( mdd, fs );
+			process( mdd, store, storeName );
 		}
 	}
 
@@ -143,9 +144,15 @@ public class HashVSCmd extends Command {
 		}
 	}
 		
-	static void process( ManagedDiskDescriptor mdd, FilesystemStore fs )
+	static void process( ManagedDiskDescriptor mdd, Store store,
+						 String storeName )
 		throws Exception {
-
+		
+		if( !( store instanceof FilesystemStore ) ) {
+			System.err.println( "Not a FileSystemStore: " + storeName );
+			return;
+		}
+		FilesystemStore fs = (FilesystemStore)store;
 		final boolean debug = false;
 		
 		Log log = LogFactory.getLog( HashVSCmd.class );

@@ -112,9 +112,9 @@ public class ManagedDiskDescriptor implements java.io.Serializable {
 
 	/*
 	  For a 'sensible' sort ordering that 'looks good' when displaying
-	  a list of ManagedDiskDescriptors, do lexocographic sort on WHAT
+	  a list of ManagedDiskDescriptors, do lexicographic sort on WHAT
 	  (the disk id) followed by time order sort on WHEN (the session)
-
+	  Sessions compareTo by increasing date+index.
 	*/
 	
 	static public final Comparator<ManagedDiskDescriptor>

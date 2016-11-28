@@ -182,6 +182,7 @@
 	    </goals>
 	    <configuration>
 	      <outputDirectory>${project.build.directory}</outputDirectory>
+	      <includeScope>compile</includeScope>
 	    </configuration>
           </execution>
         </executions>

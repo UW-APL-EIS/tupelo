@@ -39,6 +39,12 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.UUID;
 
+/**
+ * @author Stuart Maclean
+ *
+ * Tests on Session objects.
+ */
+
 public class SessionTest extends junit.framework.TestCase {
 
 	public void testSuccessor() {
@@ -66,9 +72,46 @@ public class SessionTest extends junit.framework.TestCase {
 		
 		Session s7 = s3.successor( tomorrow );
 		System.out.println( s7.format() );
-		
 	}
 
+	/**
+	 * Testing Session.equals
+	 */
+	public void testEquals() throws Exception {
+		System.out.println( "testEquals" );
+
+		Calendar now = Calendar.getInstance( Session.UTC );
+		Session s1 = new Session( Session.NOSOURCE, now, 1 );
+		Session s2 = new Session( Session.NOSOURCE, now, 1 );
+		assertTrue( s1.equals(s2) );
+
+		Session s3 = new Session( Session.NOSOURCE, now, 2 );
+		assertFalse( s1.equals(s3) );
+	}
+
+	/**
+	 * Testing Session.compareTo
+	 */
+	public void testCompare() throws Exception {
+		System.out.println( "testCompare" );
+
+		Calendar now = Calendar.getInstance( Session.UTC );
+		Session s1 = new Session( Session.NOSOURCE, now, 1 );
+		Session s2 = new Session( Session.NOSOURCE, now, 1 );
+		assertTrue( 0 == s1.compareTo( s2 ) );
+
+		Session s3 = new Session( Session.NOSOURCE, now, 2 );
+		assertTrue( -1 == s1.compareTo( s3 ) );
+		assertTrue( +1 == s3.compareTo( s1 ) );
+
+		Calendar tomorrow = (Calendar)now.clone();
+		tomorrow.add( Calendar.HOUR_OF_DAY, 24 );
+		Session s4 = new Session( Session.NOSOURCE, tomorrow, 1 );
+		assertTrue( -1 == s1.compareTo( s4 ) );
+		assertTrue( -1 == s2.compareTo( s4 ) );
+		assertTrue( -1 == s3.compareTo( s4 ) );
+	}
+	
 	public void testSerial() throws Exception {
 		System.out.println( "testSerial" );
 		Calendar now = Calendar.getInstance( Session.UTC );
@@ -82,7 +125,7 @@ public class SessionTest extends junit.framework.TestCase {
 
 	public void testOrder() {
 		System.out.println( "testOrder" );
-		List<Session> ss = new ArrayList<Session>();
+		List<Session> ss = new ArrayList<>();
 		Calendar today = Calendar.getInstance( Session.UTC );
 		UUID u = UUID.randomUUID();
 		Session s1 = new Session( u, today, 1 );

@@ -39,23 +39,33 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
+
 import edu.uw.apl.tupelo.model.DiskImage;
 import edu.uw.apl.tupelo.model.FlatDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.Session;
+import edu.uw.apl.tupelo.model.StreamOptimizedDisk;
 import edu.uw.apl.tupelo.model.UnmanagedDisk;
 import edu.uw.apl.tupelo.model.ZeroDisk;
 
-import org.apache.commons.io.FileUtils;
+/**
+ * @author Stuart Maclean
+ *
+ * Using known ManagedDisk implementations, specifically ZeroDisks,
+ * and pushing instances to a filesys Store, we can assert exact
+ * file size on disk of the Managed .tmd files.
+ */
 
-public class DigestComputeTest extends junit.framework.TestCase {
+public class SizeTest extends junit.framework.TestCase {
 
-	static final File ROOT = new File( "store-digest-tests" );
-
+	static final File ROOT = new File( "store-sizetest" );
+	
 	FilesystemStore store;
 	
 	protected void setUp() {
+		ROOT.mkdirs();
 		try {
 			store = new FilesystemStore( ROOT );
 		} catch( IOException ioe ) {
@@ -64,7 +74,7 @@ public class DigestComputeTest extends junit.framework.TestCase {
 		}
 	}
 
-	protected void _tearDown() {
+	protected void tearDown() {
 		try {
 			FileUtils.deleteDirectory( ROOT );
 		} catch( IOException ioe ) {
@@ -72,21 +82,27 @@ public class DigestComputeTest extends junit.framework.TestCase {
 			fail();
 		}
 	}
-	
-	public void _testEmpty() throws IOException {
-		Collection<ManagedDiskDescriptor> mdds = store.enumerate();
-		assertTrue( mdds.isEmpty() );
+
+	public void testSizeZero10() throws Exception {
+		ZeroDisk z10 = new ZeroDisk( 1 << 10, 1 << 20 );
+		testSize( z10, 1 << 10 );
 	}
 
-	public void testDigestZero20() throws Exception {
+	public void testSizeZero20() throws Exception {
 		ZeroDisk z20 = new ZeroDisk( 1 << 20, 1 << 20 );
-		testDigest( z20, 1 << 20 );
+		testSize( z20, 1 << 20 );
+	}
+
+	public void testSizeZero30() throws Exception {
+		ZeroDisk z30 = new ZeroDisk( 1 << 30, 100 * (1 << 20) );
+		testSize( z30, 1 << 30 );
 	}
 
 	/**
-	 * Test that a put + computeDigest of a known UnmanagedDisk works
+	 * Test that a put + size of a known UnmanagedDisk equals
+	 * the known size
 	 */
-	private void testDigest( UnmanagedDisk ud, long expectedSize )
+	private void testSize( UnmanagedDisk ud, long expectedSize )
 		throws Exception {
 		Session session = store.newSession();
 
@@ -96,10 +112,17 @@ public class DigestComputeTest extends junit.framework.TestCase {
 
 		FlatDisk fd = new FlatDisk( ud, session );
 		store.put( fd );
+		long szfd = store.size( mdd );
+		assertEquals( szfd, expectedSize );
 
-		store.computeDigest( mdd );
+		session = store.newSession();
+		StreamOptimizedDisk sod = new StreamOptimizedDisk( ud, session );
+		store.put( sod );
+		ManagedDiskDescriptor mdd2 = new ManagedDiskDescriptor( ud.getID(),
+															   session );
+		long szsod = store.size( mdd2 );
+		assertEquals( szsod, expectedSize );
 	}
-
 }
 
 // eof
