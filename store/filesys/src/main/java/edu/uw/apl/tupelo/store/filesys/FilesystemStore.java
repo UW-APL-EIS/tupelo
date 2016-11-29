@@ -451,7 +451,12 @@ public class FilesystemStore implements Store {
 	@Override
 	public synchronized Collection<ManagedDiskDescriptor> enumerate()
 		throws IOException {
-		return descriptorMap.keySet();
+		/*
+		  Do NOT just return a reference to our descriptorMap,
+		  since then a sequence of enumerate,put,enumerate will
+		  fail to show increased size due to put
+		*/
+		return new ArrayList<>( descriptorMap.keySet() );
 	}
 
 	@Override
@@ -460,7 +465,7 @@ public class FilesystemStore implements Store {
 		File dir = attrDir( root, mdd );
 		if( !dir.isDirectory() )
 			return Collections.emptyList();
-		List<String> result = new ArrayList<String>();
+		List<String> result = new ArrayList<>();
 		File[] fs = dir.listFiles();
 		for( File f : fs ) {
 			result.add( f.getName() );
@@ -605,10 +610,10 @@ public class FilesystemStore implements Store {
 	  The file system layout here is
 
 	  disks/
-	  disks/DISKID/SESSIONID
-	  disks/DISKID/SESSIONID/data
+	  disks/DISKID/SESSIONID			<--- diskDir
+	  disks/DISKID/SESSIONID/data		<--- dataDir
 	  disks/DISKID/SESSIONID/data/DISKID-SESSIONID.tmd
-	  disks/DISKID/SESSIONID/attrs
+	  disks/DISKID/SESSIONID/attrs		<--- attrDir
 	  disks/DISKID/SESSIONID/attrs/SOMEATTR
 	*/
 	static private File diskDir( File root, ManagedDiskDescriptor vd ) {
@@ -624,8 +629,11 @@ public class FilesystemStore implements Store {
 		return dir;
 	}
 
-	static private File managedDataFile( File root,
-										 ManagedDiskDescriptor mdd ) {
+	/*
+	  Nominally private but made visible to unit tests
+	*/
+	static File managedDataFile( File root,
+								 ManagedDiskDescriptor mdd ) {
 		File dir = diskDataDir( root, mdd );
 		File result = new File( dir, dataFileName( mdd ) );
 		return result;

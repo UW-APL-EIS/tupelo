@@ -69,11 +69,29 @@ public interface Store {
 	 */
 	public long size( ManagedDiskDescriptor mdd ) throws IOException;
 
+	/**
+	 * @return The 'createUUID' held in the header of the ManagedDisk
+	 * identified by the supplied ManagedDiskDescriptor, or null if
+	 * the descriptor does not identify a managed disk held in this
+	 * store.
+	 */
 	public UUID uuid( ManagedDiskDescriptor mdd ) throws IOException;
 
+	/**
+	 * @return The ManagedDiskDigest associated with the ManagedDisk
+	 * identified by the supplied ManagedDiskDescriptor, or null if
+	 * the descriptor does not identify a managed disk held in this
+	 * store OR there is no digest computed for the identified
+	 * ManagedDisk.
+	 */
 	public ManagedDiskDigest digest( ManagedDiskDescriptor mdd )
 		throws IOException;
 	
+	/**
+	 * @return The names (keys) of all the attributes associated with
+	 * the ManagedDisk identified by the supplied
+	 * ManagedDiskDescriptor.
+	 */
 	public Collection<String> listAttributes( ManagedDiskDescriptor mdd )
 		throws IOException;
 
@@ -86,7 +104,13 @@ public interface Store {
 	
 	// for the benefit of the fuse-based ManagedDiskFileSystem
 	public ManagedDisk locate( ManagedDiskDescriptor mdd );
-	
+
+	/**
+	 * @return A ManagedDiskDescriptor for each ManagedDisk held
+	 * in the store at time of enumerate.  Since no real/natural
+	 * ordering of ManagedDisk exists, we return Collection in
+	 * preference to some ordered collection like List
+	 */
 	public Collection<ManagedDiskDescriptor> enumerate() throws IOException;
 
 	/**

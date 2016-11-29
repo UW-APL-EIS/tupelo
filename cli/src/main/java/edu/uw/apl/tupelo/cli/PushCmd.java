@@ -162,6 +162,11 @@ public class PushCmd extends Command {
 		ManagedDisk md = null;
 		boolean useFlatDisk = ud.size() < 1024L * 1024 * 1024;
 		if( useFlatDisk ) {
+			/*
+			  A FlatDisk always holds ALL the data,
+			  and makes no use of any 'parent' manageddisk,
+			  so needs/uses no UUID link
+			*/
 			md = new FlatDisk( ud, session );
 		} else {
 			if( uuid != null )

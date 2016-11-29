@@ -115,15 +115,7 @@ public class TMDInfo {
 
 	public void report( ManagedDisk md, File source ) throws Exception {
 		System.out.println( "Source: " + source );
-		System.out.println( "Type: " + md.getClass() );
-		ManagedDiskDescriptor mdd = md.getDescriptor();
-		System.out.println( "DiskID: " + mdd.getDiskID() );
-		System.out.println( "Session: " + mdd.getSession().format() );
-		System.out.println( "Size: " + md.size() );
-		System.out.println( "UUID.Create: " + md.getUUIDCreate() );
-		System.out.println( "UUID.Parent: " + md.getUUIDParent() );
-		System.out.println( "Compression: " + md.getCompression() );
-		System.out.println( "Param: " + md.paramString() );
+		md.report( System.out );
 	}
 
 	static boolean debug;

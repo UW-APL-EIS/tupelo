@@ -43,7 +43,6 @@ import org.apache.commons.io.FileUtils;
 
 import edu.uw.apl.tupelo.model.DiskImage;
 import edu.uw.apl.tupelo.model.FlatDisk;
-import edu.uw.apl.tupelo.model.ManagedDisk;
 import edu.uw.apl.tupelo.model.ManagedDiskDescriptor;
 import edu.uw.apl.tupelo.model.ManagedDiskDigest;
 import edu.uw.apl.tupelo.model.Session;
@@ -54,14 +53,12 @@ import edu.uw.apl.tupelo.model.ZeroDisk;
 /**
  * @author Stuart Maclean
  *
- * Using known ManagedDisk implementations, specifically ZeroDisks,
- * and pushing instances to a filesys Store, we can assert exact
- * file size on disk of the Managed .tmd files.
+ * Unit tests based around FilesystemStore.put
  */
 
-public class SizeTest extends junit.framework.TestCase {
+public class PutTest extends junit.framework.TestCase {
 
-	static final File ROOT = new File( "store-sizetest" );
+	static final File ROOT = new File( "store-puttest" );
 	
 	FilesystemStore store;
 	
@@ -84,70 +81,69 @@ public class SizeTest extends junit.framework.TestCase {
 		}
 	}
 
-	public void testSizeZero10() throws Exception {
-		ZeroDisk z10 = new ZeroDisk( 1 << 10, 1 << 20 );
-		testSizeFlat( z10, 1 << 10 );
-		testSizeStreamOptimized( z10, 1 << 10 );
+	public void _testSizeZero10() throws Exception {
+		ZeroDisk zd = new ZeroDisk( 1 << 10, 1 << 20 );
+		testDuplicatePut( zd );
 	}
 
 	public void testSizeZero20() throws Exception {
 		ZeroDisk z20 = new ZeroDisk( 1 << 20, 1 << 20 );
-		testSizeFlat( z20, 1 << 20 );
-		testSizeStreamOptimized( z20, 1 << 20 );
+		testDuplicatePut( z20 );
+		testPutN( z20 );
 	}
 
-	public void testSizeZero30() throws Exception {
-		ZeroDisk z30 = new ZeroDisk( 1 << 30, 100 * (1 << 20) );
-		testSizeFlat( z30, 1 << 30 );
-		testSizeStreamOptimized( z30, 1 << 30 );
-	}
-
-	/**
-	 * Test that a put + size of a known UnmanagedDisk stored as a
-	 * FlatDisk equals the known/expected size
-	 */
-	private void testSizeFlat( UnmanagedDisk ud,
-							   long expectedDataSize )
+	/*
+	  Put the same UnmanagedDisk 2+ times into a store,
+	  as would be done in practice for repeated acquisitions
+	  over time of the same drive
+	*/
+	private void testPutN( UnmanagedDisk ud )
 		throws Exception {
-		Session session = store.newSession();
 
-		FlatDisk fd = new FlatDisk( ud, session );
-		store.put( fd );
+		Collection<ManagedDiskDescriptor> mdds0 = store.enumerate();
+				   
+		Session session1 = store.newSession();
+		FlatDisk fd1 = new FlatDisk( ud, session1 );
+		store.put( fd1 );
+		Collection<ManagedDiskDescriptor> mdds1 = store.enumerate();
+		assertTrue( mdds1.size() == (mdds0.size() + 1) );
+
+		Session session2 = store.newSession();
+		FlatDisk fd2 = new FlatDisk( ud, session2 );
+		store.put( fd2 );
+		Collection<ManagedDiskDescriptor> mdds2 = store.enumerate();
+
+		assertTrue( mdds2.size() == (mdds1.size() + 1) );
+
+	}
+
+	private void testDuplicatePut( UnmanagedDisk ud )
+		throws Exception {
+
+		Collection<ManagedDiskDescriptor> mdds1 = store.enumerate();
+		assertTrue( mdds1.isEmpty() );
+				   
+		Session session = store.newSession();
 
 		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
 															   session );
-		long szfd = store.size( mdd );
-		assertEquals( szfd, expectedDataSize );
+		System.out.println( mdd );
 
-		/*
-		  For FlatDisks, the on-disk file is simply all
-		  the logical disk data prefixed by a Header, of known/fixed
-		  size
-		*/
-		File onDisk = store.managedDataFile( ROOT, mdd );
-		System.out.println( onDisk + " " + onDisk.length() );
-		assertTrue( onDisk.length() == expectedDataSize +
-					ManagedDisk.Header.SIZEOF );
-	}
-
-	/**
-	 * Test that a put + size of a known UnmanagedDisk stored as a
-	 * StreamOptimizedDiskDisk equals the known/expected size
-	 */
-	private void testSizeStreamOptimized( UnmanagedDisk ud,
-										  long expectedDataSize )
-		throws Exception {
+		FlatDisk fd = new FlatDisk( ud, session );
+		store.put( fd );
 		
-		Session session = store.newSession();
-		StreamOptimizedDisk sod = new StreamOptimizedDisk( ud, session );
-		store.put( sod );
-		
-		ManagedDiskDescriptor mdd = new ManagedDiskDescriptor( ud.getID(),
-																session );
-		long szsod = store.size( mdd );
-		assertEquals( szsod, expectedDataSize );
+		Collection<ManagedDiskDescriptor> mdds2 = store.enumerate();
+		assertTrue( mdds2.size() == 1 );
 
-		sod.report( System.out );
+		// A duplicate put attempt...
+		FlatDisk fd2 = new FlatDisk( ud, session );
+		try {
+			store.put( fd2 );
+			fail();
+		} catch( RuntimeException re ) {
+		}
+		Collection<ManagedDiskDescriptor> mdds3 = store.enumerate();
+		assertTrue( mdds3.size() == mdds2.size() );
 	}
 }
 

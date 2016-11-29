@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.FilenameFilter;
 import java.io.FileInputStream;
+import java.io.PrintStream;
 import java.text.ParseException;
 import java.util.List;
 import java.util.UUID;
@@ -53,13 +54,14 @@ import org.apache.commons.logging.LogFactory;
 /**
  * @author Stuart Maclean
  *
- * A ManagedDisk is what a Tupelo store holds for 'whole disk images
- * captured'.  A ManagedDisk has a Header, at offset 0.  The
- * StreamOptimizedDisk variant also has a Header at end.  The
- * Header(s) include copies of the UnmanagedDisk diskID that
- * identifies the unmanaged data, plus a Session, and also a UUID for
- * create and parent.  The parent UUID is how we link one ManagedDisk
- * object to a previous capture of the same data.
+ * A ManagedDisk is the 'unit of work' for a Tupelo store, i.e. what a
+ * Tupelo store holds for 'whole disk image captured'.  A ManagedDisk
+ * has a Header, at offset 0.  The StreamOptimizedDisk variant also
+ * has a Header at end.  The Header(s) include copies of the
+ * UnmanagedDisk diskID that identifies the unmanaged data, plus a
+ * Session, and also a UUID for create and parent.  The parent UUID is
+ * how we link one ManagedDisk object to a previous capture of the
+ * same data.
  *
  * @see FlatDisk
  * @see StreamOptimizedDisk
@@ -121,6 +123,12 @@ abstract public class ManagedDisk {
 	
 	abstract public void setParentDigest( ManagedDiskDigest grainHashes );
 
+	/**
+	 * Expected that the parent-child association between ManagedDisks
+	 * is handled by the UUIDs held in the ManagedDisk.Header:
+	 *
+	 * child.parentUUID == parent.createUUID
+	 */
 	abstract public void setParent( ManagedDisk md );
 
 	abstract public void reportMetaData() throws IOException;
@@ -196,8 +204,20 @@ abstract public class ManagedDisk {
 		// LOOK: create once ?
 		return new ManagedDiskDescriptor( header.diskID, header.session );
 	}
-	
 
+	// Debug inspection of important fields in the Header
+	public void report( PrintStream ps ) {
+		ps.println( "Type: " + getClass() );
+		ManagedDiskDescriptor mdd = getDescriptor();
+		ps.println( "DiskID: " + mdd.getDiskID() );
+		ps.println( "Session: " + mdd.getSession().format() );
+		ps.println( "Size: " + size() );
+		ps.println( "UUID.Create: " + getUUIDCreate() );
+		ps.println( "UUID.Parent: " + getUUIDParent() );
+		ps.println( "Compression: " + getCompression() );
+		ps.println( "Param: " + paramString() );
+	}
+	
 	static public class Header {
 
 		/**
@@ -371,9 +391,21 @@ abstract public class ManagedDisk {
 
 	Header header;
 
-	// Only one of these is valid, never both
-	protected UnmanagedDisk unmanagedData;// for creating/writing a ManagedDisk
-	protected File managedData;		// for loading a ManagedDisk
+	/*
+	  Only one of these is valid, never both.  So one is non-null, the
+	  other null. When building (pushing to a store) a manageddisk,
+	  there is a link to the unmanagedDisk source.  When retrieving a
+	  Manageddisk from a store, there is the underlying file on disk
+	  (LOOK: latter only true for FilesystemStore.  What if
+	  Manageddisks stored in a DB??)
+	*/
+
+	// for creating/writing a ManagedDisk
+	protected UnmanagedDisk unmanagedData;
+
+	// for loading a ManagedDisk
+	protected File managedData;		
+
 	protected Log log;
 	
 	public enum DiskTypes { ERROR, FLAT, STREAMOPTIMIZED };

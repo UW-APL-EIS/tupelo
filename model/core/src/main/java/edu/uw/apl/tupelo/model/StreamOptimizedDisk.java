@@ -61,22 +61,28 @@ import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.io.FileUtils;
 
-
 import org.xerial.snappy.Snappy;
 
 /**
+ * @author Stuart Maclean
+ *
  * Named after VMWare's own 'stream optimized sparse extent', a way of
  * composing, transmitting and storing virtual machine hard disk
  * (.vmdk) data efficiently, and as used in .ovf files.
  *
  * @see https://www.vmware.com/support/developer/vddk/vmdk_50_technote.pdf
+ *
+ * The idea is to identify a sequence of consecutive sectors as a
+ * 'grain' and compress each grain.  Some metadata is then needed to
+ * identify grain boundaries.  A default compression algorithm
+ * (DEFLATE) can be altered via call to ManagedDisk.setCompression().
  */
 
 /**
    LOOK: can assert that unmanaged data size be whole number of
    SECTORS but that is all.  Store THAT number in header.capacity.
    Grains needed is then alignUp( capacity, grainSize ) * grainSize,
-   so min grains = 1 Then grainTables needed is alignUp( grainsNeeded,
+   so min grains = 1. Then grainTables needed is alignUp( grainsNeeded,
    numgtespergt ) * numgtespergt, so min grainTables also 1.
 
    size is always header.capacity * 512, and size v important since
@@ -190,7 +196,8 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		throws IOException {
 		super( null, managedData );
 		header = h;
-		//		grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
+
+		//grainSizeBytes = header.grainSize * Constants.SECTORLENGTH;
 		//grainTableCoverageBytes = grainSizeBytes * header.numGTEsPerGT;
 	}
 
