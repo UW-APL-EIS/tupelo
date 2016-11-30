@@ -57,6 +57,10 @@ import edu.uw.apl.tupelo.model.ZeroDisk;
  * Using known ManagedDisk implementations, specifically ZeroDisks,
  * and pushing instances to a filesys Store, we can assert exact
  * file size on disk of the Managed .tmd files.
+ *
+ * Note how the use of setUp and tearDown ensure a completely
+ * clean/empty store for each test, done by literally wiping away
+ * all files and directories under the store ROOT.
  */
 
 public class SizeTest extends junit.framework.TestCase {

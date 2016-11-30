@@ -83,9 +83,14 @@ import edu.uw.apl.tupelo.model.ProgressMonitor;
 import edu.uw.apl.tupelo.store.Store;
 
 /**
- * A client side (in the http sense that is) proxy for a Store.
+ * @author Stuart Maclean
+ *
+ * A client side (in the http sense that is) proxy for a Tupelo Store.
  * Connects to the http.server.StoreServlet.  Kind of like an RMI
- * stub.
+ * stub. This http client talks HTTP to a servlet which then forwards
+ * calls to a 'real' Store implementation, typically a FilesystemStore
+ *
+ * @see edu.uw.apl.tupelo.store.filesys.FilesystemStore
  */
 public class HttpStoreProxy implements Store {
 
@@ -220,7 +225,8 @@ public class HttpStoreProxy implements Store {
 	@Override
 	public void put( final ManagedDisk md ) throws IOException {
 		ManagedDiskDescriptor mdd = md.getDescriptor();
-		HttpPost p = new HttpPost( server + "disks/data/put/" + mdd.getDiskID() +
+		HttpPost p = new HttpPost( server + "disks/data/put/" +
+								   mdd.getDiskID() +
 								   "/" + mdd.getSession() );
 		log.debug( p.getRequestLine() );
 
@@ -294,7 +300,8 @@ public class HttpStoreProxy implements Store {
 	@Override
 	public ManagedDiskDigest digest( ManagedDiskDescriptor mdd )
 		throws IOException {
-		HttpGet g = new HttpGet( server + "disks/data/digest/" + mdd.getDiskID() +
+		HttpGet g = new HttpGet( server + "disks/data/digest/" +
+								 mdd.getDiskID() +
 								 "/" + mdd.getSession() );
 		//		g.addHeader( "Accept", "application/x-java-serialized-object" );
 		g.addHeader( "Accept", "text/plain" );
@@ -330,7 +337,8 @@ public class HttpStoreProxy implements Store {
 	@Override
 	public Collection<String> listAttributes( ManagedDiskDescriptor mdd )
 		throws IOException {
-		HttpGet g = new HttpGet( server + "disks/attr/list/" + mdd.getDiskID() +
+		HttpGet g = new HttpGet( server + "disks/attr/list/" +
+								 mdd.getDiskID() +
 								 "/" + mdd.getSession() );
 		g.addHeader( "Accept", "application/x-java-serialized-object" );
 	
@@ -354,7 +362,8 @@ public class HttpStoreProxy implements Store {
 	@Override
 	public byte[] getAttribute( ManagedDiskDescriptor mdd, String key )
 		throws IOException {
-		HttpGet g = new HttpGet( server + "disks/attr/get/" + mdd.getDiskID() +
+		HttpGet g = new HttpGet( server + "disks/attr/get/" +
+								 mdd.getDiskID() +
 								 "/" + mdd.getSession() + "/" + key  );
 		g.addHeader( "Accept", "application/x-java-serialized-object" );
 		log.debug( g.getRequestLine() );
@@ -377,7 +386,8 @@ public class HttpStoreProxy implements Store {
 	@Override
 	public void setAttribute( ManagedDiskDescriptor mdd,
 							  String key, byte[] value ) throws IOException {
-		HttpPost p = new HttpPost( server + "disks/attr/set/" + mdd.getDiskID() +
+		HttpPost p = new HttpPost( server + "disks/attr/set/" +
+								   mdd.getDiskID() +
 								   "/" + mdd.getSession() + "/" + key  );
 		log.debug( p.getRequestLine() );
 
@@ -389,14 +399,6 @@ public class HttpStoreProxy implements Store {
 		HttpResponse res = req.execute( p );
 	}
 
-	/*
-	  For the benefit of the fuse-based ManagedDiskFileSystem, so
-	  meaningless for a client-side http proxy.  Should never be
-	  called.
-	*/
-	public ManagedDisk locate( ManagedDiskDescriptor mdd ) {
-		throw new UnsupportedOperationException( "HttpStoreProxy.locate" );
-	}
 
 	@Override
 	public Collection<ManagedDiskDescriptor> enumerate() throws IOException {
@@ -419,6 +421,16 @@ public class HttpStoreProxy implements Store {
 		} finally {
 			ois.close();
 		}
+	}
+
+	/*
+	  For the benefit of the fuse-based ManagedDiskFileSystem, so
+	  meaningless for a client-side http proxy.  Should never be
+	  called.
+	*/
+	@Override
+	public ManagedDisk locate( ManagedDiskDescriptor mdd ) {
+		throw new UnsupportedOperationException( "HttpStoreProxy.locate" );
 	}
 
 	private String server;

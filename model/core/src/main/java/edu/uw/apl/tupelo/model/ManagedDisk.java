@@ -428,7 +428,10 @@ abstract public class ManagedDisk {
 	// Number of Grain Table Entries per Grain Table (the 'length' of a GT)
 	static public int NUMGTESPERGT = 512;
 
-	// As used by StreamoptimizedDisk and Store impls for digesting a managed disk
+	/*
+	  As used by StreamoptimizedDisk and Store impls for digesting
+	  a managed disk.
+	*/
 	static public final String DIGESTALGORITHM = "md5";
 	
 }

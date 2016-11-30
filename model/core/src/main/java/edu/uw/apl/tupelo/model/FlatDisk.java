@@ -54,9 +54,10 @@ import org.apache.commons.io.IOUtils;
  * The FlatDisk is thus really only for either testing or for
  * (infeasibly) small disk images.  Trying to store an 250GB physical
  * disk (e.g. /dev/sda) as a FlatDisk is asking for trouble.  Use
- * StreamOptimizedDisks instead!
+ * StreamOptimizedDisks instead, they compress the data!
  *
- * @see StreamOptimizedDisks
+ * @see ManagedDisk
+ * @see StreamOptimizedDisk
  */
 
 public class FlatDisk extends ManagedDisk {
@@ -68,8 +69,8 @@ public class FlatDisk extends ManagedDisk {
 		  A FlatDisk holds ALL its own data, so needs no parent.  This
 		  is true even if the managed data has ancestors. Since the
 		  managed data is simply appended to the Header as is, we have
-		  need for any 'grain' logic at all.  The only constraint
-		  is that it be a whole number of sectors.
+		  no need for any 'grain' logic at all.  The only constraint
+		  on a FlatDisk size is that it be a whole number of sectors.
 		*/
 		long len = unmanagedData.size();
 		checkSize( len );

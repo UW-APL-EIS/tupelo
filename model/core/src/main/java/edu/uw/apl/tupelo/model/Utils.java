@@ -42,6 +42,11 @@ import java.security.MessageDigest;
 
 import org.apache.commons.codec.binary.Hex;
 
+/**
+ * @author Stuart Maclean
+ *
+ * Various content-processing utilities, useful in unit tests mainly
+ */
 public class Utils {
 	
 	static public String md5sum( File f ) throws IOException {

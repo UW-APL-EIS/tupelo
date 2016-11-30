@@ -38,6 +38,8 @@ import java.io.IOException;
 import java.util.Random;
 
 /**
+ * @author Stuart Maclean
+ *
  * A test/fake implementation of an UnmanagedDisk.  This one is an
  * in-memory disk (needs no real backing disk) which produces random
  * data when read.  The 'random' nature does NOT give a new random
@@ -46,16 +48,20 @@ import java.util.Random;
  * larger buffer is needed, due to a larger length being read than we
  * had previously seen.
  *
- * The random stream produced is seeded by the Disk size, so Disks of
- * same size produce identical content.  Such disks cannot 'change
- * content' over time.
+ * So as long as all reads for data are the same, say 1MB, the same
+ * 1MB of data will be returned each time.  But, LOOK, the disk
+ * contents should not really be a function of how that content is
+ * read, which it is here.
+ *
+ * The random stream produced is seeded by the Disk size, so
+ * RandomDisks of same size produce identical content.  Such disks
+ * cannot 'change content' over time.
  */
 public class RandomDisk extends MemoryDisk {
 
 	/**
 	 * @param size byte count for this disk
 	 *
-	/**
 	 * @param speedBytesPerSecond - how many bytes can be
 	 * read per second from this fake disk.  Used to put realistic
 	 * load on read operations.

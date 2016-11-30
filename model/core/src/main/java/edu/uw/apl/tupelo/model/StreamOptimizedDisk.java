@@ -74,8 +74,20 @@ import org.xerial.snappy.Snappy;
  *
  * The idea is to identify a sequence of consecutive sectors as a
  * 'grain' and compress each grain.  Some metadata is then needed to
- * identify grain boundaries.  A default compression algorithm
- * (DEFLATE) can be altered via call to ManagedDisk.setCompression().
+ * identify grain boundaries.  Like VMware, we use a 2-dimensional
+ * metadata structure: a group of grains go in a 'grain table', and a
+ * group of such tables are laid out in a 'grain directory'.
+ *
+ * A default compression algorithm (DEFLATE) can be altered via call
+ * to ManagedDisk.setCompression().
+ *
+ * A tricky part of all this is when a Unmanaged disk size is not a
+ * whole number of the chosen grain size.  Imagine a (tiny!) disk of
+ * say 32K where a grain size is chosen as (the default) 64K.  We then
+ * have 32K of 'padding' that must be managed specially.  The padding
+ * size is recorded in the Header.
+ 
+ * @see ManagedDisk
  */
 
 /**
@@ -169,8 +181,8 @@ public class StreamOptimizedDisk extends ManagedDisk {
 		  The capacity is the number of grains required to store ALL
 		  the unmanagedData, even if that unmanagedData is not a whole
 		  number of grains, so capacity is a ceiling.  To derive the
-		  actual data size in bytes, we subtract the padding from the
-		  capacity.
+		  actual data size of the 'disk' in bytes, we subtract the
+		  padding from the capacity.
 		*/
 		long capacityGrains = lenAligned / Constants.SECTORLENGTH;
 		// Currently we have just a single sector header...
@@ -186,8 +198,11 @@ public class StreamOptimizedDisk extends ManagedDisk {
 
 	/**
 	  Called from ManagedDisk.readFrom(), store side.  Note how we
-	  postpone metadata read until needed (caller asks for
-	  an InputStream)
+	  postpone metadata read until needed (caller asks for an
+	  InputStream).  ManagedDisk itself reads the managedData file to
+	  load a Header, which enables it to infer the particular
+	  implementation (FlatDisk, Streamoptimizeddisk).  It then pass
+	  that Header to here.
 
 	  @see #readMetaData
 	  @see #getInputStream

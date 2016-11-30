@@ -67,3 +67,9 @@ Need 2 new features:
 1 compare disk over time - armour
 
 2 file hash search, a la STIX IOC
+
+
+
+
+*******************************************************************************
+

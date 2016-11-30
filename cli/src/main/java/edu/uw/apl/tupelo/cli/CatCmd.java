@@ -96,10 +96,8 @@ public class CatCmd extends Command {
 			return;
 		}
 
-		List<ManagedDiskDescriptor> sorted =
-			new ArrayList<ManagedDiskDescriptor>( mdds );
-		Collections.sort( sorted,
-						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
+		List<ManagedDiskDescriptor> sorted = new ArrayList<>( mdds );
+		Collections.sort( sorted, ManagedDiskDescriptor.DEFAULTCOMPARATOR );
 
 		ManagedDiskDescriptor mdd = sorted.get(index-1);
 		ManagedDisk md = store.locate( mdd );
@@ -111,6 +109,7 @@ public class CatCmd extends Command {
 				break;
 			System.out.write( ba, 0, nin );
 		}
+		is.close();
 		
 	}
 }
