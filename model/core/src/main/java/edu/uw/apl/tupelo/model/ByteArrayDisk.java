@@ -33,90 +33,53 @@
  */
 package edu.uw.apl.tupelo.model;
 
-import java.io.File;
-import java.io.FilterInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 
 /**
  * @author Stuart Maclean
  *
- * An implementation of {@link UnmanagedDisk} in which all reads are
- * from local memory.  Has no backing disk at all.  Useful only in
- * testing/demonstration of course.
+ * A fake 'disk' in which contents come from a byte[].  We maintain
+ * the byte[] by reference, enabling the user to mutate the data, just
+ * like a real disk contents would mutate over time.  Like all MemoryDisks,
+ * has no actual I/O operations at all.
  *
- * Is passed a 'read speed' at construction time, for the purposes of
- * realistic read speeds, comparable to disk I/O.
  *
- * @see UnmanagedDisk
- * @see ByteArrayDisk
- * @see RandomDisk
- * @see ZeroDisk
+ * Useful in testing Tupelo store puts, especially with parent links
+ * and the use of parent digests.  We build a single ByteArrayDisk,
+ * but mutate its content between Store.put operations:
+ *
+ * byte[] contents = new byte[N];
+ * ByteArrayDisk bad = new ByteArrayDisk( contents );
+ * ... store operations ...
+ *
+ * Mutate the unmanaged 'disk';
+ * contents[X] = 18; contents[Y] = 21; ....
+ *
+ * ... more store operations ...
+ *
+ * @see MemoryDisk
  */
- 
-abstract public class MemoryDisk implements UnmanagedDisk {
 
-	abstract protected InputStream inputStreamImpl() throws IOException;
+public class ByteArrayDisk extends MemoryDisk {
 
 	/**
 	 * @param readSpeedBytesPerSecond - how many bytes can be
 	 * read per second from this fake disk.  Used to put realistic
 	 * load on read operations. 200 MBs-1 is reasonable.
 	 */
-	protected MemoryDisk( long sizeBytes, long readSpeedBytesPerSecond ) {
-		this.size = sizeBytes;
-		this.speedBytesPerSecond = readSpeedBytesPerSecond;
-	}
-
-	@Override
-	public String getID() {
-		return getClass().getSimpleName() + "-" + size;
+	public ByteArrayDisk( byte[] data, long readSpeedBytesPerSecond ) {
+		super( data.length, readSpeedBytesPerSecond );
+		this.data = data;
 	}
 	
 	@Override
-	public long size() {
-		return size;
+	protected InputStream inputStreamImpl() throws IOException {
+		return new ByteArrayInputStream( data );
 	}
 
-	@Override
-	public File getSource() {
-		// Is NOT expected to be a File which exists!
-		return new File( getID() );
-	}
-
-	@Override
-	public InputStream getInputStream() throws IOException {
-		InputStream impl = inputStreamImpl();
-		return new SpeedLimitedInputStream( impl );
-	}
-	
-	/*
-	  SpeedLimitedInputStream imposes the readSpeed limit on read thru-put.
-	  It's a FilterInputStream where the 'filtering' is simply the delay
-	  after a read.  The actual data comes from whatever Inputstream
-	  is passed to its constructor.
-	*/
-	class SpeedLimitedInputStream extends FilterInputStream {
-		SpeedLimitedInputStream( InputStream is ) {
-			super( is );
-		}
-
-		@Override
-		public int read( byte[] b, int off, int len ) throws IOException {
-			int n = super.read( b, off, len );
-			if( n > 0 ) {
-				double delaySecs = n / (double)speedBytesPerSecond;
-				try {
-					Thread.sleep( (long)(delaySecs * 1000) );
-				} catch( InterruptedException ie ) {
-				}
-			}
-			return n;
-		}
-	}
-
-	protected final long size;
-	protected final long speedBytesPerSecond;
+	private final byte[] data;
 }
 
 // eof

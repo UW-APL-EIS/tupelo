@@ -40,53 +40,34 @@ import java.io.InputStream;
 /**
  * @author Stuart Maclean
  *
- * Testing read operations of {@link ZeroDisk}.  We use standard Unix
+ * Testing read operations of {@link ByteArrayDisk}.  We use standard Unix
  * operations like dd, md5sum for 'expected' values of read
  * operations.
  */
-public class ZeroDiskReadTest extends junit.framework.TestCase {
+public class ByteArrayDiskReadTest extends junit.framework.TestCase {
 
 	public void test_1G() {
-		long sz = 1024L * 1024 * 1024;
-		ZeroDisk zd = new ZeroDisk( sz, 1024*1024*128 );
-
-		// expected: dd if=/dev/zero bs=1M count=1K | md5sum
-		test( zd, sz, "cd573cfaace07e7949bc0c46028904ff" );
-	}
-
-	// A typical real disk size, 64GB
-	public void test_64G() {
-		long sz = 1024L * 1024 * 1024 * 64;
-		ZeroDisk zd = new ZeroDisk( sz, 1024*1024*128 );
+		byte[] contents = new byte[1024 * 1024 * 1024];
+		ByteArrayDisk bad = new ByteArrayDisk( contents, 1024*1024*128 );
 
 		/*
-		  Expected: dd if=/dev/zero bs=1M count=64K | md5sum
-		  Warning: this may take a while...
+		  Expected: dd if=/dev/zero bs=1M count=1K | md5sum
+		  Reading from /dev/zero valid since the contents array above
+		  is all zeros too...
 		*/
-		test( zd, sz, "385ada6546aba21094f60a1e920b421d" );
+		
+		test( bad, contents.length, "cd573cfaace07e7949bc0c46028904ff" );
 	}
 
-	// A typical real disk size, 128GB
-	public void _test_128G() {
-		long sz = 1024L * 1024 * 1024 * 128;
-		ZeroDisk zd = new ZeroDisk( sz, 1024*1024*128 );
-
-		/*
-		  Expected: dd if=/dev/zero bs=1M count=128K | md5sum
-		  Warning: this may take a while, took 5+ mins on rejewski
-		*/
-		test( zd, sz, "35a06e21f6bbb512aedac9671904ffd8" );
+	private void test( ByteArrayDisk bad, long sz, String expectedMD5 ) {
+		testRead2EOF( bad, sz );
+		testMD5Sum( bad, expectedMD5 );
 	}
 
-	private void test( ZeroDisk zd, long sz, String expectedMD5 ) {
-		//testRead2EOF( zd, sz );
-		testMD5Sum( zd, expectedMD5 );
-	}
-
-	private void testMD5Sum( ZeroDisk zd, String expected ) {
+	private void testMD5Sum( ByteArrayDisk bad, String expected ) {
 		String actual = null;
 		try {
-			InputStream is = zd.getInputStream();
+			InputStream is = bad.getInputStream();
 			actual = Utils.md5sum( is );
 			is.close();
 		} catch( IOException ioe ) {
@@ -95,11 +76,11 @@ public class ZeroDiskReadTest extends junit.framework.TestCase {
 		assertEquals( actual, expected );
 	}
 		
-	private void testRead2EOF( ZeroDisk zd, long expected ) {
+	private void testRead2EOF( ByteArrayDisk bad, long expected ) {
 		byte[] buf = new byte[1024*1024];
 		long actual = 0;
 		try {
-			InputStream is = zd.getInputStream();
+			InputStream is = bad.getInputStream();
 			while( true ) {
 				int nin = is.read( buf, 0, buf.length );
 				if( nin == -1 )

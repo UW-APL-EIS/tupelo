@@ -37,25 +37,25 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.util.Random;
 
+import org.apache.commons.io.input.NullInputStream;
+
 /**
  * @author Stuart Maclean
  *
  * A test/fake implementation of an UnmanagedDisk.  This one is an
  * in-memory disk (needs no real backing disk) which produces random
  * data when read.  The 'random' nature does NOT give a new random
- * buffer for each read, it just re-uses the same buffer.  The only
- * way the local buffer is filled with fresh 'random' data is when a
- * larger buffer is needed, due to a larger length being read than we
- * had previously seen.
+ * buffer for each read, it just re-uses the same buffer of say 16MB
+ * over and over.  The 'randomness' of the data is then confined to that
+ * one local buffer, which is 're-sampled' over and over.
  *
- * So as long as all reads for data are the same, say 1MB, the same
- * 1MB of data will be returned each time.  But, LOOK, the disk
- * contents should not really be a function of how that content is
- * read, which it is here.
- *
- * The random stream produced is seeded by the Disk size, so
+ * By default, the random stream produced is seeded by the Disk size, so
  * RandomDisks of same size produce identical content.  Such disks
- * cannot 'change content' over time.
+ * cannot 'change content' over time.  Can also supply a seed.
+ *
+ * Uses commons.io's NullInputStream, a nice class which already takes
+ * care of the moving 'position' (file pointer) in the data as the
+ * user calls read (and perhaps skip)
  */
 public class RandomDisk extends MemoryDisk {
 
@@ -66,48 +66,48 @@ public class RandomDisk extends MemoryDisk {
 	 * read per second from this fake disk.  Used to put realistic
 	 * load on read operations.
 	 */
-	public RandomDisk( long size, long speedBytesPerSecond ) {
-		this( size, speedBytesPerSecond,
-			  RandomDisk.class.getSimpleName() + "-" + size );
+	public RandomDisk( long size, long readSpeedBytesPerSecond ) {
+		this( size, readSpeedBytesPerSecond, size );
 	}
-	
-	public RandomDisk( long size, long speedBytesPerSecond, String id ) {
-		super( size, speedBytesPerSecond, id );
+
+	public RandomDisk( long size, long readSpeedBytesPerSecond, long seed ) {
+		super( size, readSpeedBytesPerSecond );
+		this.seed = seed;
 	}
 	
 	@Override
-	public InputStream getInputStream() throws IOException {
+	protected InputStream inputStreamImpl() throws IOException {
 		return new RandomDiskInputStream();
 	}
 
-	class RandomDiskInputStream extends MemoryDiskInputStream {
+	class RandomDiskInputStream extends NullInputStream {
 		RandomDiskInputStream() {
-			buffer = new byte[0];
-			rng = new Random( RandomDisk.this.size );
+			super( size, false, false );
+			Random rng = new Random( seed );
+			buffer = new byte[1024*1024*16];
+			for( int i = 0; i < buffer.length; i++ )
+				buffer[i] = (byte)rng.nextInt();
 		}
-		
-		/**
-		 * @param actual - NOT the len that the caller passed, but
-		 * a computed maximum byte count from
-		 * {@link MemoryDisk#read(byte[],int,int)}
-		 */
+
 		@Override
-		protected int readImpl( byte[] b, int off, int actual )
-			throws IOException {
-			
-			if( actual > buffer.length ) {
-				// LOOK: could blow up, what if actual=MaxInt ??
-				buffer = new byte[actual];
-				for( int i = 0; i < buffer.length; i++ )
-					buffer[i] = (byte)rng.nextInt();
-			}
-			System.arraycopy( buffer, 0, b, off, actual );
-			return actual;
+		protected int processByte() {
+			int indx = (int)(getPosition() % buffer.length);
+			return buffer[indx] & 0xff;
 		}
 		
-		private byte[] buffer;
-		private final Random rng;
+		@Override
+		protected void processBytes( byte[] ba, int offset, int length ) {
+			long p = getPosition();
+			for( int i = 0; i < length; i++ ) {
+				int indx = (int)( (p + i) % buffer.length );
+				ba[offset+i] = buffer[indx];
+			}
+		}
+		
+		private final byte[] buffer;
 	}
+
+	private final long seed;
 }
 
 // eof

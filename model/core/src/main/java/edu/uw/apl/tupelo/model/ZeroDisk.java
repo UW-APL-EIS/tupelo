@@ -36,6 +36,8 @@ package edu.uw.apl.tupelo.model;
 import java.io.InputStream;
 import java.io.IOException;
 
+import org.apache.commons.io.input.NullInputStream;
+
 /**
  * @author Stuart Maclean
  *
@@ -43,6 +45,11 @@ import java.io.IOException;
  * returns zeroes. A variation of {@link MemoryDisk}, since has no
  * disk-backed data at all.
  *
+ * Uses commons.io's NullInputStream, a nice class which already takes
+ * care of the moving 'position' (file pointer) in the data as the
+ * user calls read (and perhaps skip)
+ *
+ * @see ByteArrayDisk
  * @see RandomDisk
  * @see MemoryDisk
  */
@@ -55,69 +62,24 @@ public class ZeroDisk extends MemoryDisk {
 	 * load on read operations. 200 MBs-1 is reasonable.
 	 */
 	public ZeroDisk( long sizeBytes, long readSpeedBytesPerSecond ) {
-		this( sizeBytes, readSpeedBytesPerSecond,
-			  ZeroDisk.class.getSimpleName() + "-" + sizeBytes );
-	}
-	
-	/**
-	 * @param speedBytesPerSecond - how many bytes can be read per second
-	 * from this fake disk.  Used to put realistic load on read
-	 * operations.
-	 */
-	public ZeroDisk( long sizeBytes, long speedBytesPerSecond, String id ) {
-		super( sizeBytes, speedBytesPerSecond, id );
+		super( sizeBytes, readSpeedBytesPerSecond );
 	}
 	
 	@Override
-	public InputStream getInputStream() throws IOException {
+	protected InputStream inputStreamImpl() throws IOException {
 		return new ZeroInputStream();
 	}
 	
-	class ZeroInputStream extends MemoryDiskInputStream {
+	class ZeroInputStream extends NullInputStream {
 		ZeroInputStream() {
-			buffer = new byte[0];
+			super( size, false, false );
 		}
 		
-		/**
-		 * @param len - NOT the len that the caller passed in to the
-		 * original read, but a computed maximum byte count from
-		 * {@link MemoryDisk#read(byte[],int,int)}
-		 *
-		 * We just need to fill b with len zeros, starting at offset
-		 * off.  We could just loop over len, just a System.arraycopy
-		 * is likely faster. But that implies we HAVE a local buffer
-		 * to copy FROM.  We guard against that buffer needing to be
-		 * too huge, say 2GB!
-		 */
 		@Override
-		protected int readImpl( byte[] b, int off, int len )
-			throws IOException {
-				
-			if( len > buffer.length && len < MAXBUFFERSIZE ) {
-				resize( len );
-			}
-			populate( b, off, len );
-			return len;
+		protected void processBytes( byte[] ba, int offset, int length ) {
+			for( int i = 0; i < length; i++ )
+				ba[offset+i] = 0;
 		}
-
-		private void resize( int len ) {
-			buffer = new byte[len];
-		}
-
-		private void populate( byte[] b, int off, int len ) {
-			int total = 0;
-			int remaining = len - total;
-			while( remaining >= buffer.length ) {
-				System.arraycopy( buffer, 0, b, off+total, buffer.length );
-				total += buffer.length;
-				remaining -= buffer.length;
-			}
-			System.arraycopy( buffer, 0, b, off+total, remaining );
-		}
-
-		private byte[] buffer;
-
-		static private final int MAXBUFFERSIZE = 1 << 20;
 	}
 }
 
