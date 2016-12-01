@@ -59,12 +59,16 @@ import org.apache.commons.io.input.NullInputStream;
  */
 public class RandomDisk extends MemoryDisk {
 
+	public RandomDisk( long size ) {
+		this( size, 0, size );
+	}
+
 	/**
 	 * @param size byte count for this disk
 	 *
 	 * @param speedBytesPerSecond - how many bytes can be
 	 * read per second from this fake disk.  Used to put realistic
-	 * load on read operations.
+	 * load on read operations. Can be 0.
 	 */
 	public RandomDisk( long size, long readSpeedBytesPerSecond ) {
 		this( size, readSpeedBytesPerSecond, size );

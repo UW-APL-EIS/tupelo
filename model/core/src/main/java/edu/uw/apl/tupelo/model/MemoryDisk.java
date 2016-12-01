@@ -46,7 +46,8 @@ import java.io.IOException;
  * testing/demonstration of course.
  *
  * Is passed a 'read speed' at construction time, for the purposes of
- * realistic read speeds, comparable to disk I/O.
+ * realistic read speeds, comparable to disk I/O.  If this read speed,
+ * we add NO delays to reads.
  *
  * @see UnmanagedDisk
  * @see ByteArrayDisk
@@ -58,14 +59,19 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 
 	abstract protected InputStream inputStreamImpl() throws IOException;
 
+	protected MemoryDisk( long sizeBytes ) {
+		this( sizeBytes, 0 );
+	}
+	
 	/**
 	 * @param readSpeedBytesPerSecond - how many bytes can be
 	 * read per second from this fake disk.  Used to put realistic
-	 * load on read operations. 200 MBs-1 is reasonable.
+	 * load on read operations. 200 MBs-1 is reasonable.  If 0,
+	 * no limit is imposed on read speed.
 	 */
 	protected MemoryDisk( long sizeBytes, long readSpeedBytesPerSecond ) {
 		this.size = sizeBytes;
-		this.speedBytesPerSecond = readSpeedBytesPerSecond;
+		this.readSpeedBytesPerSecond = readSpeedBytesPerSecond;
 	}
 
 	@Override
@@ -87,7 +93,10 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 	@Override
 	public InputStream getInputStream() throws IOException {
 		InputStream impl = inputStreamImpl();
-		return new SpeedLimitedInputStream( impl );
+		if( readSpeedBytesPerSecond > 0 )
+			return new SpeedLimitedInputStream( impl );
+		// If NOT limiting read speed, simply give the caller the impl...
+		return impl;
 	}
 	
 	/*
@@ -105,7 +114,7 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 		public int read( byte[] b, int off, int len ) throws IOException {
 			int n = super.read( b, off, len );
 			if( n > 0 ) {
-				double delaySecs = n / (double)speedBytesPerSecond;
+				double delaySecs = n / (double)readSpeedBytesPerSecond;
 				try {
 					Thread.sleep( (long)(delaySecs * 1000) );
 				} catch( InterruptedException ie ) {
@@ -116,7 +125,7 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 	}
 
 	protected final long size;
-	protected final long speedBytesPerSecond;
+	private final long readSpeedBytesPerSecond;
 }
 
 // eof

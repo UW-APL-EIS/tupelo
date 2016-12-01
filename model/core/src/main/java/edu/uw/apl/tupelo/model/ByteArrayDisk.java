@@ -64,6 +64,10 @@ import java.io.IOException;
 
 public class ByteArrayDisk extends MemoryDisk {
 
+	public ByteArrayDisk( byte[] data ) {
+		this( data, 0 );
+	}
+	
 	/**
 	 * @param readSpeedBytesPerSecond - how many bytes can be
 	 * read per second from this fake disk.  Used to put realistic

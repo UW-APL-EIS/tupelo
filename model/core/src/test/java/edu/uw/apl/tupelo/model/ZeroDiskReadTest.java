@@ -48,6 +48,14 @@ public class ZeroDiskReadTest extends junit.framework.TestCase {
 
 	public void test_1G() {
 		long sz = 1024L * 1024 * 1024;
+		ZeroDisk zd = new ZeroDisk( sz );
+
+		// expected: dd if=/dev/zero bs=1M count=1K | md5sum
+		test( zd, sz, "cd573cfaace07e7949bc0c46028904ff" );
+	}
+
+	public void test_1G_SpeedLimited() {
+		long sz = 1024L * 1024 * 1024;
 		ZeroDisk zd = new ZeroDisk( sz, 1024*1024*128 );
 
 		// expected: dd if=/dev/zero bs=1M count=1K | md5sum
@@ -57,7 +65,7 @@ public class ZeroDiskReadTest extends junit.framework.TestCase {
 	// A typical real disk size, 64GB
 	public void test_64G() {
 		long sz = 1024L * 1024 * 1024 * 64;
-		ZeroDisk zd = new ZeroDisk( sz, 1024*1024*128 );
+		ZeroDisk zd = new ZeroDisk( sz );
 
 		/*
 		  Expected: dd if=/dev/zero bs=1M count=64K | md5sum

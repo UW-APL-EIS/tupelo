@@ -56,6 +56,10 @@ import org.apache.commons.io.input.NullInputStream;
 
 public class ZeroDisk extends MemoryDisk {
 
+	public ZeroDisk( long sizeBytes ) {
+		super( sizeBytes );
+	}
+	
 	/**
 	 * @param readSpeedBytesPerSecond - how many bytes can be
 	 * read per second from this fake disk.  Used to put realistic
