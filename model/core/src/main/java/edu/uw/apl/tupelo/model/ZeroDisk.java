@@ -79,23 +79,45 @@ public class ZeroDisk extends MemoryDisk {
 		}
 		
 		/**
-		 * @param actual - NOT the len that the caller passed, but
-		 * a computed maximum byte count from
+		 * @param len - NOT the len that the caller passed in to the
+		 * original read, but a computed maximum byte count from
 		 * {@link MemoryDisk#read(byte[],int,int)}
+		 *
+		 * We just need to fill b with len zeros, starting at offset
+		 * off.  We could just loop over len, just a System.arraycopy
+		 * is likely faster. But that implies we HAVE a local buffer
+		 * to copy FROM.  We guard against that buffer needing to be
+		 * too huge, say 2GB!
 		 */
 		@Override
-		protected int readImpl( byte[] b, int off, int actual )
+		protected int readImpl( byte[] b, int off, int len )
 			throws IOException {
 				
-			if( actual > buffer.length ) {
-				// LOOK: could blow up, what if actual=MaxInt ??
-				buffer = new byte[actual];
+			if( len > buffer.length && len < MAXBUFFERSIZE ) {
+				resize( len );
 			}
-			System.arraycopy( buffer, 0, b, off, actual );
-			return actual;
+			populate( b, off, len );
+			return len;
+		}
+
+		private void resize( int len ) {
+			buffer = new byte[len];
+		}
+
+		private void populate( byte[] b, int off, int len ) {
+			int total = 0;
+			int remaining = len - total;
+			while( remaining >= buffer.length ) {
+				System.arraycopy( buffer, 0, b, off+total, buffer.length );
+				total += buffer.length;
+				remaining -= buffer.length;
+			}
+			System.arraycopy( buffer, 0, b, off+total, remaining );
 		}
 
 		private byte[] buffer;
+
+		static private final int MAXBUFFERSIZE = 1 << 20;
 	}
 }
 

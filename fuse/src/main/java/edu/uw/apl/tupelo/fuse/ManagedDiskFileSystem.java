@@ -61,6 +61,8 @@ import edu.uw.apl.tupelo.model.Session;
 import edu.uw.apl.tupelo.store.Store;
 
 /**
+ * @author Stuart Maclean
+ *
  * Expose the contents of a Tupelo store as a <em>filesystem</em>,
  * suitable for inspection by e.g. <code>md5sum, dd, mmls, fls,
  * etc</code>.  Each file exposed is a <em>device file</em> rather

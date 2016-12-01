@@ -1257,8 +1257,8 @@ public class StreamOptimizedDisk extends ManagedDisk {
 	}
 
 	private ManagedDiskDigest parentDigest;
-	
 	private ManagedDisk parent;
+
 	private long grainSizeBytes, grainTableCoverageBytes;
 	private byte[] zeroGrain;
 	private byte[] zeroGrainTable;

@@ -47,6 +47,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
+ * @author Stuart Maclean
+ *
  * Used for monitoring how ManagedDisk 'transfer' operations are
  * proceeding.  By transfer we mean the act of transferring unmanaged
  * data (a DiskImage, PhysicalDisk, VirtualDisk) to managed data,
@@ -64,6 +66,11 @@ import org.apache.commons.logging.LogFactory;
  * implementations have to do is implement {@link #readFromWriteTo},
  * and use the supplied InputStream to read unmanaaged data from, and
  * not their own unmanagedData.getInputStream().
+ *
+ * This is the same basic ideas as Java Swing's own
+ * ProgressMonitorInputStream, but without the enforced Swing UI.
+ *
+ * @see javax.swing.ProgressMonitorInputStream
  */
 
 public class ProgressMonitor {
