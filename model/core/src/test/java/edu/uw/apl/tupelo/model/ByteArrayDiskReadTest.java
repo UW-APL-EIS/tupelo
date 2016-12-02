@@ -47,7 +47,21 @@ import java.io.InputStream;
 
 public class ByteArrayDiskReadTest extends junit.framework.TestCase {
 
+	static final String ONEGIGZEROSMD5 = "cd573cfaace07e7949bc0c46028904ff";
 	public void test_1G() {
+		byte[] contents = new byte[1024 * 1024 * 1024];
+		ByteArrayDisk bad = new ByteArrayDisk( contents );
+
+		/*
+		  Expected: dd if=/dev/zero bs=1M count=1K | md5sum
+		  Reading from /dev/zero valid since the contents array above
+		  is all zeros too...
+		*/
+		
+		test( bad, contents.length, ONEGIGZEROSMD5 );
+	}
+
+	public void test_1G_SpeedLimited() {
 		byte[] contents = new byte[1024 * 1024 * 1024];
 		ByteArrayDisk bad = new ByteArrayDisk( contents, 1024*1024*128 );
 
@@ -57,7 +71,7 @@ public class ByteArrayDiskReadTest extends junit.framework.TestCase {
 		  is all zeros too...
 		*/
 		
-		test( bad, contents.length, "cd573cfaace07e7949bc0c46028904ff" );
+		test( bad, contents.length, ONEGIGZEROSMD5 );
 	}
 
 	private void test( ByteArrayDisk bad, long sz, String expectedMD5 ) {
