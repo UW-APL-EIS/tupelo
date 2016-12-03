@@ -86,32 +86,46 @@ public class RandomDisk extends MemoryDisk {
 
 	class RandomDiskInputStream extends NullInputStream {
 		RandomDiskInputStream() {
+			
 			super( size, false, false );
 			Random rng = new Random( seed );
-			buffer = new byte[1024*1024*16];
-			for( int i = 0; i < buffer.length; i++ )
-				buffer[i] = (byte)rng.nextInt();
+			buffer = new byte[BUFFERLENGTH];
+			rng.nextBytes( buffer );
 		}
 
-		@Override
+	   	@Override
 		protected int processByte() {
-			int indx = (int)(getPosition() % buffer.length);
-			return buffer[indx] & 0xff;
+			/*
+			  The read has already been done, and position moved
+			  along by 1
+			*/
+			long indx = getPosition() - 1;
+			return buffer[(int)(indx % buffer.length)] & 0xff;
 		}
 		
 		@Override
 		protected void processBytes( byte[] ba, int offset, int length ) {
-			long p = getPosition();
+			if( false )
+				return;
+			
+			/*
+			  The read has already been done, and position moved
+			  along by length bytes
+			*/
+			long lo = getPosition() - length;
 			for( int i = 0; i < length; i++ ) {
-				int indx = (int)( (p + i) % buffer.length );
+				int indx = (int)((lo + i) % buffer.length);
 				ba[offset+i] = buffer[indx];
 			}
 		}
 		
 		private final byte[] buffer;
+
 	}
 
 	private final long seed;
+
+	static final int BUFFERLENGTH = 1 << 24;
 }
 
 // eof
