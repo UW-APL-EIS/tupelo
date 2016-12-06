@@ -65,6 +65,26 @@ public class Utils {
 	
 	static public String md5sum( InputStream is, int blockSize )
 		throws IOException {
+		MessageDigest md = null;
+		try {
+			md = MessageDigest.getInstance( "md5" );
+		} catch( Exception e ) {
+			// never
+		}
+		byte[] ba = new byte[blockSize];
+		while( true ) {
+			int nin = is.read( ba );
+			if( nin < 0 )
+				break;
+			md.update( ba, 0, nin );
+		}
+		byte[] hash = md.digest();
+		return Hex.encodeHexString( hash );
+	}
+
+	// Using a DigestInputStream (somehow slower??)
+	static public String md5sumDIS( InputStream is, int blockSize )
+		throws IOException {
 		MessageDigest md5 = null;
 		try {
 			md5 = MessageDigest.getInstance( "md5" );

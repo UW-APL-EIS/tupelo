@@ -37,6 +37,8 @@ import java.io.File;
 import java.io.FilterInputStream;
 import java.io.InputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Stuart Maclean
@@ -72,6 +74,7 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 	protected MemoryDisk( long sizeBytes, long readSpeedBytesPerSecond ) {
 		this.size = sizeBytes;
 		this.readSpeedBytesPerSecond = readSpeedBytesPerSecond;
+		mutations = new ArrayList<>();
 	}
 
 	@Override
@@ -90,6 +93,24 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 		return new File( getID() );
 	}
 
+	public void set( long offset, byte[] bs ) {
+		if( offset + bs.length > size )
+			throw new IllegalArgumentException( getID() +
+												": region extends past size: " +
+												offset+ bs.length );
+		mutations.add( new Region( offset, bs ) );
+	}
+
+	protected int mutatedValue( long offset ) {
+		for( Region r : mutations ) {
+			if( offset >= r.offset &&
+				offset < r.offset + r.data.length ) {
+				return r.data[(int)(offset - r.offset)] & 0xff;
+			}
+		}
+		return -1;
+	}
+	
 	@Override
 	public InputStream getInputStream() throws IOException {
 		InputStream impl = inputStreamImpl();
@@ -97,6 +118,15 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 			return new SpeedLimitedInputStream( impl );
 		// If NOT limiting read speed, simply give the caller the impl...
 		return impl;
+	}
+
+	static class Region {
+		Region( long offset, byte[] bs ) {
+			this.offset = offset;
+			this.data = bs;
+		}
+		final long offset;
+		final byte[] data;
 	}
 	
 	/*
@@ -126,6 +156,7 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 
 	protected final long size;
 	private final long readSpeedBytesPerSecond;
+	protected final List<Region> mutations;
 }
 
 // eof

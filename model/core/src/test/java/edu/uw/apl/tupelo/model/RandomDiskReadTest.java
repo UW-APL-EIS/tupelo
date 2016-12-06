@@ -50,9 +50,11 @@ import java.util.Vector;
  */
 public class RandomDiskReadTest extends junit.framework.TestCase {
 
-	static String md5RndBytes( int len, long seed ) throws IOException {
+	static String md5RndBytes( long len, long seed ) throws IOException {
+		if( len > RandomDisk.BUFFERLENGTH )
+			return md5RndBytesSequenced( len, seed );
 		Random r = new Random( seed );
-		byte[] ba = new byte[len];
+		byte[] ba = new byte[(int)len];
 		r.nextBytes( ba ); 
 		ByteArrayInputStream bais = new ByteArrayInputStream( ba );
 		String md5 = Utils.md5sum( bais );
@@ -68,12 +70,12 @@ public class RandomDiskReadTest extends junit.framework.TestCase {
 		Random r = new Random( seed );
 		byte[] ba = new byte[RandomDisk.BUFFERLENGTH];
 		r.nextBytes( ba );
-		Vector<InputStream> iss = new Vector<InputStream>();
+		Vector<InputStream> iss = new Vector<>( chunks );
 		for( int i = 1; i <= chunks; i++ )
 			iss.add( new ByteArrayInputStream( ba ) );
 		Enumeration<InputStream> e = iss.elements();
 		SequenceInputStream sis = new SequenceInputStream( e );
-		String md5 = Utils.md5sum( sis );
+		String md5 = Utils.md5sum( sis, _64M );
 		sis.close();
 		return md5;
 	}
@@ -92,19 +94,24 @@ public class RandomDiskReadTest extends junit.framework.TestCase {
 		test( rd, sz, md5 );
 	}
 
-	// Bigger than RandomDisk.BUFFERLENGTH, need md5RndBytesSequenced
 	public void test_64M() throws IOException {
 		long sz = 1024L * 1024 * 64;
 		RandomDisk rd = new RandomDisk( sz );
-		String md5 = md5RndBytesSequenced( sz, sz );
+		String md5 = md5RndBytes( sz, sz );
 		test( rd, sz, md5 );
 	}
 
-	// Bigger than RandomDisk.BUFFERLENGTH, need md5RndBytesSequenced
 	public void test_2GB() throws IOException {
 		long sz = 1024L * 1024 * 1024 * 2;
 		RandomDisk rd = new RandomDisk( sz );
-		String md5 = md5RndBytesSequenced( sz, sz );
+		String md5 = md5RndBytes( sz, sz );
+		test( rd, sz, md5 );
+	}
+
+	public void test_32GB() throws IOException {
+		long sz = 1024L * 1024 * 1024 * 32;
+		RandomDisk rd = new RandomDisk( sz );
+		String md5 = md5RndBytes( sz, sz );
 		test( rd, sz, md5 );
 	}
 
@@ -121,25 +128,12 @@ public class RandomDiskReadTest extends junit.framework.TestCase {
 	}
 
 	private void test( RandomDisk rd, long sz, String md5Expected ) {
+		//testRead2EOF( rd, sz );
 		testMD5Sum( rd, md5Expected );
-		testRead2EOF( rd, sz );
 	}
-
-	private void testMD5Sum( RandomDisk rd, String expected ) {
-		String actual = null;
-		try {
-			InputStream is = rd.getInputStream();
-			actual = Utils.md5sum( is );
-			is.close();
-		} catch( IOException ioe ) {
-			fail();
-		}
-		assertEquals( actual, expected );
-	}
-		
 
 	private void testRead2EOF( RandomDisk rd, long expected ) {
-		byte[] buf = new byte[1024*1024*128];
+		byte[] buf = new byte[_128M];
 		long actual = 0;
 		try {
 			InputStream is = rd.getInputStream();
@@ -155,6 +149,24 @@ public class RandomDiskReadTest extends junit.framework.TestCase {
 		}
 		assertEquals( actual, expected );
 	}
+
+	private void testMD5Sum( RandomDisk rd, String expected ) {
+		String actual = null;
+		try {
+			InputStream is = rd.getInputStream();
+			actual = Utils.md5sum( is, _64M );
+			is.close();
+		} catch( IOException ioe ) {
+			fail();
+		}
+		assertEquals( actual, expected );
+	}
+
+	static final int _16M = 1 << 24;
+
+	static final int _64M = 1 << 26;
+
+	static final int _128M = 1 << 27;
 }
 
 // eof

@@ -100,23 +100,33 @@ public class RandomDisk extends MemoryDisk {
 			  along by 1
 			*/
 			long indx = getPosition() - 1;
-			return buffer[(int)(indx % buffer.length)] & 0xff;
+			int m = mutatedValue( indx );
+			return m > -1 ? m : value( indx ) & 0xff;
 		}
 		
 		@Override
 		protected void processBytes( byte[] ba, int offset, int length ) {
-			if( false )
-				return;
-			
+			System.err.println( length + " " + getPosition() );
 			/*
 			  The read has already been done, and position moved
 			  along by length bytes
 			*/
 			long lo = getPosition() - length;
 			for( int i = 0; i < length; i++ ) {
-				int indx = (int)((lo + i) % buffer.length);
-				ba[offset+i] = buffer[indx];
+				int m = mutatedValue( lo+i );
+				if( m > -1 && false )
+					System.err.println( (lo+i)  + " " + m );
+				ba[offset+i] = (m > -1) ? (byte)m : value( lo+i );
 			}
+			System.err.println( "'" + length + " " + getPosition() );
+		}
+
+		private byte value( long indx ) {
+			/*
+			  buffer.length MUST be 2^n, we are optimising the A % B
+			  operation as A & (B-1), which requires B is 2^N.
+			*/
+			return buffer[(int)(indx & (buffer.length-1))];
 		}
 		
 		private final byte[] buffer;

@@ -37,6 +37,8 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 
+import org.apache.commons.io.input.NullInputStream;
+
 /**
  * @author Stuart Maclean
  *
@@ -44,7 +46,6 @@ import java.io.IOException;
  * the byte[] by reference, enabling the user to mutate the data, just
  * like a real disk contents would mutate over time.  Like all MemoryDisks,
  * has no actual I/O operations at all.
- *
  *
  * Useful in testing Tupelo store puts, especially with parent links
  * and the use of parent digests.  We build a single ByteArrayDisk,
@@ -80,7 +81,38 @@ public class ByteArrayDisk extends MemoryDisk {
 	
 	@Override
 	protected InputStream inputStreamImpl() throws IOException {
-		return new ByteArrayInputStream( data );
+		return new LocalInputStream();
+	}
+
+	// ByteArrayInputStream obviously taken by java.io ;)
+	class LocalInputStream extends NullInputStream {
+		LocalInputStream() {
+			super( size, false, false );
+		}
+
+	   	@Override
+		protected int processByte() {
+			/*
+			  The read has already been done, and position moved
+			  along by 1
+			*/
+			long indx = getPosition() - 1;
+			int m = mutatedValue( indx );
+			return m > -1 ? m : data[(int)indx];
+		}
+		
+		@Override
+		protected void processBytes( byte[] ba, int offset, int length ) {
+			/*
+			  The read has already been done, and position moved
+			  along by length bytes
+			*/
+			long lo = getPosition() - length;
+			for( int i = 0; i < length; i++ ) {
+				int m = mutatedValue( lo+i );
+				ba[offset+i] = (m > -1) ? (byte)m : data[(int)(lo+i)];
+			}
+		}
 	}
 
 	private final byte[] data;

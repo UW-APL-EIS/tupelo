@@ -78,11 +78,29 @@ public class ZeroDisk extends MemoryDisk {
 		ZeroInputStream() {
 			super( size, false, false );
 		}
+
+	   	@Override
+		protected int processByte() {
+			/*
+			  The read has already been done, and position moved
+			  along by 1
+			*/
+			long indx = getPosition() - 1;
+			int m = mutatedValue( indx );
+			return m > -1 ? m : 0;
+		}
 		
 		@Override
 		protected void processBytes( byte[] ba, int offset, int length ) {
-			for( int i = 0; i < length; i++ )
-				ba[offset+i] = 0;
+			/*
+			  The read has already been done, and position moved
+			  along by length bytes
+			*/
+			long lo = getPosition() - length;
+			for( int i = 0; i < length; i++ ) {
+				int m = mutatedValue( lo+i );
+				ba[offset+i] = (m > -1) ? (byte)m : 0;
+			}
 		}
 	}
 }
