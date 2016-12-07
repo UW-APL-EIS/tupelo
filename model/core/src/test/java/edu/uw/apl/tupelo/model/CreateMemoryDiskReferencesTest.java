@@ -88,6 +88,7 @@ public class CreateMemoryDiskReferencesTest extends junit.framework.TestCase {
 		r.nextBytes( bs );
 
 		int chunks = (int)(size / extent);
+		System.out.println( f + ": " + chunks + " extents" );
 		FileOutputStream fos = new FileOutputStream( f );
 		BufferedOutputStream bos = new BufferedOutputStream( fos,
 															 1 << 20 );

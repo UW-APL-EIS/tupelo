@@ -70,6 +70,16 @@ public class MutatedMemoryDisksTest extends junit.framework.TestCase {
 		test( md, sz, "c836f772d30ec3fbaa3ff436eafdeee3" );
 	}
 
+
+	// rnd21_30MD1 is 1GB of randoms seeded 21
+	public void test_rnd21_30() throws Exception {
+		long sz = 1024L * 1024 * 1024;
+		MemoryDisk md = new RandomDisk( sz, (int)sz, 21 );
+		
+		// expected: md5sum rnd21_30
+		test( md, sz, "29c48ad4bcdc4a7d2522b7dc7e7167e8" );
+	}
+
 	/*
 	  MMD2 is 1GB of randoms with seed=21, then mutated by 1 MB of
 	  ones at offset 8MB
@@ -78,11 +88,11 @@ public class MutatedMemoryDisksTest extends junit.framework.TestCase {
 		byte[] ba = loadMutFile( new File( "ones_20" ) );
 
 		long sz = 1024L * 1024 * 1024;
-		MemoryDisk md = new RandomDisk( sz, 0, 21 );
+		MemoryDisk md = new RandomDisk( sz, (int)sz, 21 );
 		md.set( 8 * (1 << 20), ba );
 		
 		// expected: md5sum mmd2.dat
-		test( md, sz, "c03f485b449346b5957756214c9b34b8" );
+		test( md, sz, "d048586d6e348e13c1bca8b4e635a017" );
 	}
 
 	/*
@@ -95,12 +105,12 @@ public class MutatedMemoryDisksTest extends junit.framework.TestCase {
 		byte[] zeros = new byte[1<<24];
 		long sz = 1024L * 1024 * 1024;
 		
-		MemoryDisk md = new RandomDisk( sz, 0, 21 );
+		MemoryDisk md = new RandomDisk( sz, (int)sz, 21 );
 		md.set( 8  * (1 << 20), ones );
 		md.set( 32 * (1 << 20), zeros );
 		
 		// expected: md5sum mmd3.dat
-		test( md, sz, "d7b033a70d76e2baee5ebf6de0475e7d" );
+		test( md, sz, "c1756744fc669fd9ac65a044ab981fa8" );
 	}
 
 	/*
