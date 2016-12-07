@@ -59,83 +59,48 @@ import org.apache.commons.io.input.NullInputStream;
  */
 public class RandomDisk extends MemoryDisk {
 
-	public RandomDisk( long size ) {
-		this( size, 0, size );
-	}
-
 	/**
-	 * @param size byte count for this disk
+	 * When the entire disk content is handled by a single extent.
+	 * The disk size also doubles up as the random stream seed.
 	 *
-	 * @param speedBytesPerSecond - how many bytes can be
-	 * read per second from this fake disk.  Used to put realistic
-	 * load on read operations. Can be 0.
+	 * @param size - the overall disk size
 	 */
-	public RandomDisk( long size, long readSpeedBytesPerSecond ) {
-		this( size, readSpeedBytesPerSecond, size );
+	public RandomDisk( long size ) {
+		this( size, (int)size, size );
+	}
+	/**
+	 * @param size - the overall disk size
+	 * @param extent - the length of the maintained rnd byte stream.
+	 * Extents are then chained together to make up the required
+	 * disk size.
+	 */
+	public RandomDisk( long size, int extent ) {
+		this( size, extent, size );
 	}
 
-	public RandomDisk( long size, long readSpeedBytesPerSecond, long seed ) {
-		super( size, readSpeedBytesPerSecond );
-		this.seed = seed;
+	public RandomDisk( long size, int extent, long seed ) {
+		super( size );
+		if( size % extent != 0 ) {
+			throw new IllegalArgumentException
+				( "Extent length (" + extent + ")" +
+				  " must divide size (" + size + ")" );
+		}
+		Random rng = new Random( seed );
+		buffer = new byte[extent];
+		rng.nextBytes( buffer );
 	}
 	
 	@Override
-	protected InputStream inputStreamImpl() throws IOException {
-		return new RandomDiskInputStream();
+	protected byte supplyByte( long offset ) {
+		/*
+		  buffer.length MUST be 2^n, we are optimising the A % B
+		  operation as A & (B-1), which requires B is 2^N.
+		*/
+		int indx = (int)(offset & (buffer.length-1));
+		return buffer[indx];
 	}
 
-	class RandomDiskInputStream extends NullInputStream {
-		RandomDiskInputStream() {
-			
-			super( size, false, false );
-			Random rng = new Random( seed );
-			buffer = new byte[BUFFERLENGTH];
-			rng.nextBytes( buffer );
-		}
-
-	   	@Override
-		protected int processByte() {
-			/*
-			  The read has already been done, and position moved
-			  along by 1
-			*/
-			long indx = getPosition() - 1;
-			int m = mutatedValue( indx );
-			return m > -1 ? m : value( indx ) & 0xff;
-		}
-		
-		@Override
-		protected void processBytes( byte[] ba, int offset, int length ) {
-			System.err.println( length + " " + getPosition() );
-			/*
-			  The read has already been done, and position moved
-			  along by length bytes
-			*/
-			long lo = getPosition() - length;
-			for( int i = 0; i < length; i++ ) {
-				int m = mutatedValue( lo+i );
-				if( m > -1 && false )
-					System.err.println( (lo+i)  + " " + m );
-				ba[offset+i] = (m > -1) ? (byte)m : value( lo+i );
-			}
-			System.err.println( "'" + length + " " + getPosition() );
-		}
-
-		private byte value( long indx ) {
-			/*
-			  buffer.length MUST be 2^n, we are optimising the A % B
-			  operation as A & (B-1), which requires B is 2^N.
-			*/
-			return buffer[(int)(indx & (buffer.length-1))];
-		}
-		
-		private final byte[] buffer;
-
-	}
-
-	private final long seed;
-
-	static final int BUFFERLENGTH = 1 << 24;
+	private final byte[] buffer;
 }
 
 // eof

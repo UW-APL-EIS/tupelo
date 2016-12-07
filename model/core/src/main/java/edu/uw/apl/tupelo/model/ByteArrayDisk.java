@@ -47,6 +47,9 @@ import org.apache.commons.io.input.NullInputStream;
  * like a real disk contents would mutate over time.  Like all MemoryDisks,
  * has no actual I/O operations at all.
  *
+ * See also methods in the parent class MemoryDisk, which allow
+ * disk mutations and a throttled read-speed.
+
  * Useful in testing Tupelo store puts, especially with parent links
  * and the use of parent digests.  We build a single ByteArrayDisk,
  * but mutate its content between Store.put operations:
@@ -55,8 +58,8 @@ import org.apache.commons.io.input.NullInputStream;
  * ByteArrayDisk bad = new ByteArrayDisk( contents );
  * ... store operations ...
  *
- * Mutate the unmanaged 'disk';
- * contents[X] = 18; contents[Y] = 21; ....
+ * Mutate the unmanaged 'disk' via writing a 'region';
+ * bad.set( someOffset, someNewBytes );
  *
  * ... more store operations ...
  *
@@ -65,54 +68,36 @@ import org.apache.commons.io.input.NullInputStream;
 
 public class ByteArrayDisk extends MemoryDisk {
 
-	public ByteArrayDisk( byte[] data ) {
-		this( data, 0 );
-	}
-	
 	/**
-	 * @param readSpeedBytesPerSecond - how many bytes can be
-	 * read per second from this fake disk.  Used to put realistic
-	 * load on read operations. 200 MBs-1 is reasonable.
+	 * When the data supplied is the entire disk content
 	 */
-	public ByteArrayDisk( byte[] data, long readSpeedBytesPerSecond ) {
-		super( data.length, readSpeedBytesPerSecond );
+	public ByteArrayDisk( byte[] data ) {
+		this( data.length, data );
+	}
+
+	/**
+	 * When the data supplied is chained end-to-end to make
+	 * up the disk content, size provided.
+	 */
+	public ByteArrayDisk( long size, byte[] data ) {
+		super( size );
+		
+		if( size % data.length != 0 ) {
+			throw new IllegalArgumentException
+				( "Data length (" + data.length + ")" +
+				  " must divide size (" + size + ")" );
+		}
 		this.data = data;
 	}
 	
 	@Override
-	protected InputStream inputStreamImpl() throws IOException {
-		return new LocalInputStream();
-	}
-
-	// ByteArrayInputStream obviously taken by java.io ;)
-	class LocalInputStream extends NullInputStream {
-		LocalInputStream() {
-			super( size, false, false );
-		}
-
-	   	@Override
-		protected int processByte() {
-			/*
-			  The read has already been done, and position moved
-			  along by 1
-			*/
-			long indx = getPosition() - 1;
-			int m = mutatedValue( indx );
-			return m > -1 ? m : data[(int)indx];
-		}
-		
-		@Override
-		protected void processBytes( byte[] ba, int offset, int length ) {
-			/*
-			  The read has already been done, and position moved
-			  along by length bytes
-			*/
-			long lo = getPosition() - length;
-			for( int i = 0; i < length; i++ ) {
-				int m = mutatedValue( lo+i );
-				ba[offset+i] = (m > -1) ? (byte)m : data[(int)(lo+i)];
-			}
-		}
+	protected byte supplyByte( long offset ) {
+		/*
+		  data.length MUST be 2^n, we are optimising the A % B
+		  operation as A & (B-1), which requires B is 2^N.
+		*/
+		int indx = (int)(offset & (data.length-1));
+		return data[indx];
 	}
 
 	private final byte[] data;

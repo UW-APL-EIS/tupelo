@@ -71,22 +71,23 @@ public class CreateMemoryDiskReferencesTest extends junit.framework.TestCase {
 		os.close();
 	}
 
-	private void createRandomContentFile( int len, int seed, File f )
+	private void createRandomContentFile( long size, int extent,
+										  long seed, File f )
 		throws IOException {
 
 		if( f.exists() )
 			return;
 
-		if( len % RandomDisk.BUFFERLENGTH != 0 )
+		if( size % extent != 0 )
 			throw new IllegalArgumentException
-				( "len (" + len + ") must be multiple of " +
-				  "RandomDisk.BUFFERLENGTH (" + RandomDisk.BUFFERLENGTH + ")" );
+				( "size (" + size + ") must be multiple of " +
+				  "extent (" + extent + ")" );
 
-		byte[] bs = new byte[RandomDisk.BUFFERLENGTH];
+		byte[] bs = new byte[extent];
 		Random r = new Random( seed );
 		r.nextBytes( bs );
 
-		int chunks = len / RandomDisk.BUFFERLENGTH;
+		int chunks = (int)(size / extent);
 		FileOutputStream fos = new FileOutputStream( f );
 		BufferedOutputStream bos = new BufferedOutputStream( fos,
 															 1 << 20 );
@@ -109,7 +110,7 @@ public class CreateMemoryDiskReferencesTest extends junit.framework.TestCase {
 		// One billion randoms...
 		File f2 = new File( "rnd21_30" );
 		System.out.println( f2 );
-		createRandomContentFile( 1 << 30, 21, f2 );
+		createRandomContentFile( 1 << 30, 1 << 30, 21, f2 );
 	}
 }
 // eof

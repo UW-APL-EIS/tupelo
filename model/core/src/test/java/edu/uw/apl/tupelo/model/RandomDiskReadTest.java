@@ -50,11 +50,12 @@ import java.util.Vector;
  */
 public class RandomDiskReadTest extends junit.framework.TestCase {
 
-	static String md5RndBytes( long len, long seed ) throws IOException {
-		if( len > RandomDisk.BUFFERLENGTH )
-			return md5RndBytesSequenced( len, seed );
+	static String md5RndBytes( long size, long seed )
+		throws IOException {
+		if( size > 1 << 30 )
+			return md5RndBytesSequenced( size, 1 << 20, seed );
 		Random r = new Random( seed );
-		byte[] ba = new byte[(int)len];
+		byte[] ba = new byte[(int)size];
 		r.nextBytes( ba ); 
 		ByteArrayInputStream bais = new ByteArrayInputStream( ba );
 		String md5 = Utils.md5sum( bais );
@@ -62,17 +63,20 @@ public class RandomDiskReadTest extends junit.framework.TestCase {
 		return md5;
 	}
 
-	static String md5RndBytesSequenced( long len, long seed )
+	static String md5RndBytesSequenced( long size, int extent,
+										long seed )
 		throws IOException {
 
-		int chunks = (int)(len / RandomDisk.BUFFERLENGTH);
+		int chunks = (int)(size / extent );
 		
 		Random r = new Random( seed );
-		byte[] ba = new byte[RandomDisk.BUFFERLENGTH];
+		byte[] ba = new byte[extent];
 		r.nextBytes( ba );
 		Vector<InputStream> iss = new Vector<>( chunks );
-		for( int i = 1; i <= chunks; i++ )
+		for( int i = 1; i <= chunks; i++ ) {
+			//			System.err.println( "md5RndBytesSequenced " + i );
 			iss.add( new ByteArrayInputStream( ba ) );
+		}
 		Enumeration<InputStream> e = iss.elements();
 		SequenceInputStream sis = new SequenceInputStream( e );
 		String md5 = Utils.md5sum( sis, _64M );
@@ -82,15 +86,15 @@ public class RandomDiskReadTest extends junit.framework.TestCase {
 	
 	public void test_1M() throws IOException {
 		long sz = 1024L * 1024;
-		RandomDisk rd = new RandomDisk( sz );
-		String md5 = md5RndBytes( (int)sz, sz );
+		RandomDisk rd = new RandomDisk( sz, (int)sz );
+		String md5 = md5RndBytes( sz, sz );
 		test( rd, sz, md5 );
 	}
 
 	public void test_16M() throws IOException {
 		long sz = 1024L * 1024 * 16;
 		RandomDisk rd = new RandomDisk( sz );
-		String md5 = md5RndBytes( (int)sz, sz );
+		String md5 = md5RndBytes( sz, sz );
 		test( rd, sz, md5 );
 	}
 
@@ -103,28 +107,29 @@ public class RandomDiskReadTest extends junit.framework.TestCase {
 
 	public void test_2GB() throws IOException {
 		long sz = 1024L * 1024 * 1024 * 2;
-		RandomDisk rd = new RandomDisk( sz );
-		String md5 = md5RndBytes( sz, sz );
+		RandomDisk rd = new RandomDisk( sz, 1<<20, sz );
+		String md5 = md5RndBytesSequenced( sz, 1<<20, sz );
 		test( rd, sz, md5 );
 	}
 
 	public void test_32GB() throws IOException {
 		long sz = 1024L * 1024 * 1024 * 32;
-		RandomDisk rd = new RandomDisk( sz );
-		String md5 = md5RndBytes( sz, sz );
+		RandomDisk rd = new RandomDisk( sz, 1 << 26, sz );
+		String md5 = md5RndBytesSequenced( sz, 1 << 26, sz );
 		test( rd, sz, md5 );
 	}
 
 	// A typical real disk size, 128GB
-	public void _test_128G() {
+	public void test_128G() throws IOException {
 		long sz = 1024L * 1024 * 1024 * 128;
-		RandomDisk rd = new RandomDisk( sz );
+		RandomDisk rd = new RandomDisk( sz, 1 << 28, sz );
+		String md5 = md5RndBytesSequenced( sz, 1 << 28, sz );
 
 		/*
 		  Expected: dd if=/dev/zero bs=1M count=128K | md5sum
 		  Warning: this may take a while, took 5+ mins on rejewski
 		*/
-		//		test( rd, sz );
+		test( rd, sz, md5 );
 	}
 
 	private void test( RandomDisk rd, long sz, String md5Expected ) {

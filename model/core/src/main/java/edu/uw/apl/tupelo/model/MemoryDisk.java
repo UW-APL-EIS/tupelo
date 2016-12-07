@@ -40,6 +40,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.input.NullInputStream;
+
 /**
  * @author Stuart Maclean
  *
@@ -59,10 +61,11 @@ import java.util.List;
  
 abstract public class MemoryDisk implements UnmanagedDisk {
 
-	abstract protected InputStream inputStreamImpl() throws IOException;
+	abstract protected byte supplyByte( long offset );
 
 	protected MemoryDisk( long sizeBytes ) {
-		this( sizeBytes, 0 );
+		this.size = sizeBytes;
+		mutations = new ArrayList<>();
 	}
 	
 	/**
@@ -71,10 +74,8 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 	 * load on read operations. 200 MBs-1 is reasonable.  If 0,
 	 * no limit is imposed on read speed.
 	 */
-	protected MemoryDisk( long sizeBytes, long readSpeedBytesPerSecond ) {
-		this.size = sizeBytes;
+	public void setReadSpeed( long readSpeedBytesPerSecond ) {
 		this.readSpeedBytesPerSecond = readSpeedBytesPerSecond;
-		mutations = new ArrayList<>();
 	}
 
 	@Override
@@ -93,6 +94,10 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 		return new File( getID() );
 	}
 
+	/*
+	  How to mutate a MemoryDisk, supply a byte range with offset.
+	  Many mutations are supported
+	*/
 	public void set( long offset, byte[] bs ) {
 		if( offset + bs.length > size )
 			throw new IllegalArgumentException( getID() +
@@ -101,7 +106,7 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 		mutations.add( new Region( offset, bs ) );
 	}
 
-	protected int mutatedValue( long offset ) {
+	private int mutatedValue( long offset ) {
 		for( Region r : mutations ) {
 			if( offset >= r.offset &&
 				offset < r.offset + r.data.length ) {
@@ -113,7 +118,7 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 	
 	@Override
 	public InputStream getInputStream() throws IOException {
-		InputStream impl = inputStreamImpl();
+		InputStream impl = new WithMutationsNullInputStream();
 		if( readSpeedBytesPerSecond > 0 )
 			return new SpeedLimitedInputStream( impl );
 		// If NOT limiting read speed, simply give the caller the impl...
@@ -154,9 +159,39 @@ abstract public class MemoryDisk implements UnmanagedDisk {
 		}
 	}
 
-	protected final long size;
-	private final long readSpeedBytesPerSecond;
-	protected final List<Region> mutations;
+	class WithMutationsNullInputStream extends NullInputStream {
+		protected WithMutationsNullInputStream() {
+			super( size, false, false );
+		}
+
+		@Override
+		protected int processByte() {
+			/*
+			  The read has already been done, and position moved
+			  along by 1
+			*/
+			long indx = getPosition() - 1;
+			int m = mutatedValue( indx );
+			return m > -1 ? m : supplyByte( indx );
+		}
+
+		@Override
+		protected void processBytes( byte[] ba, int offset, int length ) {
+			/*
+			  The read has already been done, and position moved
+			  along by length bytes
+			*/
+			long lo = getPosition() - length;
+			for( int i = 0; i < length; i++ ) {
+				int m = mutatedValue( lo+i );
+				ba[offset+i] = (m > -1) ? (byte)m : supplyByte( lo+i );
+			}
+		}
+	}
+
+	private final long size;
+	private long readSpeedBytesPerSecond;
+	private final List<Region> mutations;
 }
 
 // eof

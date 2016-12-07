@@ -36,7 +36,6 @@ package edu.uw.apl.tupelo.model;
 import java.io.InputStream;
 import java.io.IOException;
 
-import org.apache.commons.io.input.NullInputStream;
 
 /**
  * @author Stuart Maclean
@@ -45,9 +44,8 @@ import org.apache.commons.io.input.NullInputStream;
  * returns zeroes. A variation of {@link MemoryDisk}, since has no
  * disk-backed data at all.
  *
- * Uses commons.io's NullInputStream, a nice class which already takes
- * care of the moving 'position' (file pointer) in the data as the
- * user calls read (and perhaps skip)
+ * See also methods in the parent class MemoryDisk, which allow
+ * disk mutations and a throttled read-speed.
  *
  * @see ByteArrayDisk
  * @see RandomDisk
@@ -59,49 +57,10 @@ public class ZeroDisk extends MemoryDisk {
 	public ZeroDisk( long sizeBytes ) {
 		super( sizeBytes );
 	}
-	
-	/**
-	 * @param readSpeedBytesPerSecond - how many bytes can be
-	 * read per second from this fake disk.  Used to put realistic
-	 * load on read operations. 200 MBs-1 is reasonable.
-	 */
-	public ZeroDisk( long sizeBytes, long readSpeedBytesPerSecond ) {
-		super( sizeBytes, readSpeedBytesPerSecond );
-	}
-	
+ 
 	@Override
-	protected InputStream inputStreamImpl() throws IOException {
-		return new ZeroInputStream();
-	}
-	
-	class ZeroInputStream extends NullInputStream {
-		ZeroInputStream() {
-			super( size, false, false );
-		}
-
-	   	@Override
-		protected int processByte() {
-			/*
-			  The read has already been done, and position moved
-			  along by 1
-			*/
-			long indx = getPosition() - 1;
-			int m = mutatedValue( indx );
-			return m > -1 ? m : 0;
-		}
-		
-		@Override
-		protected void processBytes( byte[] ba, int offset, int length ) {
-			/*
-			  The read has already been done, and position moved
-			  along by length bytes
-			*/
-			long lo = getPosition() - length;
-			for( int i = 0; i < length; i++ ) {
-				int m = mutatedValue( lo+i );
-				ba[offset+i] = (m > -1) ? (byte)m : 0;
-			}
-		}
+	protected byte supplyByte( long offset ) {
+		return (byte)0;
 	}
 }
 

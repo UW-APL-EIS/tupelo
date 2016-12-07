@@ -56,25 +56,29 @@ public class MemoryDiskReadTimesTest extends junit.framework.TestCase {
 	
 	public void test_1M() {
 		long sz = 1024L * 1024;
-		ZeroDisk zd = new ZeroDisk( sz, ONE_MBPERSEC );
+		ZeroDisk zd = new ZeroDisk( sz );
+		zd.setReadSpeed( ONE_MBPERSEC );
 		test( zd, 1 );
 	}
 
 	public void test_16M() {
 		long sz = 1024L * 1024 * 16;
-		ZeroDisk zd = new ZeroDisk( sz, ONE_MBPERSEC );
+		ZeroDisk zd = new ZeroDisk( sz );
+		zd.setReadSpeed( ONE_MBPERSEC );
 		test( zd, 16 );
 	}
 
 	public void test_1G() {
 		long sz = 1L << 30;
-		ZeroDisk zd = new ZeroDisk( sz, ONEHUNDRED_MBPERSEC );
+		ZeroDisk zd = new ZeroDisk( sz );
+		zd.setReadSpeed( ONEHUNDRED_MBPERSEC );
 		test( zd, 1 << 3 );
 	}
 
 	public void test_1T() {
 		long sz = (1L << 40);
-		ZeroDisk zd = new ZeroDisk( sz, FIVEHUNDRED_MBPERSEC );
+		ZeroDisk zd = new ZeroDisk( sz );
+		zd.setReadSpeed( FIVEHUNDRED_MBPERSEC );
 		test( zd, 1 << 11 );
 	}
 

@@ -47,9 +47,15 @@ import java.io.InputStream;
 
 public class ByteArrayDiskReadTest extends junit.framework.TestCase {
 
-	static final String ONEGIGZEROSMD5 = "cd573cfaace07e7949bc0c46028904ff";
+	static final String ONEGIGZEROSMD5 =
+		"cd573cfaace07e7949bc0c46028904ff";
+
+	static final String EIGHTGIGZEROSMD5 =
+		"b770351fadae5a96bbaf9702ed97d28d";
+
 	public void test_1G() {
-		byte[] contents = new byte[1024 * 1024 * 1024];
+		long sz = 1024 * 1024 * 1024;
+		byte[] contents = new byte[(int)sz];
 		ByteArrayDisk bad = new ByteArrayDisk( contents );
 
 		/*
@@ -63,8 +69,8 @@ public class ByteArrayDiskReadTest extends junit.framework.TestCase {
 
 	public void test_1G_SpeedLimited() {
 		byte[] contents = new byte[1024 * 1024 * 1024];
-		ByteArrayDisk bad = new ByteArrayDisk( contents, 1024*1024*128 );
-
+		ByteArrayDisk bad = new ByteArrayDisk( contents );
+		bad.setReadSpeed( 1 << 26 );
 		/*
 		  Expected: dd if=/dev/zero bs=1M count=1K | md5sum
 		  Reading from /dev/zero valid since the contents array above
@@ -74,15 +80,29 @@ public class ByteArrayDiskReadTest extends junit.framework.TestCase {
 		test( bad, contents.length, ONEGIGZEROSMD5 );
 	}
 
-	private void test( ByteArrayDisk bad, long sz, String expectedMD5 ) {
-		testRead2EOF( bad, sz );
-		testMD5Sum( bad, expectedMD5 );
+	public void test_8G() {
+		long sz = 1024L * 1024 * 1024 * 8;
+		byte[] contents = new byte[1<<30];
+		ByteArrayDisk bad = new ByteArrayDisk( sz, contents );
+
+		/*
+		  Expected: dd if=/dev/zero bs=1M count=8K | md5sum
+		  Reading from /dev/zero valid since the contents array above
+		  is all zeros too...
+		*/
+		
+		test( bad, sz, EIGHTGIGZEROSMD5 );
 	}
 
-	private void testMD5Sum( ByteArrayDisk bad, String expected ) {
+	private void test( MemoryDisk md, long sz, String expectedMD5 ) {
+		testRead2EOF( md, sz );
+		testMD5Sum( md, expectedMD5 );
+	}
+
+	private void testMD5Sum( MemoryDisk md, String expected ) {
 		String actual = null;
 		try {
-			InputStream is = bad.getInputStream();
+			InputStream is = md.getInputStream();
 			actual = Utils.md5sum( is );
 			is.close();
 		} catch( IOException ioe ) {
@@ -91,11 +111,11 @@ public class ByteArrayDiskReadTest extends junit.framework.TestCase {
 		assertEquals( actual, expected );
 	}
 		
-	private void testRead2EOF( ByteArrayDisk bad, long expected ) {
+	private void testRead2EOF( MemoryDisk md, long expected ) {
 		byte[] buf = new byte[1024*1024];
 		long actual = 0;
 		try {
-			InputStream is = bad.getInputStream();
+			InputStream is = md.getInputStream();
 			while( true ) {
 				int nin = is.read( buf, 0, buf.length );
 				if( nin == -1 )

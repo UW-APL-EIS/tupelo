@@ -108,7 +108,7 @@ public class MutatedMemoryDisksTest extends junit.framework.TestCase {
 	public void _test_ByteArrayDisk_1G_1() {
 		int sz = 1024 * 1024 * 1024;
 		byte[] ba = new byte[sz];
-		ByteArrayDisk bad = new ByteArrayDisk( ba );
+		ByteArrayDisk bad = new ByteArrayDisk( sz, ba );
 
 		/*
 		  A 'null' mutation, writing more zeros into a
