@@ -72,7 +72,7 @@ public class RandomDisk extends MemoryDisk {
 	 * @param size - the overall disk size
 	 * @param extent - the length of the maintained rnd byte stream.
 	 * Extents are then chained together to make up the required
-	 * disk size.
+	 * disk size.  Thus the random stream repeats over and over.
 	 */
 	public RandomDisk( long size, int extent ) {
 		this( size, extent, size );

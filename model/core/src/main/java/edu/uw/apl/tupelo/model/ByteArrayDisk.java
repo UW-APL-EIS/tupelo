@@ -78,6 +78,8 @@ public class ByteArrayDisk extends MemoryDisk {
 	/**
 	 * When the data supplied is chained end-to-end to make
 	 * up the disk content, size provided.
+	 * Thus the data in the byte array repeats over and over to make
+	 * up the whole disk content.
 	 */
 	public ByteArrayDisk( long size, byte[] data ) {
 		super( size );
