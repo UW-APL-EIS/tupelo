@@ -40,6 +40,16 @@ import java.util.Random;
 /**
  * @author Stuart Maclean
  *
+ * Uses java.util.Random, with supplied seed, to output a random
+ * stream of bytes to System.out.  Length of stream supplied along
+ * with seed, as log2size, like this:
+ *
+ * $ rndTool 30 21
+ *
+ * will produce 1 billion (2^30) bytes seeded 21, on stdout
+ *
+ * rndTool is the expected driver shell script wrapping this main entry point.
+ *
  */
 public class RndTool {
 
