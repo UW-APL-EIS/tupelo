@@ -1,0 +1,5 @@
+#!/bin/bash
+
+exec java -cp target/classes edu.uw.apl.tupelo.model.RndTool $@
+
+# eof
