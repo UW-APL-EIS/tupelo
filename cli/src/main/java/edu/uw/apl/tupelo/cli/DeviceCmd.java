@@ -38,6 +38,7 @@ import java.util.List;
 
 import org.apache.commons.cli.*;
 
+import edu.uw.apl.tupelo.model.MemoryDisk;
 import edu.uw.apl.tupelo.model.RandomDisk;
 import edu.uw.apl.tupelo.model.ZeroDisk;
 import edu.uw.apl.tupelo.model.DiskImage;
@@ -126,9 +127,10 @@ public class DeviceCmd extends Command {
 			// 100MB.s-1
 			long readSpeed = 100 * (1L << 20);
 			long size = 1 << log2size;
-			ud = path.equals( "zero" ) ?
-				new ZeroDisk( size, readSpeed ) :
-				new RandomDisk( size, readSpeed );
+			MemoryDisk md = path.equals( "zero" ) ?
+				new ZeroDisk( size ) : new RandomDisk( size );
+			md.setReadSpeed( readSpeed );
+			ud = md;
 		} else if( path.startsWith( "/dev/" ) ) {
 			File f = new File( path );
 			PhysicalDisk pd = new PhysicalDisk( f );

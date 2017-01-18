@@ -219,11 +219,13 @@ public class Command {
 		File f = new File( path );
 		if( false ) {
 		} else if( path.equals( "random" ) ) {
+			RandomDisk rd = new RandomDisk( cd.getSize() );
 			long readSpeed = 100 * (1L << 20);
-			return new RandomDisk( cd.getSize(), readSpeed );
+			rd.setReadSpeed( readSpeed );
 		} else if( path.equals( "zero" ) ) {
+			ZeroDisk zd = new ZeroDisk( cd.getSize() );
 			long readSpeed = 100 * (1L << 20);
-			return new ZeroDisk( cd.getSize(), readSpeed );
+			zd.setReadSpeed( readSpeed );
 		} else if( path.startsWith( "/dev/" ) ) {
 			return new PhysicalDisk( f );
 		} else if( VirtualDisk.likelyVirtualDisk( f ) ) {
@@ -235,7 +237,7 @@ public class Command {
 		return null;
 	}
 
-	static final List<Command> COMMANDS = new ArrayList();
+	static final List<Command> COMMANDS = new ArrayList<>();
 
 	final CommandHelp help;
 	

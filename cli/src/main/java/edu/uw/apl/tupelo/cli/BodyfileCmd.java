@@ -111,7 +111,7 @@ public class BodyfileCmd extends Command {
 			return;
 		}
 		
-		List<ManagedDiskDescriptor> sorted = new ArrayList( mdds );
+		List<ManagedDiskDescriptor> sorted = new ArrayList<>( mdds );
 		Collections.sort( sorted,
 						  ManagedDiskDescriptor.DEFAULTCOMPARATOR );
 		ManagedDiskDescriptor mdd = sorted.get(index-1);
