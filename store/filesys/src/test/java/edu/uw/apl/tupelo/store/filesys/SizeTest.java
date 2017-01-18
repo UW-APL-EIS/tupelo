@@ -89,19 +89,20 @@ public class SizeTest extends junit.framework.TestCase {
 	}
 
 	public void testSizeZero10() throws Exception {
-		ZeroDisk z10 = new ZeroDisk( 1 << 10, 1 << 20 );
+		ZeroDisk z10 = new ZeroDisk( 1 << 10 );
 		testSizeFlat( z10, 1 << 10 );
 		testSizeStreamOptimized( z10, 1 << 10 );
 	}
 
 	public void testSizeZero20() throws Exception {
-		ZeroDisk z20 = new ZeroDisk( 1 << 20, 1 << 20 );
+		ZeroDisk z20 = new ZeroDisk( 1 << 20 );
 		testSizeFlat( z20, 1 << 20 );
 		testSizeStreamOptimized( z20, 1 << 20 );
 	}
 
 	public void testSizeZero30() throws Exception {
-		ZeroDisk z30 = new ZeroDisk( 1 << 30, 100 * (1 << 20) );
+		ZeroDisk z30 = new ZeroDisk( 1 << 30 );
+		z30.setReadSpeed( 100 * (1 << 20) );
 		testSizeFlat( z30, 1 << 30 );
 		testSizeStreamOptimized( z30, 1 << 30 );
 	}

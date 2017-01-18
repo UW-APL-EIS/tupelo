@@ -79,7 +79,8 @@ public class DigestComputeTest extends junit.framework.TestCase {
 	}
 
 	public void testDigestZero20() throws Exception {
-		ZeroDisk z20 = new ZeroDisk( 1 << 20, 1 << 20 );
+		ZeroDisk z20 = new ZeroDisk( 1 << 20 );
+		z20.setReadSpeed( 1 << 20 );
 		testDigest( z20, 1 << 20 );
 	}
 

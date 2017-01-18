@@ -89,17 +89,17 @@ public class PutTest extends junit.framework.TestCase {
 	}
 
 	public void testSizeZero10() throws Exception {
-		ZeroDisk zd = new ZeroDisk( 1 << 10, 1 << 20 );
+		ZeroDisk zd = new ZeroDisk( 1 << 10 );
 		tests( zd );
 	}
 
 	public void testSizeZero20() throws Exception {
-		ZeroDisk zd = new ZeroDisk( 1 << 20, 1 << 20 );
+		ZeroDisk zd = new ZeroDisk( 1 << 20 );
 		tests( zd );
 	}
 
 	public void testSizeZero24() throws Exception {
-		ZeroDisk zd = new ZeroDisk( 1 << 24, 1 << 20 );
+		ZeroDisk zd = new ZeroDisk( 1 << 24 );
 		tests( zd );
 	}
 
