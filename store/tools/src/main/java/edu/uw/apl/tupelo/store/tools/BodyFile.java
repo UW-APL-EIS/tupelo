@@ -129,50 +129,95 @@ public class BodyFile {
 		
 		Image i = new Image( mdfsPath );
 		try {
-			VolumeSystem vs = null;
-			try {
-				vs = new VolumeSystem( i );
-			} catch( IllegalStateException noVolSys ) {
-				log.warn( noVolSys );
-				return;
-			}
-			try {
-				List<Partition> ps = vs.getPartitions();
-				for( Partition p : ps ) {
-					if( !p.isAllocated() ) {
-						continue;
-					}
-					FileSystem fs = null;
-					try {
-						log.info( p.start() + " " +
-								  p.length() + " " +
-								  p.description() );
-						fs = new FileSystem( i, p.start() );
-						edu.uw.apl.commons.tsk4j.digests.BodyFile bf =
-							BodyFileBuilder.create( fs );
-						StringWriter sw = new StringWriter();
-						BodyFileCodec.format( bf, sw );
-						String value = sw.toString();
-						String key = "bodyfile-" +
-							p.start() + "-" + p.length();
-						store.setAttribute( mdd, key, value.getBytes() );
-						if( printResult )
-							BodyFileCodec.format( bf, System.out );
-						fs.close();
-					} catch( IllegalStateException noFileSystem ) {
-						continue;
-					}
-				}				
-			} finally {
-				// MUST release vs else leaves mdfs non-unmountable
-				vs.close();
+			log.debug( "Trying volume system on " + mdfsPath );
+			boolean b = walkVolumeSystem( i, mdd, store, printResult );
+			if( !b ) {
+				log.debug( "Trying file system on " + mdfsPath );
+				walkFileSystem( i, mdd, store, printResult );
 			}
 		} finally {
 			// MUST release i else leaves mdfs non-unmountable
 			i.close();
 		}
+	}
+
+	/**
+	 * @return true if a volume system found (and thus traversed), false
+	 * otherwise.  False result lets us try the image as a standalone
+	 * filesystem
+	 */
+	static private boolean walkVolumeSystem
+		( Image i, ManagedDiskDescriptor mdd, Store store, boolean printResult )
+		throws Exception {
+
+		VolumeSystem vs = null;
+		try {
+			vs = new VolumeSystem( i );
+		} catch( Exception iae ) {
+			return false;
+		}
+		List<Partition> ps = vs.getPartitions();
+		try {
+			for( Partition p : ps ) {
+				if( !p.isAllocated() ) {
+					continue;
+				}
+				log.info( p.start() + " " +
+						  p.length() + " " +
+						  p.description() );
+				String key = keyName( p.start(), p.length() );
+				boolean exists = Utils.isAttributePresent( store, mdd, key );
+				if( exists )
+					continue;
+				FileSystem fs = null;
+				try {
+					fs = new FileSystem( i, p.start() );
+					edu.uw.apl.commons.tsk4j.digests.BodyFile bf =
+						BodyFileBuilder.create( fs );
+					fs.close();
+					StringWriter sw = new StringWriter();
+					BodyFileCodec.format( bf, sw );
+					String value = sw.toString();
+					store.setAttribute( mdd, key, value.getBytes() );
+					if( printResult )
+						BodyFileCodec.format( bf, System.out );
+				} catch( IllegalStateException noFileSystem ) {
+					continue;
+				}
+			}				
+		} finally {
+			// MUST release vs else leaves mdfs non-unmountable
+			vs.close();
+		}
+		return true;
+	}
+
+	static private void walkFileSystem( Image i, ManagedDiskDescriptor mdd,
+										Store store, boolean printResult )
+		throws Exception {
+
+		String key = keyName( 0, 0 );
+		boolean exists = Utils.isAttributePresent( store, mdd, key );
+		if( exists )
+			return;
+		FileSystem fs = new FileSystem( i );
+		edu.uw.apl.commons.tsk4j.digests.BodyFile bf =
+			BodyFileBuilder.create( fs );
+		fs.close();
+		StringWriter sw = new StringWriter();
+		BodyFileCodec.format( bf, sw );
+		String value = sw.toString();
+		store.setAttribute( mdd, key, value.getBytes() );
+		if( printResult )
+			BodyFileCodec.format( bf, System.out );
 		
 	}
+	
+	static String keyName( long startSector, long sectorCount ) {
+		return "bodyfile-" + startSector + "-" + sectorCount;
+	}
+
+	static private final Log log = LogFactory.getLog( BodyFile.class );
 }
 
 // eof
