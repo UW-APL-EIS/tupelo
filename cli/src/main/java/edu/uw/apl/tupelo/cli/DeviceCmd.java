@@ -74,10 +74,16 @@ public class DeviceCmd extends Command {
 		super( "device" );
 
 		Options osAdd = new Options();
+
 		Option oa1 = new Option( "i", true,
 								 "AlternativeID (device name unavailable)" );
 		oa1.setArgName( "alternateID" );
 		osAdd.addOption( oa1 );
+
+		Option oa2 = new Option( "f", false,
+								 "Force device name unavailable" );
+		oa2.setArgName( "forceDeviceNameUnavailable" );
+		osAdd.addOption( oa2 );
 		addSub( "add", ADD, osAdd, "name", "path" );
 
 		Options osRemove = new Options();
@@ -105,17 +111,30 @@ public class DeviceCmd extends Command {
 		String name = args[0];
 		String path = args[1];
 
+		/*
+		  Option to force the DeviceFiles JNI code to fail, enables
+		  us to mimic on Linux what we would really see on MacOS,Windows
+		*/
+		boolean forceDeviceFilesFail = cl.hasOption( "f" );
+		if( forceDeviceFilesFail ) {
+			System.setProperty
+				( "edu.uw.apl.commons.devicefiles.disabled", "true" );
+		}
+		
 
 		if( cl.hasOption( "i" ) ) {
 			name = cl.getOptionValue( "i" );
 		}
 
-		System.out.println( name + " => " + path );
 
 		UnmanagedDisk ud = null;
 		if( false ) {
 		} else if( path.equals( "random" ) ||
 				   path.equals( "zero" ) ) {
+			/*
+			   By default, we'll build a 1GB fake disk.  If the user
+			   supplies their own log2size, we'll use that
+			*/
 			long log2size = 30L;
 			if( args.length > 2 ) {
 				try {
@@ -145,11 +164,19 @@ public class DeviceCmd extends Command {
 			DiskImage di = new DiskImage( f );
 			ud = di;
 		}
-		Config.Device d = c.addDevice( name, path );
 		if( ud != null ) {
-			d.setID( ud.getID() );
-			d.setSize( ud.size() );
-			c.store();
+			Config.Device d = c.addDevice( name, path );
+			if( d == null ) {
+				System.err.println( "Device Name Exists: " + name );
+			} else {
+				System.out.println( "Adding:     " + path );
+				System.out.println( "LocalName:  " + name );
+				System.out.println( "GlobalName: " + ud.getID() );
+				System.out.println( "Size:       " + ud.size() );
+				d.setID( ud.getID() );
+				d.setSize( ud.size() );
+				c.store();
+			}
 		} else {
 			System.err.println( path + ": cannot process" );
 		}
