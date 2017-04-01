@@ -14,7 +14,10 @@ drive 5 times will cost you far less than the 1.5TB that would be
 needed for true bit-for-bit copies.  Furthermore, the space-compressed
 offline copy is still fully usable in-place.  There is no need to
 'inflate back to raw' so that e.g. Sleuthkit tools can walk the
-captured drive.
+captured drive.  A work-in-progress [User Guide]
+(./doc/UserGuide/TupeloUserGuide.pdf) explains how to use Tupelo in
+your own system.
+
 
 ## Versioning
 

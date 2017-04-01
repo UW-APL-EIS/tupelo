@@ -1,20 +1,38 @@
 #!/bin/bash                                                                     
 
+# Stuart Maclean: Shell-script driver for Tupelo command-line entry point
+
+# See how we locate the Java jars in a directory relative to this script:
 DIRNAME=`dirname $0`
 JARSHOME=$DIRNAME/target
 
+# Were you to install Tupelo more permanently, perhaps for many users,
+# you would:
+
+# 1: Move all the jars in ./target to someplace more permanent, e.g.
+# /usr/local/share/java/
+#
+# 2: Copy this shell script to say /usr/local/bin and update JARSHOME
+# to whatever you chose in step 1.
 
 ARTIFACT=tupelo-cli
 
 # The Maven <version> becomes part of the final artifact name (the
 # jar).  Rather than hard-coding it here, we locate the jar with the
 # LATEST version. Thus we always run the LATEST code, should many
-# (stale) versions be present.
+# (stale) jars be present along with the current one.
 
 JAR=`ls $JARSHOME | grep $ARTIFACT | sort -n -r | head -1`
 
 PACKAGE=edu.uw.apl.tupelo.cli
 CLAZZ=Main
+
+# Add any JVM-level flags you need, like -Dlog4j.debug perhaps??
+JAVA_OPTS=
+
+# and finally invoke the Java runtime.  This looks like a tiny
+# classpath, just a single jar.  But the manifest inside that jar
+# itself declares a whole bunch of further classpath components.
 
 exec java $JAVA_OPTS -classpath $JARSHOME/$JAR $PACKAGE.$CLAZZ "$@"
 

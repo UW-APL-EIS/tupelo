@@ -34,6 +34,7 @@
 package edu.uw.apl.tupelo.cli;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.PrintWriter;
@@ -83,8 +84,8 @@ public class Main {
 		if( cl.hasOption( "c" ) ) {
 			String s = cl.getOptionValue( "c" );
 			File f = new File( s );
-			if( !f.canRead() ) {
-				System.err.println( s + ": no such config file" );
+			if( f.exists() && !f.canRead() ) {
+				System.err.println( s + ": unreadable" );
 				return;
 			}
 			configBacking = f;
@@ -93,6 +94,7 @@ public class Main {
 		config.setBacking( configBacking );
 		try {
 			config.load();
+		} catch( FileNotFoundException fnfe ) {
 		} catch( IOException ioe ) {
 			System.err.println( ioe );
 		}
